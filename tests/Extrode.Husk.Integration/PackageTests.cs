@@ -26,10 +26,56 @@ public sealed class PackedFeed : IDisposable
 
     public string Package(string id) => Path.Combine(Feed.Dir, $"{id}.{Version}.nupkg");
 
+    /// <summary>A nuget.config for <paramref name="project"/>: Husk from this feed, Pare from the
+    /// repo's packages/, the rest from nuget.org, into a package folder of the project's own.</summary>
+    public void NuGetConfig(TempProject project)
+    {
+        Assert.True(Pack.Exit == 0, Pack.Output);
+        project.Put("nuget.config", $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <configuration>
+              <config><add key="globalPackagesFolder" value="{project.P("packages")}" /></config>
+              <packageSources>
+                <clear />
+                <add key="husk" value="{Feed.Dir}" />
+                <add key="pare" value="{Path.Combine(TempProject.RepoRoot, "packages")}" />
+                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+              </packageSources>
+              <packageSourceMapping>
+                <packageSource key="husk"><package pattern="Extrode.Husk*" /></packageSource>
+                <packageSource key="pare"><package pattern="Extrode.Pare*" /></packageSource>
+                <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+              </packageSourceMapping>
+            </configuration>
+            """);
+    }
+
+    /// <summary>samples/svelte-app copied to a temp folder, restoring this feed's build.</summary>
+    public TempProject Sample()
+    {
+        var project = new TempProject();
+        string sample = Path.Combine(TempProject.RepoRoot, "samples", "svelte-app");
+        foreach (var file in Directory.EnumerateFiles(sample, "*", SearchOption.AllDirectories))
+        {
+            string relative = Path.GetRelativePath(sample, file);
+            if (relative.Split(Path.DirectorySeparatorChar)[0] is "bin" or "obj")
+                continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(project.P(relative))!);
+            File.Copy(file, project.P(relative));
+        }
+        NuGetConfig(project);
+        project.Put("svelte-app.csproj", project.Read("svelte-app.csproj").Replace("\"0.1.0-*\"", $"\"{Version}\"", StringComparison.Ordinal));
+        return project;
+    }
+
     public void Dispose() => Feed.Dispose();
 }
 
-public sealed class PackageTests(PackedFeed feed) : IClassFixture<PackedFeed>
+[CollectionDefinition(nameof(PackedFeed))]
+public sealed class PackedFeedCollection : ICollectionFixture<PackedFeed>;
+
+[Collection(nameof(PackedFeed))]
+public sealed class PackageTests(PackedFeed feed)
 {
     private List<string> Entries(string id)
     {
@@ -75,25 +121,8 @@ public sealed class PackageTests(PackedFeed feed) : IClassFixture<PackedFeed>
 
     private TempProject Consumer(string references)
     {
-        Assert.True(feed.Pack.Exit == 0, feed.Pack.Output);
         var project = new TempProject();
-        project.Put("nuget.config", $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <configuration>
-              <config><add key="globalPackagesFolder" value="{project.P("packages")}" /></config>
-              <packageSources>
-                <clear />
-                <add key="husk" value="{feed.Feed.Dir}" />
-                <add key="pare" value="{Path.Combine(TempProject.RepoRoot, "packages")}" />
-                <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-              </packageSources>
-              <packageSourceMapping>
-                <packageSource key="husk"><package pattern="Extrode.Husk*" /></packageSource>
-                <packageSource key="pare"><package pattern="Extrode.Pare*" /></packageSource>
-                <packageSource key="nuget.org"><package pattern="*" /></packageSource>
-              </packageSourceMapping>
-            </configuration>
-            """);
+        feed.NuGetConfig(project);
         project.Put("app.csproj", $"""
             <Project Sdk="Microsoft.NET.Sdk.Web">
               <PropertyGroup>
@@ -137,5 +166,23 @@ public sealed class PackageTests(PackedFeed feed) : IClassFixture<PackedFeed>
         var (exit, output) = project.Build();
         Assert.NotEqual(0, exit);
         Assert.Contains("error HUSK002", output, StringComparison.Ordinal);
+    }
+}
+
+[Collection(nameof(PackedFeed))]
+public sealed class SampleBuildTests(PackedFeed feed)
+{
+    [Fact]
+    public void The_sample_builds_from_the_feed_with_one_HUSK200_naming_file_line_and_column()
+    {
+        using var sample = feed.Sample();
+
+        var (exit, output) = sample.Build();
+        Assert.True(exit == 0, output);
+        var warnings = output.Split('\n').Where(l => l.Contains(": warning ", StringComparison.Ordinal)).Distinct().ToList();
+        Assert.Matches(@"/wwwroot/App\.svelte\(39,1\): warning HUSK200: a11y_missing_attribute: ", Assert.Single(warnings));
+        foreach (var name in new[] { "App.svelte.js", "Child.svelte.js", "counter.svelte.js", "format.js", "main.js", "index.html" })
+            Assert.True(File.Exists(sample.P(TempProject.PareOut + name)), name);
+        Assert.Contains("\"/counter.svelte\": \"/counter.svelte.js\"", sample.Read(TempProject.PareOut + "index.html"), StringComparison.Ordinal);
     }
 }
