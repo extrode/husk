@@ -63,11 +63,11 @@ public sealed class PageBuildTests
         project.Project(properties);
         project.Put("wwwroot/index.html", Marked);
 
-        var (exit, output) = project.Build();
+        var (exit, output) = project.Run("publish", "-nologo", "-o", "out", "-nodeReuse:false", "--disable-build-servers");
 
         Assert.True(exit == 0, output);
         Assert.False(File.Exists(project.P(TempProject.PareOut + "index.html")), output);
-        Assert.False(File.Exists(project.P("gen/wwwroot/index.html")), output);
+        Assert.Equal(Marked, project.Read("out/wwwroot/index.html"));
     }
 
     [Fact]
