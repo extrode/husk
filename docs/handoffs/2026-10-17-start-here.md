@@ -40,8 +40,7 @@ TypeScript type stripper with an MSBuild package) and does not fork it.
 
 1. ~~Browser floor~~: import-map browsers first, older ones later as an opt-in (decision 003).
 2. ~~First target app~~: saaaat.com (decision 004).
-3. Type checking without Deno: keep `svelte-check`/`tsc` under a runtime in CI, or find a native
-   checker.
+3. ~~Type checking~~: native TypeScript 7 `tsc` (decision 005); `.svelte` checker to evaluate.
 4. linux-musl: unsupported, or a Jint fallback at 13-25x the build time.
 5. Pare's extension point: its shape is designed in Pare, before Husk's build integration.
 
