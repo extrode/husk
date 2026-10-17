@@ -121,6 +121,29 @@ public sealed class HuskCompileTests : IDisposable
     }
 
     [Fact]
+    public void A_compiler_that_cannot_start_is_husk100_per_source_not_a_crash()
+    {
+        Directory.CreateDirectory(P("compiler"));
+        File.WriteAllText(P("compiler/index.js"), "this is not javascript (");
+        var plain = Source("wwwroot/Plain.svelte");
+        var styled = Source("wwwroot/Styled.svelte");
+
+        bool ok = new HuskCompile
+        {
+            BuildEngine = _engine,
+            Sources = [.. plain, .. styled],
+            ProjectDirectory = _dir.FullName,
+            CompilerPath = P("compiler/index.js"),
+        }.Execute();
+
+        Assert.False(ok);
+        Assert.Equal([("HUSK100", P("wwwroot/Plain.svelte")), ("HUSK100", P("wwwroot/Styled.svelte"))],
+            _engine.Errors.Select(e => (e.Code, e.File)));
+        Assert.All(_engine.Errors, e => Assert.StartsWith("the compiler failed: ", e.Message, StringComparison.Ordinal));
+        Assert.False(File.Exists(P("obj/pare/Plain.svelte.js")));
+    }
+
+    [Fact]
     public void A_rewritten_compiler_file_gets_a_fresh_compiler()
     {
         string compiler = P("compiler/index.js");

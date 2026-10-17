@@ -26,6 +26,34 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
     // Not under TaskHostFactory (Visual Studio's MSBuild), whose host exits after the task.
     internal static SvelteCompiler CompilerFor(string compilerPath) => SvelteCompiler.Shared(compilerPath);
 
+    // A batch that throws (an engine that cannot start, a host error mid-compile) is compiled again
+    // one source at a time, so the source behind it is named and the others still compile. Null is
+    // a source that failed this way, already logged.
+    private IReadOnlyList<CompileResult?> Compile(List<CompileInput> inputs)
+    {
+        try
+        {
+            return CompilerFor(CompilerPath).CompileAll(inputs, Dev);
+        }
+        catch (Exception)
+        {
+            return [.. inputs.Select(CompileOne)];
+        }
+    }
+
+    private CompileResult? CompileOne(CompileInput input)
+    {
+        try
+        {
+            return CompilerFor(CompilerPath).Compile(input, Dev);
+        }
+        catch (Exception e)
+        {
+            Log.LogError(null, "HUSK100", null, Path.Combine(ProjectDirectory, input.Filename), 0, 0, 0, 0, "the compiler failed: " + e.Message);
+            return null;
+        }
+    }
+
     public override bool Execute()
     {
         var sw = Stopwatch.StartNew();
@@ -47,18 +75,22 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
                 Log.LogError(null, "HUSK102", null, source.Path, 0, 0, 0, 0, "cannot read the source: " + e.Message);
             }
         }
-        var results = CompilerFor(CompilerPath).CompileAll(inputs, Dev);
+        var results = Compile(inputs);
 
         int compiled = 0;
         for (int i = 0; i < readable.Count; i++)
         {
             var (path, outputs) = readable[i];
             var result = results[i];
+            if (result is null)
+                continue;
             foreach (var warning in result.Warnings)
                 Log.LogWarning(null, "HUSK200", null, path, warning.Line, warning.Column + 1, 0, 0, Message(warning));
             if (!result.Succeeded)
             {
-                Log.LogError(null, "HUSK100", null, path, result.Error!.Line, result.Error.Column + 1, 0, 0, Message(result.Error));
+                // Line 0: Svelte gave no position (an internal error), so none is printed.
+                var error = result.Error!;
+                Log.LogError(null, "HUSK100", null, path, error.Line, error.Line == 0 ? 0 : error.Column + 1, 0, 0, Message(error));
                 continue;
             }
             if (!Write(path, outputs, result))
