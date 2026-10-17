@@ -5,7 +5,8 @@ embedded V8 inside MSBuild, components compile to ES modules, and the `svelte` r
 unbundled behind an import map. Built on [Pare](https://github.com/extrode/pare).
 
 **Status: research.** No product code yet. Start with
-[docs/handoffs/2026-10-17-start-here.md](docs/handoffs/2026-10-17-start-here.md).
+[docs/handoffs/2026-10-17-start-here.md](docs/handoffs/2026-10-17-start-here.md), then
+[docs/handoffs/2026-10-17-decisions-done.md](docs/handoffs/2026-10-17-decisions-done.md).
 
 ## Run the spike
 
