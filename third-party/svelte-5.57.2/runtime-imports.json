@@ -1,0 +1,30 @@
+{
+  "imports": {
+    "#client/constants": "svelte/src/internal/client/constants.js",
+    "clsx": "clsx/dist/clsx.mjs",
+    "esm-env": "esm-env/index.js",
+    "esm-env/browser": "esm-env/true.js",
+    "esm-env/development": "esm-env/true.js",
+    "esm-env/node": "esm-env/false.js",
+    "svelte": "svelte/src/index-client.js",
+    "svelte/animate": "svelte/src/animate/index.js",
+    "svelte/attachments": "svelte/src/attachments/index.js",
+    "svelte/easing": "svelte/src/easing/index.js",
+    "svelte/events": "svelte/src/events/index.js",
+    "svelte/internal": "svelte/src/internal/index.js",
+    "svelte/internal/client": "svelte/src/internal/client/index.js",
+    "svelte/internal/disclose-version": "svelte/src/internal/disclose-version.js",
+    "svelte/internal/flags/async": "svelte/src/internal/flags/async.js",
+    "svelte/internal/flags/legacy": "svelte/src/internal/flags/legacy.js",
+    "svelte/internal/flags/tracing": "svelte/src/internal/flags/tracing.js",
+    "svelte/legacy": "svelte/src/legacy/legacy-client.js",
+    "svelte/motion": "svelte/src/motion/index.js",
+    "svelte/reactivity": "svelte/src/reactivity/index-client.js",
+    "svelte/reactivity/window": "svelte/src/reactivity/window/index.js",
+    "svelte/store": "svelte/src/store/index-client.js",
+    "svelte/transition": "svelte/src/transition/index.js"
+  },
+  "production": {
+    "esm-env/development": "esm-env/false.js"
+  }
+}
