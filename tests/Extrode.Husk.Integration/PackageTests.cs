@@ -59,6 +59,28 @@ public sealed class PackedFeed : IDisposable
             """);
     }
 
+    /// <summary>A web project restoring from this feed, with <paramref name="references"/>
+    /// (<c>$(HuskVersion)</c> is this feed's version) and the Styled fixture.</summary>
+    public TempProject Consumer(string references)
+    {
+        var project = new TempProject();
+        NuGetConfig(project);
+        project.Put("app.csproj", $"""
+            <Project Sdk="Microsoft.NET.Sdk.Web">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <ImplicitUsings>enable</ImplicitUsings>
+              </PropertyGroup>
+              <ItemGroup>
+                {references.Replace("$(HuskVersion)", Version, StringComparison.Ordinal)}
+              </ItemGroup>
+            </Project>
+            """);
+        project.Put("Program.cs", "using Extrode.Husk.AspNetCore;\nvar builder = WebApplication.CreateBuilder(args);\nbuilder.AddHusk();\nvar app = builder.Build();\napp.MapStaticAssets();\napp.Run();\n");
+        project.Fixture("wwwroot/Styled.svelte");
+        return project;
+    }
+
     /// <summary>samples/svelte-app copied to a temp folder, restoring this feed's build.</summary>
     public TempProject Sample()
     {
@@ -141,30 +163,10 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.DoesNotContain(entries, e => e.Contains("ClearScript", StringComparison.OrdinalIgnoreCase));
     }
 
-    private TempProject Consumer(string references)
-    {
-        var project = new TempProject();
-        feed.NuGetConfig(project);
-        project.Put("app.csproj", $"""
-            <Project Sdk="Microsoft.NET.Sdk.Web">
-              <PropertyGroup>
-                <TargetFramework>net10.0</TargetFramework>
-                <ImplicitUsings>enable</ImplicitUsings>
-              </PropertyGroup>
-              <ItemGroup>
-                {references.Replace("$(HuskVersion)", feed.Version, StringComparison.Ordinal)}
-              </ItemGroup>
-            </Project>
-            """);
-        project.Put("Program.cs", "using Extrode.Husk.AspNetCore;\nvar builder = WebApplication.CreateBuilder(args);\nbuilder.AddHusk();\nvar app = builder.Build();\napp.MapStaticAssets();\napp.Run();\n");
-        project.Fixture("wwwroot/Styled.svelte");
-        return project;
-    }
-
     [Fact]
     public void A_fresh_project_restores_both_from_the_feed_and_builds_a_component()
     {
-        using var project = Consumer("""
+        using var project = feed.Consumer("""
             <PackageReference Include="Extrode.Pare.Build" Version="0.6.0" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
@@ -182,7 +184,7 @@ public sealed class PackageTests(PackedFeed feed)
     [Fact]
     public void Without_Pare_the_build_fails_with_HUSK002()
     {
-        using var project = Consumer("""<PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />""");
+        using var project = feed.Consumer("""<PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />""");
         project.Put("Program.cs", "var app = WebApplication.CreateBuilder(args).Build();\napp.Run();\n");
 
         var (exit, output) = project.Build();
