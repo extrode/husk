@@ -1,0 +1,3 @@
+# Compiler inputs and vendored files are hashed byte for byte against Node's output: no CRLF.
+tests/fixtures/** -text
+third-party/** -text

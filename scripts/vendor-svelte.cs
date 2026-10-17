@@ -26,7 +26,7 @@ Directory.CreateDirectory(cacheDir);
 // Package -> which of its files ship. Paths are below the tarball's package/ folder.
 var keep = new Dictionary<string, Func<string, bool>>
 {
-    ["svelte"] = p => p is "package.json" or "LICENSE.md" or "compiler/index.js"
+    ["svelte"] = p => p is "package.json" or "LICENSE.md" or "compiler/index.js" or "compiler/package.json"
         || (p.StartsWith("src/", StringComparison.Ordinal) && p.EndsWith(".js", StringComparison.Ordinal) && !p.StartsWith("src/compiler/", StringComparison.Ordinal)),
     ["esm-env"] = p => p is "package.json" or "LICENSE" || (!p.Contains('/') && p.EndsWith(".js", StringComparison.Ordinal)),
     ["clsx"] = p => p is "package.json" or "license" or "dist/clsx.mjs",
