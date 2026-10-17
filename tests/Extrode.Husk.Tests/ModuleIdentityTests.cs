@@ -18,6 +18,16 @@ public sealed class ModuleIdentityTests(CompilerFixture fixture) : IClassFixture
         row.AssertMatches(fixture.Compiler.Compile(row.Input, dev));
     }
 
+    [Theory]
+    [InlineData("wwwroot/x.ts")]
+    [InlineData("wwwroot/x.js")]
+    public void Other_files_are_refused(string filename)
+    {
+        var result = fixture.Compiler.Compile(new CompileInput(filename, "export const x = 1;\n"), dev: false);
+
+        Assert.Equal("unsupported_source", result.Error!.Code);
+    }
+
     [Fact]
     public void A_svelte_ts_map_shows_the_typescript()
     {

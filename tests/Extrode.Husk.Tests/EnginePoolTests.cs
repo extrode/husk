@@ -49,6 +49,23 @@ public sealed class EnginePoolTests
     }
 
     [Fact]
+    public void An_engine_that_fails_to_start_is_not_counted_or_kept()
+    {
+        string bad = Path.Combine(AppContext.BaseDirectory, "bad-compiler.js");
+        File.WriteAllText(bad, "this is not javascript (");
+        using var compiler = new SvelteCompiler(bad);
+
+        Assert.ThrowsAny<Exception>(() => compiler.Compile(Plain, dev: false));
+
+        Assert.Equal(0, compiler.Pool.Started);
+        Assert.Empty(compiler.Pool.Engines);
+    }
+
+    [Fact]
+    public void A_non_positive_idle_timeout_is_refused() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SvelteCompiler(ExpectedRow.CompilerPath, TimeSpan.Zero));
+
+    [Fact]
     public void A_disposed_pool_refuses_to_rent()
     {
         var compiler = new SvelteCompiler(ExpectedRow.CompilerPath);

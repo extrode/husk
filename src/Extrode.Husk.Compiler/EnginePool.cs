@@ -18,6 +18,7 @@ internal sealed class EnginePool : IDisposable
         _compilerSource = File.ReadAllText(compilerPath);
         using var glue = typeof(EnginePool).Assembly.GetManifestResourceStream("husk-compile.js")!;
         _glueSource = new StreamReader(glue).ReadToEnd();
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(idleTimeout, TimeSpan.Zero);
         _idleTimeout = idleTimeout;
         _now = now ?? (() => Environment.TickCount64);
         if (now is null)
@@ -56,12 +57,27 @@ internal sealed class EnginePool : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (_idle.TryPop(out var idle))
                 return idle.Engine;
-            Started++;
         }
         var engine = new Engine(_compilerSource, _glueSource);
         lock (_idle)
-            _all.Add(engine);
-        return engine;
+        {
+            if (!_disposed)
+            {
+                Started++;
+                _all.Add(engine);
+                return engine;
+            }
+        }
+        engine.Dispose();
+        throw new ObjectDisposedException(nameof(EnginePool));
+    }
+
+    /// <summary>Disposes an engine that threw outside a compile error: it is not trusted again.</summary>
+    public void Discard(Engine engine)
+    {
+        lock (_idle)
+            _all.Remove(engine);
+        engine.Dispose();
     }
 
     public void Return(Engine engine)
@@ -70,6 +86,7 @@ internal sealed class EnginePool : IDisposable
         {
             if (_disposed)
             {
+                _all.Remove(engine);
                 engine.Dispose();
                 return;
             }

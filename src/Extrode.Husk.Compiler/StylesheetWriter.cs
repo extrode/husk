@@ -13,7 +13,7 @@ public static class StylesheetWriter
         {
             if (css.Length == 0)
                 continue;
-            text.Append("/* ").Append(path).Append(" */\n").Append(css);
+            text.Append("/* ").Append(path.Replace("*/", "*\\/", StringComparison.Ordinal)).Append(" */\n").Append(css);
             if (!css.EndsWith('\n'))
                 text.Append('\n');
         }

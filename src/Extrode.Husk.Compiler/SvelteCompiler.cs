@@ -25,26 +25,35 @@ public sealed class SvelteCompiler : IDisposable
     public CompileResult Compile(CompileInput input, bool dev)
     {
         var engine = Pool.Rent();
+        CompileResult result;
         try
         {
-            return Compile(engine, input, dev);
+            result = Compile(engine, input, dev);
         }
-        finally
+        catch
         {
-            Pool.Return(engine);
+            Pool.Discard(engine);
+            throw;
         }
+        Pool.Return(engine);
+        return result;
     }
 
     private static CompileResult Compile(Engine engine, CompileInput input, bool dev)
     {
         if (input.Filename.EndsWith(".svelte", StringComparison.Ordinal))
             return engine.Compile(module: false, input.Source, input.Filename, dev, null);
-        if (!input.Filename.EndsWith(".svelte.ts", StringComparison.Ordinal))
+        if (input.Filename.EndsWith(".svelte.js", StringComparison.Ordinal))
             return engine.Compile(module: true, input.Source, input.Filename, dev, null);
+        if (!input.Filename.EndsWith(".svelte.ts", StringComparison.Ordinal))
+            return new CompileResult(null, null, null, [],
+                new CompileDiagnostic("unsupported_source", "Husk compiles .svelte, .svelte.js and .svelte.ts files only", 1, 0));
 
         string? stripped = TypeStripper.Strip(input.Source, out var diagnostics);
         if (stripped is null)
         {
+            if (diagnostics.Count == 0)
+                return new CompileResult(null, null, null, [], new CompileDiagnostic("PARE001", "Pare could not strip the TypeScript", 1, 0));
             var first = diagnostics[0];
             var at = SourceLocation.FromOffset(input.Source, first.Start);
             var error = new CompileDiagnostic($"PARE{(int)first.Code:000}", DiagnosticMessages.Message(first.Code), at.Line, at.Column - 1);
@@ -74,10 +83,12 @@ public sealed class SvelteCompiler : IDisposable
                 for (int i = w; i < inputs.Count; i += workers)
                     results[i] = Compile(engine, inputs[i], dev);
             }
-            finally
+            catch
             {
-                Pool.Return(engine);
+                Pool.Discard(engine);
+                throw;
             }
+            Pool.Return(engine);
         })).ToArray();
         Task.WaitAll(tasks);
         return results;

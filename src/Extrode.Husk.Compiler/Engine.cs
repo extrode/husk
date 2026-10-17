@@ -21,10 +21,18 @@ internal sealed class Engine : IDisposable
     {
         var sw = Stopwatch.StartNew();
         _engine = new V8ScriptEngine();
-        _engine.Execute(new DocumentInfo("svelte/compiler/index.js"), compilerSource);
-        _engine.Execute(new DocumentInfo("husk-compile.js"), glueSource);
-        _svelte = _engine.Script.svelte;
-        _compile = (ScriptObject)_engine.Script.huskCompile;
+        try
+        {
+            _engine.Execute(new DocumentInfo("svelte/compiler/index.js"), compilerSource);
+            _engine.Execute(new DocumentInfo("husk-compile.js"), glueSource);
+            _svelte = _engine.Script.svelte;
+            _compile = (ScriptObject)_engine.Script.huskCompile;
+        }
+        catch
+        {
+            _engine.Dispose();
+            throw;
+        }
         StartTime = sw.Elapsed;
     }
 

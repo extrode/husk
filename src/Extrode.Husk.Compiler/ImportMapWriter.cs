@@ -53,10 +53,17 @@ public static class ImportMapWriter
         var map = new JsonObject();
         foreach (var (key, value) in imports)
             map[key] = value;
-        return new JsonObject { ["imports"] = map }.ToJsonString(Indented) + "\n";
+        // `<` only appears inside strings: escaped, the map can be inlined in a <script> safely.
+        return new JsonObject { ["imports"] = map }.ToJsonString(Indented).Replace("<", "\\u003c", StringComparison.Ordinal) + "\n";
     }
 
-    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    // "\n" on every OS: a build on Windows writes the same bytes as one on macOS.
+    private static readonly JsonSerializerOptions Indented = new()
+    {
+        WriteIndented = true,
+        NewLine = "\n",
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private static string? WithoutExtension(string url)
     {
