@@ -19,6 +19,9 @@
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="js/husk-compile.js" LogicalName="husk-compile.js" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Extrode.Husk.Tests" />
   </ItemGroup>
 </Project>
