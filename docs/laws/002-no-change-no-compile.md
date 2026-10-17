@@ -1,7 +1,8 @@
 ---
 id: L002
 title: A build with no source changed compiles nothing
-status: proposed
+status: enacted
+enacted: 2026-10-17
 kind: invariant
 scope: src/Extrode.Husk.Build/build/Extrode.Husk.Build.targets
 ---

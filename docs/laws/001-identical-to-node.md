@@ -1,7 +1,8 @@
 ---
 id: L001
 title: Husk's compiler result is identical to Node's
-status: proposed
+status: enacted
+enacted: 2026-10-17
 kind: guard
 scope: src/Extrode.Husk.Compiler/SvelteCompiler.cs
 ---

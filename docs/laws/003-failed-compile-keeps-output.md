@@ -1,7 +1,8 @@
 ---
 id: L003
 title: A failed compile never replaces the last good output
-status: proposed
+status: enacted
+enacted: 2026-10-17
 kind: invariant
 scope: src/Extrode.Husk.Build/HuskCompile.cs, src/Extrode.Husk.AspNetCore/HuskCompiler.cs
 ---
