@@ -16,6 +16,8 @@
   <ItemGroup>
     <!-- Built first; TempProject points HuskTaskAssembly at its output, copied here. -->
     <ProjectReference Include="..\..\src\Extrode.Husk.Build\Extrode.Husk.Build.csproj" />
+    <!-- CorpusTests compiles with it directly. -->
+    <ProjectReference Include="..\..\src\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" />
   </ItemGroup>
   <ItemGroup>
     <AssemblyMetadata Include="PareBuildDir" Value="$(PkgExtrode_Pare_Build)/build" />
