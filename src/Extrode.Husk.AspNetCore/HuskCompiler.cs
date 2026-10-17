@@ -64,6 +64,8 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
         return texts;
     }
 
+    private static readonly StringComparison PathComparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
     // Pare writes the returned outputs after this returns, so the saved component's CSS is taken
     // from them and every other component's from disk.
     private static void WriteStylesheet(HuskDevelopmentMap map, CompilerBridge bridge, Dictionary<string, string> texts, ILogger logger)
@@ -72,7 +74,7 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
             return;
         try
         {
-            var css = map.Styles.Select(s => Path.GetFullPath(s.Css) == Path.GetFullPath(saved) ? texts[saved] : File.Exists(s.Css) ? File.ReadAllText(s.Css) : "");
+            var css = map.Styles.Select(s => string.Equals(Path.GetFullPath(s.Css), Path.GetFullPath(saved), PathComparison) ? texts[saved] : File.Exists(s.Css) ? File.ReadAllText(s.Css) : "");
             string text = bridge.Stylesheet([.. map.Styles.Select(s => s.Name)], [.. css]);
             if (!File.Exists(map.Stylesheet) || File.ReadAllText(map.Stylesheet) != text)
             {
