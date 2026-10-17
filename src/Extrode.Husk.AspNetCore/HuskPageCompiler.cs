@@ -27,7 +27,7 @@ internal sealed class HuskPageCompiler(HuskSession session) : IPareCompiler
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or RegexMatchTimeoutException)
         {
-            logger.LogError("{File}: error HUSK102: cannot write the page: {Message}", Path.GetRelativePath(map.ProjectDirectory, sourcePath), e.Message);
+            logger.LogError("{File}: error HUSK102: cannot read the page or the import map: {Message}", Path.GetRelativePath(map.ProjectDirectory, sourcePath), e.Message);
             return null;
         }
     }

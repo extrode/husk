@@ -16,28 +16,42 @@ public sealed class HuskPages : Microsoft.Build.Utilities.Task
 
     public override bool Execute()
     {
+        string map;
         try
         {
-            string map = File.ReadAllText(ImportMap);
-            foreach (var page in Pages)
+            map = File.ReadAllText(ImportMap);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.LogError(null, "HUSK102", null, ImportMap, 0, 0, 0, 0, "cannot read the import map: " + e.Message);
+            return false;
+        }
+        // Each page on its own: one that cannot be written does not stop the rest.
+        foreach (var page in Pages)
+        {
+            string source = page.GetMetadata("FullPath");
+            try
             {
-                string source = page.GetMetadata("FullPath");
-                string output = page.GetMetadata("PareOutputPath");
-                Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-                // Written, not copied: a copy keeps the source's time, older than the map, and the
-                // target would run every build.
-                byte[] bytes = File.ReadAllBytes(source);
-                bool bom = bytes.AsSpan().StartsWith(Utf8Bom);
-                if (PageWriter.Inline(new UTF8Encoding(false).GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0)), map) is { } inlined)
-                    File.WriteAllText(output, inlined, new UTF8Encoding(bom));
-                else
-                    File.WriteAllBytes(output, bytes);
+                Write(source, page.GetMetadata("PareOutputPath"), map);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.RegularExpressions.RegexMatchTimeoutException)
+            {
+                Log.LogError(null, "HUSK102", null, source, 0, 0, 0, 0, "cannot write the page: " + e.Message);
             }
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.RegularExpressions.RegexMatchTimeoutException)
-        {
-            Log.LogError(null, "HUSK102", null, ImportMap, 0, 0, 0, 0, "cannot write a page: " + e.Message);
-        }
         return !Log.HasLoggedErrors;
+    }
+
+    private static void Write(string source, string output, string map)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+        // Written, not copied: a copy keeps the source's time, older than the map, and the
+        // target would run every build.
+        byte[] bytes = File.ReadAllBytes(source);
+        bool bom = bytes.AsSpan().StartsWith(Utf8Bom);
+        if (PageWriter.Inline(new UTF8Encoding(false).GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0)), map) is { } inlined)
+            File.WriteAllText(output, inlined, new UTF8Encoding(bom));
+        else
+            File.WriteAllBytes(output, bytes);
     }
 }

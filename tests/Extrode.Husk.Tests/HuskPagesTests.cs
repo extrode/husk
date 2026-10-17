@@ -52,4 +52,37 @@ public sealed class HuskPagesTests : IDisposable
         Assert.Equal([0xFF, 0x00, 0x41], File.ReadAllBytes(P("out/b.html")));
         Assert.True(File.GetLastWriteTimeUtc(P("out/b.html")) > DateTime.UtcNow.AddHours(-1));
     }
+
+    [Fact]
+    public void A_page_that_cannot_be_read_is_named_and_the_others_are_written()
+    {
+        File.WriteAllText(P("importmap.json"), "{}\n");
+        File.WriteAllText(P("b.html"), "<script type=importmap data-husk></script>");
+        var engine = new FakeBuildEngine();
+
+        bool ok = new HuskPages
+        {
+            BuildEngine = engine,
+            Pages = [new TaskItem(P("missing.html"), new Dictionary<string, string> { ["PareOutputPath"] = P("out/missing.html") }),
+                     new TaskItem(P("b.html"), new Dictionary<string, string> { ["PareOutputPath"] = P("out/b.html") })],
+            ImportMap = P("importmap.json"),
+        }.Execute();
+
+        Assert.False(ok);
+        var error = Assert.Single(engine.Errors);
+        Assert.Equal(("HUSK102", P("missing.html")), (error.Code, error.File));
+        Assert.Equal("<script type=importmap data-husk>{}</script>", File.ReadAllText(P("out/b.html")));
+    }
+
+    [Fact]
+    public void A_missing_import_map_is_named_as_the_cause()
+    {
+        var engine = new FakeBuildEngine();
+
+        Assert.False(new HuskPages { BuildEngine = engine, Pages = [], ImportMap = P("importmap.json") }.Execute());
+
+        var error = Assert.Single(engine.Errors);
+        Assert.Equal(P("importmap.json"), error.File);
+        Assert.StartsWith("cannot read the import map", error.Message, StringComparison.Ordinal);
+    }
 }
