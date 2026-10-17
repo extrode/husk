@@ -1,7 +1,8 @@
 <Project>
   <!-- Defaults. Properties set in the project file win: MSBuild evaluates every property before
        any item, so the condition below sees the project's value. Override the items with
-       <HuskComponent Remove="..." />, <HuskModule Remove="..." /> or EnableHuskDefaultItems=false. -->
+       <HuskComponent Remove="..." />, <HuskModule Remove="..." />, <HuskPage Remove="..." /> or
+       EnableHuskDefaultItems=false. -->
   <PropertyGroup>
     <EnableHuskDefaultItems Condition="'$(EnableHuskDefaultItems)' == ''">true</EnableHuskDefaultItems>
   </PropertyGroup>
@@ -9,5 +10,6 @@
   <ItemGroup Condition="'$(EnableHuskDefaultItems)' == 'true'">
     <HuskComponent Include="wwwroot/**/*.svelte" Exclude="wwwroot/**/node_modules/**" />
     <HuskModule Include="wwwroot/**/*.svelte.ts;wwwroot/**/*.svelte.js" Exclude="wwwroot/**/node_modules/**" />
+    <HuskPage Include="wwwroot/**/*.html" Exclude="wwwroot/**/node_modules/**" />
   </ItemGroup>
 </Project>

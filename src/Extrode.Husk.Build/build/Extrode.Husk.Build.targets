@@ -7,6 +7,8 @@
        The app-wide files go under obj/<cfg>/<tfm>/husk/, outside Pare's folder so its stale deletion
        leaves them, and are served below $(StaticWebAssetBasePath)_husk/: husk.css (every
        component's CSS), importmap.json, and the vendored runtime (svelte/, esm-env/, clsx/).
+       Each @(HuskPage) (wwwroot/**/*.html) is served from obj/ at its own URL, with the import map
+       inlined when it holds <script type="importmap" data-husk></script>, unchanged otherwise.
        Extrode.Husk.development.json goes to the build output, never to a publish.
        Properties:
          HuskDev            Svelte's dev option; default true in Debug, false otherwise
@@ -31,6 +33,7 @@
     <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js.map" />
     <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js" />
     <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js.map" />
+    <PareCompileSource Include="@(HuskPage)" PareCompiler="husk-page" PareOutputExtension=".html" />
     <!-- Here, not in the props: every package's props import before any package's targets, so this
          sees Pare's default Include whichever order NuGet imports the two packages' props. Without
          it Pare would strip a .svelte.ts as well, and both outputs would claim one URL (PARE201). -->
@@ -46,6 +49,10 @@
   <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
              Condition="'$(MSBuildRuntimeType)' == 'Core'" />
   <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskPages" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskPages" AssemblyFile="$(HuskTaskAssembly)"
              Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
 
   <!-- The build machine, not the publish target: ClearScript's V8 ships for these six only
@@ -71,6 +78,7 @@
   <Target Name="_HuskCollectSources" DependsOnTargets="_HuskComputePaths">
     <ItemGroup>
       <_HuskCompileSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk'" />
+      <_HuskPageSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk-page'" />
     </ItemGroup>
     <!-- A changed HuskDev rebuilds everything: the stamp is an input, rewritten only when it differs. -->
     <MakeDir Directories="$(_HuskObjRoot)" Condition="'@(_HuskCompileSource)' != ''" />
@@ -103,6 +111,14 @@
       <None Include="$(_HuskObjRoot)Extrode.Husk.development.json" Link="Extrode.Husk.development.json" Condition="'$(_IsPublishing)' != 'true'"
             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" Visible="false" />
     </ItemGroup>
+  </Target>
+
+  <!-- After HuskAssets, which writes the map only when it changed: a new component rewrites every
+       page, an edit to one page rewrites that page. -->
+  <Target Name="HuskPages" AfterTargets="HuskAssets" BeforeTargets="BeforeBuild" Condition="'$(_HuskServed)' == 'true'"
+          Inputs="@(_HuskPageSource);$(_HuskObjRoot)importmap.json;$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(MSBuildThisFileFullPath)"
+          Outputs="@(_HuskPageSource->'%(PareOutputPath)')">
+    <HuskPages Condition="'@(_HuskPageSource)' != ''" Pages="@(_HuskPageSource)" ImportMap="$(_HuskObjRoot)importmap.json" />
   </Target>
 
   <!-- As Pare registers its outputs (_PareDefineStaticWebAssets): computed assets in the inputs
