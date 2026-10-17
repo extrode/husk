@@ -32,6 +32,7 @@ public sealed class HuskAssetsTests : IDisposable
         Outputs = outputs,
         BasePath = basePath,
         OutputDirectory = P("obj/husk"),
+        ServedRoot = P("obj/pare"),
         RuntimeImports = Path.Combine(RepoPaths.Vendored, "runtime-imports.json"),
         CompilerAssembly = "/c/Extrode.Husk.Compiler.dll",
         CompilerPath = "/c/index.js",
@@ -64,6 +65,26 @@ public sealed class HuskAssetsTests : IDisposable
         Assert.Equal("/app/_husk/svelte/src/internal/client/index.js", imports.GetProperty("svelte/internal/client").GetString());
         Assert.False(imports.TryGetProperty("/app/ui/Child.svelte.js.map", out _));
         Assert.Equal("/* ui/Child.svelte */\n.a{}\n", File.ReadAllText(P("obj/husk/husk.css")));
+    }
+
+    [Fact]
+    public void An_unserved_output_is_left_out_of_the_map()
+    {
+        string path = P("Scripts/tool.js");
+        Directory.CreateDirectory(P("Scripts"));
+        File.WriteAllText(path, "");
+        var unserved = new TaskItem(path, new Dictionary<string, string>
+        {
+            ["PareSource"] = P("Scripts/tool.ts"),
+            ["PareRelativePath"] = "Scripts/tool.js",
+            ["PareCompiler"] = "",
+        });
+
+        Assert.True(Run("/", unserved, Output("a.js", "a.ts", compiler: "")));
+
+        string map = File.ReadAllText(P("obj/husk/importmap.json"));
+        Assert.Contains("\"/a.ts\"", map);
+        Assert.DoesNotContain("tool", map);
     }
 
     [Fact]

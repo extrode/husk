@@ -18,7 +18,7 @@ public static partial class PageWriter
     }
 
     // An empty importmap script with a data-husk attribute, attributes in any order and quoting.
-    [GeneratedRegex("""(?<open><script(?=[^>]*\stype\s*=\s*["']?importmap["']?[\s>])(?=[^>]*\sdata-husk[\s=>])[^>]*>)\s*</script\s*>""",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("""(?<open><script(?![\w-])(?=[^>]*\stype\s*=\s*["']?importmap["']?[\s>])(?=[^>]*\sdata-husk[\s=>])[^>]*>)\s*</script\s*>""",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
     private static partial Regex Marker();
 }

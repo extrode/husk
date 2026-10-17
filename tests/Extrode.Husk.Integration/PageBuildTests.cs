@@ -42,6 +42,49 @@ public sealed class PageBuildTests
     }
 
     [Fact]
+    public void A_build_with_nothing_changed_rewrites_no_page()
+    {
+        using var project = App();
+        Assert.Equal(0, project.Build().Exit);
+        var stamps = new[] { "index.html", "docs/plain.html" }.Select(p => project.Stamp(TempProject.PareOut + p)).ToArray();
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(stamps, new[] { "index.html", "docs/plain.html" }.Select(p => project.Stamp(TempProject.PareOut + p)));
+    }
+
+    [Theory]
+    [InlineData("<PareEmbed>true</PareEmbed>")]
+    [InlineData("<PareOutDir>gen</PareOutDir>")]
+    public void An_app_not_served_from_obj_keeps_its_pages_as_they_are(string properties)
+    {
+        using var project = new TempProject();
+        project.Project(properties);
+        project.Put("wwwroot/index.html", Marked);
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.False(File.Exists(project.P(TempProject.PareOut + "index.html")), output);
+        Assert.False(File.Exists(project.P("gen/wwwroot/index.html")), output);
+    }
+
+    [Fact]
+    public void Husk_targets_imported_before_Pare_still_see_the_outputs()
+    {
+        using var project = new TempProject();
+        project.Project(huskFirst: true);
+        project.Fixture("wwwroot/Plain.svelte");
+        project.Put("wwwroot/index.html", Marked);
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.Equal("/Plain.svelte.js", InlinedMap(project.Read(TempProject.PareOut + "index.html")).GetProperty("/Plain.svelte").GetString());
+    }
+
+    [Fact]
     public async Task Published_pages_are_served_inlined_or_byte_identical()
     {
         using var project = App();

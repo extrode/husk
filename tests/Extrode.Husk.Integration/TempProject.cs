@@ -67,7 +67,7 @@ public sealed class TempProject : IDisposable
 
     /// <summary>Writes app.csproj. Husk's files import only once they exist, so T3's empty web project
     /// builds before the targets are written.</summary>
-    public void Project(string properties = "", string items = "", string sdk = "Microsoft.NET.Sdk.Web", string targets = "") => Put("app.csproj", $"""
+    public void Project(string properties = "", string items = "", string sdk = "Microsoft.NET.Sdk.Web", string targets = "", bool huskFirst = false) => Put("app.csproj", $"""
         <Project Sdk="{sdk}">
           <Import Project="{Path.Combine(PareBuildDir, "Extrode.Pare.Build.props")}" />
           <Import Project="{Path.Combine(HuskBuildDir, "Extrode.Husk.Build.props")}" Condition="Exists('{Path.Combine(HuskBuildDir, "Extrode.Husk.Build.props")}')" />
@@ -79,11 +79,15 @@ public sealed class TempProject : IDisposable
             {properties}
           </PropertyGroup>
           <ItemGroup>{items}</ItemGroup>
-          <Import Project="{Path.Combine(PareBuildDir, "Extrode.Pare.Build.targets")}" />
-          <Import Project="{Path.Combine(HuskBuildDir, "Extrode.Husk.Build.targets")}" Condition="Exists('{Path.Combine(HuskBuildDir, "Extrode.Husk.Build.targets")}')" />
+          {(huskFirst ? HuskTargets + PareTargets : PareTargets + HuskTargets)}
           {targets}
         </Project>
         """);
+
+    private static string PareTargets => $"""<Import Project="{Path.Combine(PareBuildDir, "Extrode.Pare.Build.targets")}" />""";
+
+    private static string HuskTargets =>
+        $"""<Import Project="{Path.Combine(HuskBuildDir, "Extrode.Husk.Build.targets")}" Condition="Exists('{Path.Combine(HuskBuildDir, "Extrode.Husk.Build.targets")}')" />""";
 
     public (int Exit, string Output) Build(params string[] extra) =>
         Run(["build", "-nologo", "-nodeReuse:false", "--disable-build-servers", "-clp:NoSummary", .. extra]);

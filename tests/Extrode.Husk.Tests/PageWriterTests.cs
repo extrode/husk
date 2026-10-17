@@ -19,6 +19,8 @@ public sealed class PageWriterTests
     [InlineData("<script type=\"importmap\" data-husky></script>")]
     [InlineData("<script type=\"importmap\" data-husk>{}</script>")]
     [InlineData("<p>no scripts</p>")]
+    [InlineData("<scriptx type=\"importmap\" data-husk></scriptx>")]
+    [InlineData("<script-a type=\"importmap\" data-husk></script>")]
     public void A_page_without_the_marker_is_left_alone(string html) =>
         Assert.Null(PageWriter.Inline(html, Map));
 

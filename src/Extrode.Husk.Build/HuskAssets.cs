@@ -24,6 +24,10 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
 
     [Required] public string OutputDirectory { get; set; } = "";
 
+    /// <summary>Pare's obj/ output folder. Only outputs under it are served; an unserved one
+    /// (PARE202) gets a path below the project as PareRelativePath, which is no URL.</summary>
+    [Required] public string ServedRoot { get; set; } = "";
+
     [Required] public string RuntimeImports { get; set; } = "";
 
     [Required] public string CompilerAssembly { get; set; } = "";
@@ -37,8 +41,11 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
         string root = Url(BasePath);
         var styles = new List<(string Name, string Path)>();
         var sources = new List<ImportMapSource>();
+        string served = Path.GetFullPath(ServedRoot);
         foreach (var output in Outputs)
         {
+            if (!output.GetMetadata("FullPath").StartsWith(served, StringComparison.OrdinalIgnoreCase))
+                continue;
             string relative = output.GetMetadata("PareRelativePath").Replace('\\', '/');
             if (output.GetMetadata("PareCompiler") == "husk" && relative.EndsWith(".svelte.css", StringComparison.Ordinal))
                 styles.Add((relative[..^".css".Length], output.GetMetadata("FullPath")));
@@ -60,7 +67,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             WriteIfChanged(importMap, ImportMapWriter.Write(Compiler.RuntimeImports.Load(RuntimeImports), root + "_husk/", Dev, sources));
             WriteIfChanged(Path.Combine(OutputDirectory, DevelopmentMap), Development(stylesheet, importMap, styles));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
         {
             Log.LogError(null, "HUSK102", null, OutputDirectory, 0, 0, 0, 0, "cannot write the app's stylesheet or import map: " + e.Message);
         }

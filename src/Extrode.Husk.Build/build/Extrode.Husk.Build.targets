@@ -33,7 +33,8 @@
     <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js.map" />
     <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js" />
     <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js.map" />
-    <PareCompileSource Include="@(HuskPage)" PareCompiler="husk-page" PareOutputExtension=".html" />
+    <!-- Served apps only: embedded or under PareOutDir, a page stays the plain Content it was. -->
+    <PareCompileSource Include="@(HuskPage)" PareCompiler="husk-page" PareOutputExtension=".html" Condition="'$(_HuskServed)' == 'true'" />
     <!-- Here, not in the props: every package's props import before any package's targets, so this
          sees Pare's default Include whichever order NuGet imports the two packages' props. Without
          it Pare would strip a .svelte.ts as well, and both outputs would claim one URL (PARE201). -->
@@ -56,12 +57,13 @@
              Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
 
   <!-- The build machine, not the publish target: ClearScript's V8 ships for these six only
-       (decision 006). A source-built SDK names its distro (ubuntu.24.04-x64), which is glibc Linux. -->
+       (decision 006). A source-built SDK names its distro (ubuntu.24.04-x64, arch-x64), which is
+       glibc Linux unless the name says otherwise. -->
   <Target Name="_HuskCheckPlatform">
     <PropertyGroup>
       <_HuskRid>$(NETCoreSdkRuntimeIdentifier)</_HuskRid>
       <_HuskSupported Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^(win|osx|linux)-(x64|arm64)\z'))">true</_HuskSupported>
-      <_HuskSupported Condition="'$(_HuskSupported)' != 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^[a-z]+\.[0-9.]+-(x64|arm64)\z')) and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', 'musl|alpine|freebsd|illumos|solaris|android|ios|tvos|maccatalyst'))">true</_HuskSupported>
+      <_HuskSupported Condition="'$(_HuskSupported)' != 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^[a-z]+(\.[0-9.]+)?-(x64|arm64)\z')) and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', 'musl|alpine|freebsd|illumos|solaris|android|ios|tvos|maccatalyst'))">true</_HuskSupported>
     </PropertyGroup>
     <Error Code="HUSK001" Condition="'$(_HuskSupported)' != 'true'"
            Text="Husk cannot build on $(_HuskRid): its compiler runs on V8, which ships for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64 and linux-arm64 (glibc) only. Build on one of those; the output runs anywhere." />
@@ -101,9 +103,12 @@
 
   <!-- Every build: reads each component's .svelte.css, writes only what changed. No Inputs, since a
        removed component changes the outputs without any input being newer. -->
+  <!-- DependsOnTargets as well as AfterTargets: with Husk's targets imported before Pare's,
+       BeforeBuild's list would otherwise run this first, over an empty @(PareOutput). -->
   <Target Name="HuskAssets" AfterTargets="PareStripTypeScript" BeforeTargets="BeforeBuild"
-          DependsOnTargets="_HuskComputePaths" Condition="'$(_HuskServed)' == 'true'">
+          DependsOnTargets="_HuskComputePaths;PareStripTypeScript" Condition="'$(_HuskServed)' == 'true'">
     <HuskAssets Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)" OutputDirectory="$(_HuskObjRoot)"
+                ServedRoot="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'pare'))"
                 RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
     <ItemGroup>
@@ -115,7 +120,7 @@
 
   <!-- After HuskAssets, which writes the map only when it changed: a new component rewrites every
        page, an edit to one page rewrites that page. -->
-  <Target Name="HuskPages" AfterTargets="HuskAssets" BeforeTargets="BeforeBuild" Condition="'$(_HuskServed)' == 'true'"
+  <Target Name="HuskPages" AfterTargets="HuskAssets" BeforeTargets="BeforeBuild" DependsOnTargets="HuskAssets" Condition="'$(_HuskServed)' == 'true'"
           Inputs="@(_HuskPageSource);$(_HuskObjRoot)importmap.json;$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(MSBuildThisFileFullPath)"
           Outputs="@(_HuskPageSource->'%(PareOutputPath)')">
     <HuskPages Condition="'@(_HuskPageSource)' != ''" Pages="@(_HuskPageSource)" ImportMap="$(_HuskObjRoot)importmap.json" />
@@ -130,7 +135,8 @@
       <_HuskAppCandidate RelativePath="_husk/%(Filename)%(Extension)" />
       <!-- The folder as metadata, the path in a second step: %(...) in an Include's metadata would
            batch over the items already added and add each file once per batch. -->
-      <_HuskRuntimeCandidate Include="$(HuskVendorDir)svelte/src/**/*.js" Folder="svelte/src/" />
+      <!-- Not the server runtime: no client module imports it, and runtime-imports.json names none. -->
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)svelte/src/**/*.js" Exclude="$(HuskVendorDir)svelte/src/**/server/**;$(HuskVendorDir)svelte/src/**/*-server.js" Folder="svelte/src/" />
       <_HuskRuntimeCandidate Include="$(HuskVendorDir)esm-env/*.js" Folder="esm-env/" />
       <_HuskRuntimeCandidate Include="$(HuskVendorDir)clsx/dist/clsx.mjs" Folder="clsx/dist/" />
       <_HuskRuntimeCandidate RelativePath="_husk/%(Folder)$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />

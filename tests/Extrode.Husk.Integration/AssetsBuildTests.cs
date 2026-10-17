@@ -30,6 +30,7 @@ public sealed class AssetsBuildTests
         Assert.Contains("_husk/svelte/src/internal/client/index.js", routes);
         Assert.Contains("_husk/esm-env/index.js", routes);
         Assert.Contains("_husk/clsx/dist/clsx.mjs", routes);
+        Assert.DoesNotContain(routes, r => r.Contains("server", StringComparison.Ordinal));
         Assert.Contains("Styled.svelte.js", routes);
         Assert.DoesNotContain("Styled.svelte", routes);
 
@@ -103,6 +104,7 @@ public sealed class AssetsBuildTests
 
     [Theory]
     [InlineData("ubuntu.24.04-x64")]
+    [InlineData("arch-x64")]
     [InlineData("osx-arm64")]
     public void A_supported_build_machine_passes_the_gate(string rid)
     {
