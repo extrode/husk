@@ -38,6 +38,12 @@ public static class Development
         return Encoding.UTF8.GetString(buffer.ToArray());
     }
 
+    /// <summary><see cref="StylesheetWriter.Join"/> over parallel arrays of component names and CSS.</summary>
+    public static string Stylesheet(string[] names, string[] css) => StylesheetWriter.Join(names.Zip(css));
+
+    /// <summary><see cref="PageWriter.Inline"/>: the page with the map inlined, or null without the marker.</summary>
+    public static string? Page(string html, string importMap) => PageWriter.Inline(html, importMap);
+
     private static void Write(Utf8JsonWriter json, CompileDiagnostic d)
     {
         json.WriteStartObject();

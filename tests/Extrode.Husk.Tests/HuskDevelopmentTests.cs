@@ -38,14 +38,17 @@ public sealed class HuskDevelopmentTests : IDisposable
     private string[] ComponentOutputs(string name) =>
         [P($"obj/pare/{name}.svelte.js"), P($"obj/pare/{name}.svelte.css"), P($"obj/pare/{name}.svelte.js.map")];
 
-    private void WriteMaps(params string[] components)
+    private void WriteMaps(params string[] components) => WriteMaps(components, []);
+
+    private void WriteMaps(string[] components, string[] pages)
     {
         File.WriteAllText(PareMap, JsonSerializer.Serialize(new
         {
             sourceRoot = P("wwwroot"),
             outputRoot = P("obj/pare"),
             sources = Array.Empty<object>(),
-            compiled = components.SelectMany(c => ComponentOutputs(c).Select(o => new { source = P($"wwwroot/{c}.svelte"), output = o, compiler = "husk" })),
+            compiled = components.SelectMany(c => ComponentOutputs(c).Select(o => new { source = P($"wwwroot/{c}.svelte"), output = o, compiler = "husk" }))
+                .Concat(pages.Select(page => new { source = P($"wwwroot/{page}"), output = P($"obj/pare/{page}"), compiler = "husk-page" })),
         }));
         File.WriteAllText(HuskMap, JsonSerializer.Serialize(new
         {
@@ -53,9 +56,9 @@ public sealed class HuskDevelopmentTests : IDisposable
             svelte = Path.Combine(RepoPaths.Vendored, "svelte", "compiler", "index.js"),
             projectDirectory = _dir.FullName,
             dev = true,
-            stylesheet = "/_husk/husk.css",
-            importMap = "/_husk/importmap.json",
-            styles = Array.Empty<object>(),
+            stylesheet = P("obj/husk/husk.css"),
+            importMap = P("obj/husk/importmap.json"),
+            styles = components.Select(c => new { name = $"{c}.svelte", css = ComponentOutputs(c)[1] }),
         }));
     }
 
@@ -126,6 +129,54 @@ public sealed class HuskDevelopmentTests : IDisposable
     }
 
     [Fact]
+    public async Task A_style_save_changes_only_that_components_block_in_the_stylesheet()
+    {
+        Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: red; }</style>\n");
+        Put("wwwroot/B.svelte", "<p>b</p>\n<style>p { color: blue; }</style>\n");
+        WriteMaps("A", "B");
+        Directory.CreateDirectory(P("obj/husk"));
+        await using var app = (IAsyncDisposable)await Start();
+        string stylesheet = P("obj/husk/husk.css");
+        Put("wwwroot/B.svelte", "<p>b</p>\n<style>p { color: navy; }</style>\n");
+        WaitFor(() => File.Exists(stylesheet) && File.ReadAllText(stylesheet).Contains("navy"));
+        string before = File.ReadAllText(stylesheet);
+        Assert.Contains("red", before);
+
+        Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: green; }</style>\n");
+        WaitFor(() => File.ReadAllText(stylesheet).Contains("green"));
+        string after = File.ReadAllText(stylesheet);
+        static string Block(string css, string name) => css[css.IndexOf($"/* {name} */", StringComparison.Ordinal)..];
+        Assert.Equal(Block(before, "B.svelte"), Block(after, "B.svelte"));
+        Assert.DoesNotContain("red", after);
+        WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
+        Assert.Equal(Compiler.StylesheetWriter.Join([("A.svelte", File.ReadAllText(ComponentOutputs("A")[1])), ("B.svelte", File.ReadAllText(ComponentOutputs("B")[1]))]), after);
+    }
+
+    [Fact]
+    public async Task A_page_save_inlines_the_current_import_map()
+    {
+        Directory.CreateDirectory(P("obj/husk"));
+        File.WriteAllText(P("obj/husk/importmap.json"), "{\"imports\":{\"/A.svelte\":\"/A.svelte.js\"}}\n");
+        Directory.CreateDirectory(P("wwwroot"));
+        File.WriteAllBytes(P("wwwroot/index.html"),
+            [0xEF, 0xBB, 0xBF, .. "<head><script type=\"importmap\" data-husk></script></head>\n"u8]);
+        Put("wwwroot/plain.html", "<p>plain</p>\n");
+        WriteMaps([], ["index.html", "plain.html"]);
+        await using var app = (IAsyncDisposable)await Start();
+        Assert.Equal([0xEF, 0xBB, 0xBF, .. "<head><script type=\"importmap\" data-husk>{\"imports\":{\"/A.svelte\":\"/A.svelte.js\"}}</script></head>\n"u8],
+            File.ReadAllBytes(P("obj/pare/index.html")));
+        Assert.Equal("<p>plain</p>\n", File.ReadAllText(P("obj/pare/plain.html")));
+
+        File.WriteAllText(P("obj/husk/importmap.json"), "{\"imports\":{\"/A.svelte\":\"/A.svelte.js\",\"/B.svelte\":\"/B.svelte.js\"}}\n");
+        File.WriteAllBytes(P("wwwroot/index.html"), [0xEF, 0xBB, 0xBF, .. "<head><title>t</title><script type=\"importmap\" data-husk></script></head>\n"u8]);
+        Put("wwwroot/plain.html", "<p>plain two</p>\n");
+        WaitFor(() => File.ReadAllText(P("obj/pare/index.html")).Contains("B.svelte"));
+        Assert.Equal([0xEF, 0xBB, 0xBF, .. "<head><title>t</title><script type=\"importmap\" data-husk>{\"imports\":{\"/A.svelte\":\"/A.svelte.js\",\"/B.svelte\":\"/B.svelte.js\"}}</script></head>\n"u8],
+            File.ReadAllBytes(P("obj/pare/index.html")));
+        WaitFor(() => File.ReadAllText(P("obj/pare/plain.html")) == "<p>plain two</p>\n");
+    }
+
+    [Fact]
     public async Task Outside_Development_nothing_is_registered()
     {
         Put("wwwroot/Hello.svelte", "<p>one</p>\n");
@@ -139,7 +190,7 @@ public sealed class HuskDevelopmentTests : IDisposable
     [Fact]
     public async Task Without_the_development_map_the_compile_is_skipped_with_an_error()
     {
-        var compiler = new HuskCompiler(P("missing.json"));
+        var compiler = new HuskCompiler(new HuskSession(P("missing.json")));
         var result = await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p/>", ComponentOutputs("Hello"), _log.CreateLogger("t"), TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -151,7 +202,7 @@ public sealed class HuskDevelopmentTests : IDisposable
     {
         File.WriteAllText(HuskMap, "{\"compiler\": \"x\"}");
         File.SetLastWriteTimeUtc(HuskMap, DateTime.UtcNow.AddMinutes(-1));
-        var compiler = new HuskCompiler(HuskMap);
+        var compiler = new HuskCompiler(new HuskSession(HuskMap));
         var ct = TestContext.Current.CancellationToken;
 
         Assert.Null(await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p>one</p>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct));
@@ -167,7 +218,7 @@ public sealed class HuskDevelopmentTests : IDisposable
     public async Task An_output_the_compiler_does_not_write_is_HUSK101()
     {
         WriteMaps();
-        var compiler = new HuskCompiler(HuskMap);
+        var compiler = new HuskCompiler(new HuskSession(HuskMap));
         var result = await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p/>", [P("obj/pare/Hello.other.js")], _log.CreateLogger("t"), TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -175,13 +226,14 @@ public sealed class HuskDevelopmentTests : IDisposable
     }
 
     [Fact]
-    public void AddHusk_twice_registers_one_compiler()
+    public void AddHusk_twice_registers_each_compiler_once()
     {
         var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { EnvironmentName = "Development", ContentRootPath = _dir.FullName });
         HuskExtensions.AddHusk(builder, HuskMap);
         builder.AddHusk();
 
-        Assert.Single(builder.Services, s => s.ServiceType == typeof(IPareCompiler));
+        Assert.Equal(["husk", "husk-page"], builder.Services.Where(s => s.ServiceType == typeof(IPareCompiler))
+            .Select(s => ((IPareCompiler)s.ImplementationInstance!).Name));
     }
 
     private sealed class LogSink : ILoggerProvider, ILogger

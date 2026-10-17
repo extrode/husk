@@ -11,6 +11,10 @@ internal sealed class CompilerBridge
 {
     public required Func<string, string, string, string, bool, string> Compile { get; init; }
 
+    public required Func<string[], string[], string> Stylesheet { get; init; }
+
+    public required Func<string, string, string?> Page { get; init; }
+
     /// <summary>The bridge, or null after logging why saves cannot be compiled in this app.</summary>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Development only, never in a published app.")]
     [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Development only, never in a published app.")]
@@ -32,6 +36,8 @@ internal sealed class CompilerBridge
         return new CompilerBridge
         {
             Compile = type.GetMethod("Compile")!.CreateDelegate<Func<string, string, string, string, bool, string>>(),
+            Stylesheet = type.GetMethod("Stylesheet")!.CreateDelegate<Func<string[], string[], string>>(),
+            Page = type.GetMethod("Page")!.CreateDelegate<Func<string, string, string?>>(),
         };
     }
 

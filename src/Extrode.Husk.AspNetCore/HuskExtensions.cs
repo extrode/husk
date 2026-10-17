@@ -9,7 +9,9 @@ public static class HuskExtensions
 {
     /// <summary>
     /// In Development, compiles each <c>.svelte</c>, <c>.svelte.ts</c> and <c>.svelte.js</c> again as it
-    /// is saved, through <see cref="PareDevelopmentExtensions.AddPareDevelopment"/>, which this calls.
+    /// is saved, through <see cref="PareDevelopmentExtensions.AddPareDevelopment"/>, which this calls;
+    /// rewrites <c>husk.css</c> with the saved component's styles, and writes a saved page with the
+    /// import map inlined.
     /// The compiler is loaded from the build package, so it never ships in the app. Does nothing in any
     /// other environment.
     /// </summary>
@@ -22,7 +24,11 @@ public static class HuskExtensions
         if (!builder.Environment.IsDevelopment())
             return builder;
         if (!builder.Services.Any(s => s.ServiceType == typeof(IPareCompiler) && s.ImplementationInstance is HuskCompiler))
-            builder.Services.AddSingleton<IPareCompiler>(new HuskCompiler(mapPath));
+        {
+            var session = new HuskSession(mapPath);
+            builder.Services.AddSingleton<IPareCompiler>(new HuskCompiler(session));
+            builder.Services.AddSingleton<IPareCompiler>(new HuskPageCompiler(session));
+        }
         return builder.AddPareDevelopment();
     }
 }
