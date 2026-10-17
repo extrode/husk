@@ -20,6 +20,7 @@ internal sealed class Engine : IDisposable
     public Engine(string compilerSource, string glueSource)
     {
         var sw = Stopwatch.StartNew();
+        NativeProbe.Register();
         _engine = new V8ScriptEngine();
         try
         {

@@ -14,6 +14,9 @@ public sealed class TempProject : IDisposable
     // By path: loading the task type would need the MSBuild assemblies, which only the host ships.
     public static readonly string TaskAssembly = Path.Combine(AppContext.BaseDirectory, "Extrode.Husk.Build.dll");
 
+    public static readonly string VendorDir = Path.Combine(RepoRoot, "third-party", "svelte-5.57.2");
+    public static readonly string Fixtures = Path.Combine(RepoRoot, "tests", "fixtures");
+
     // Where a web project's build writes compiled outputs and Husk's own files.
     public const string PareOut = "obj/Debug/net10.0/pare/";
     public const string HuskOut = "obj/Debug/net10.0/husk/";
@@ -53,6 +56,15 @@ public sealed class TempProject : IDisposable
 
     public string Read(string relative) => File.ReadAllText(P(relative));
 
+    /// <summary>Copies a file from tests/fixtures to the same path in this project.</summary>
+    public void Fixture(string relative)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(P(relative))!);
+        File.Copy(Path.Combine(Fixtures, relative), P(relative), overwrite: true);
+    }
+
+    public DateTime Stamp(string relative) => File.GetLastWriteTimeUtc(P(relative));
+
     /// <summary>Writes app.csproj. Husk's files import only once they exist, so T3's empty web project
     /// builds before the targets are written.</summary>
     public void Project(string properties = "", string items = "", string sdk = "Microsoft.NET.Sdk.Web", string targets = "") => Put("app.csproj", $"""
@@ -63,6 +75,7 @@ public sealed class TempProject : IDisposable
             <TargetFramework>net10.0</TargetFramework>
             <OutputType>Library</OutputType>
             <HuskTaskAssembly>{TaskAssembly}</HuskTaskAssembly>
+            <HuskVendorDir>{VendorDir}</HuskVendorDir>
             {properties}
           </PropertyGroup>
           <ItemGroup>{items}</ItemGroup>

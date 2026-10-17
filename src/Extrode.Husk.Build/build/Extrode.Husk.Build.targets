@@ -1,0 +1,66 @@
+<Project>
+  <!-- Compiles Svelte through Pare's compile extension point (Pare 0.6.0). Each @(HuskComponent)
+       becomes three PareCompileSource items, outputs <name>.svelte.js, .svelte.css (empty with no
+       <style>) and .svelte.js.map; each @(HuskModule) (.svelte.ts, .svelte.js) two, <name>.js and
+       .js.map. Pare places, serves, publishes and deletes them as it does its own .ts output; the
+       HuskCompile target writes them. Metadata set on an item (PareServeAt) carries over.
+       Properties:
+         HuskDev            Svelte's dev option; default true in Debug, false otherwise
+         HuskTaskAssembly   the task dll; tests point it at a build output
+         HuskVendorDir      the vendored Svelte (compiler, runtime, runtime-imports.json) -->
+  <PropertyGroup>
+    <HuskDev Condition="'$(HuskDev)' == '' and '$(Configuration)' == 'Debug'">true</HuskDev>
+    <HuskDev Condition="'$(HuskDev)' == ''">false</HuskDev>
+    <HuskTaskAssembly Condition="'$(HuskTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\tasks\net10.0\Extrode.Husk.Build.dll</HuskTaskAssembly>
+    <HuskVendorDir Condition="'$(HuskVendorDir)' == ''">$(MSBuildThisFileDirectory)..\third-party\svelte-5.57.2\</HuskVendorDir>
+    <HuskVendorDir>$([MSBuild]::EnsureTrailingSlash('$(HuskVendorDir)'))</HuskVendorDir>
+    <_HuskCompilerPath>$(HuskVendorDir)svelte\compiler\index.js</_HuskCompilerPath>
+    <_HuskCompilerAssembly>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))\Extrode.Husk.Compiler.dll</_HuskCompilerAssembly>
+    <PareCompileDependsOn>$(PareCompileDependsOn);_HuskCollectSources;HuskCompile</PareCompileDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js" />
+    <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.css" />
+    <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js.map" />
+    <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js" />
+    <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js.map" />
+    <!-- Here, not in the props: every package's props import before any package's targets, so this
+         sees Pare's default Include whichever order NuGet imports the two packages' props. Without
+         it Pare would strip a .svelte.ts as well, and both outputs would claim one URL (PARE201). -->
+    <TypeScriptSource Remove="@(HuskModule)" />
+  </ItemGroup>
+
+  <!-- The task targets .NET. Visual Studio's MSBuild (.NET Framework) runs it in MSBuild 18's .NET
+       task host, out of process. -->
+  <UsingTask TaskName="Extrode.Husk.Build.HuskCompile" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskCompile" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+
+  <!-- Runs inside PareStripTypeScript, after Pare computed each PareCompileSource's PareOutputPath. -->
+  <Target Name="_HuskCollectSources">
+    <PropertyGroup>
+      <_HuskObjRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'husk'))</_HuskObjRoot>
+      <_HuskDevStamp>$(_HuskObjRoot)dev.txt</_HuskDevStamp>
+    </PropertyGroup>
+    <ItemGroup>
+      <_HuskCompileSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk'" />
+    </ItemGroup>
+    <!-- A changed HuskDev rebuilds everything: the stamp is an input, rewritten only when it differs. -->
+    <MakeDir Directories="$(_HuskObjRoot)" />
+    <WriteLinesToFile File="$(_HuskDevStamp)" Lines="$(HuskDev)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_HuskDevStamp)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Incremental: a source is compiled only when it, the task, the compiler, this file or HuskDev
+       is newer than its outputs. A failed compile writes nothing, so it is retried next build. -->
+  <Target Name="HuskCompile" DependsOnTargets="_HuskCollectSources" Condition="'@(_HuskCompileSource)' != ''"
+          Inputs="@(_HuskCompileSource);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath);$(MSBuildThisFileFullPath);$(_HuskDevStamp)"
+          Outputs="@(_HuskCompileSource->'%(PareOutputPath)')">
+    <HuskCompile Sources="@(_HuskCompileSource)" ProjectDirectory="$(MSBuildProjectDirectory)"
+                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
+  </Target>
+</Project>
