@@ -22,6 +22,15 @@ public sealed class PackedFeed : IDisposable
         string stdout = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
         Pack = (process.ExitCode, stdout + stderr.Result);
+        _development = new(StartDevelopment);
+    }
+
+    private (TempProject, RunningApp) StartDevelopment()
+    {
+        var project = Sample();
+        var (exit, output) = project.Build();
+        Assert.True(exit == 0, output);
+        return (project, new RunningApp(project.Dir, project.P("bin/Debug/net10.0/svelte-app.dll")));
     }
 
     public string Package(string id) => Path.Combine(Feed.Dir, $"{id}.{Version}.nupkg");
@@ -68,7 +77,20 @@ public sealed class PackedFeed : IDisposable
         return project;
     }
 
-    public void Dispose() => Feed.Dispose();
+    private readonly Lazy<(TempProject Project, RunningApp App)> _development;
+
+    /// <summary>The sample, built once from this feed and running in Development.</summary>
+    public (TempProject Project, RunningApp App) Development => _development.Value;
+
+    public void Dispose()
+    {
+        if (_development.IsValueCreated)
+        {
+            _development.Value.App.Dispose();
+            _development.Value.Project.Dispose();
+        }
+        Feed.Dispose();
+    }
 }
 
 [CollectionDefinition(nameof(PackedFeed))]
