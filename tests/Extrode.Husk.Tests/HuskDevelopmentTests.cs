@@ -117,6 +117,43 @@ public sealed class HuskDevelopmentTests : IDisposable
         Assert.Equal(before, ComponentOutputs("Hello").Select(File.ReadAllBytes).ToList());
     }
 
+    // L003, the Development half (the build half: tests/Extrode.Husk.Integration/Laws/).
+    [Fact]
+    [Trait("Law", "L003")]
+    public async Task L003_a_rejected_save_keeps_the_last_good_outputs_and_stylesheet_through_a_random_sequence()
+    {
+        string[] broken = ["<p>one</p>\n{#if}\n", "<p\n", "<script>let x = ;</script>\n", "{#each items}\n"];
+        Put("wwwroot/Hello.svelte", "<p class=\"h\">h</p>\n<style>.h { color: red; }</style>\n");
+        Put("wwwroot/Other.svelte", "<p class=\"o\">o</p>\n<style>.o { color: blue; }</style>\n");
+        WriteMaps("Hello", "Other");
+        await using var app = (IAsyncDisposable)await Start();
+        WaitFor(() => ComponentOutputs("Hello").Concat(ComponentOutputs("Other")).All(File.Exists));
+        List<byte[]?> Snapshot() => [.. ComponentOutputs("Hello").Concat(ComponentOutputs("Other")).Append(P("obj/husk/husk.css"))
+            .Select(f => File.Exists(f) ? File.ReadAllBytes(f) : null)];
+        var random = new Random(3003);
+        var good = Snapshot();
+
+        for (int i = 0; i < 8; i++)
+        {
+            string name = random.Next(2) == 0 ? "Hello" : "Other";
+            if (random.Next(3) == 0)
+            {
+                Put($"wwwroot/{name}.svelte", $"<p class=\"v{i}\">v{i}</p>\n<style>.v{i} {{ color: red; }}</style>\n");
+                WaitFor(() => File.ReadAllText(ComponentOutputs(name)[0]).Contains($"v{i}", StringComparison.Ordinal)
+                    && File.Exists(P("obj/husk/husk.css")) && File.ReadAllText(P("obj/husk/husk.css")).Contains($".v{i}", StringComparison.Ordinal));
+                good = Snapshot();
+                continue;
+            }
+            int errors = _log.Count(LogLevel.Error, "error HUSK100");
+            Put($"wwwroot/{name}.svelte", broken[random.Next(broken.Length)]);
+            WaitFor(() => _log.Count(LogLevel.Error, "error HUSK100") > errors);
+            Thread.Sleep(200);
+            var now = Snapshot();
+            Assert.True(good.Zip(now).All(p => p.First is null ? p.Second is null : p.Second is not null && p.First.AsSpan().SequenceEqual(p.Second)),
+                $"step {i}, {name}: a rejected save changed the last good output");
+        }
+    }
+
     [Fact]
     public async Task Warnings_are_logged_with_their_position()
     {
