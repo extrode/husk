@@ -28,11 +28,13 @@ public sealed class SamplePublishTests(PackedFeed feed)
             Assert.True(File.Exists(Path.Combine(root, file + ".gz")), file + ".gz");
         }
         var published = Directory.GetFiles(sample.P("out"), "*", SearchOption.AllDirectories).Select(f => Path.GetRelativePath(sample.P("out"), f)).ToList();
-        Assert.DoesNotContain(published, f => f.EndsWith(".svelte", StringComparison.Ordinal) || f.EndsWith(".svelte.ts", StringComparison.Ordinal) || f.EndsWith(".ts", StringComparison.Ordinal));
+        Assert.DoesNotContain(published.Select(f => f.EndsWith(".br", StringComparison.Ordinal) || f.EndsWith(".gz", StringComparison.Ordinal) ? f[..^3] : f),
+            f => f.EndsWith(".svelte", StringComparison.Ordinal) || f.EndsWith(".ts", StringComparison.Ordinal));
         Assert.DoesNotContain(published, f => f.Contains("Extrode.Husk.development", StringComparison.Ordinal) || f.Contains("ClearScript", StringComparison.Ordinal));
 
         string page = File.ReadAllText(Path.Combine(root, "index.html"));
         int open = page.IndexOf("<script type=\"importmap\" data-husk>", StringComparison.Ordinal);
+        Assert.True(open >= 0, page);
         string map = page[(page.IndexOf('>', open) + 1)..page.IndexOf("</script>", open, StringComparison.Ordinal)];
         string development = JsonDocument.Parse(map).RootElement.GetProperty("imports").GetProperty("esm-env/development").GetString()!;
         Assert.Equal("/_husk/esm-env/false.js", development);

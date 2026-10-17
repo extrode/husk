@@ -46,7 +46,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
         try
         {
             var address = new Uri($"http://127.0.0.1:{port}/");
-            using (var http = new HttpClient())
+            using (var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
             {
                 var deadline = DateTime.UtcNow.AddSeconds(180);
                 while (true)
@@ -57,7 +57,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
                         using var _ = await http.GetAsync(address, TestContext.Current.CancellationToken);
                         break;
                     }
-                    catch (HttpRequestException)
+                    catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !TestContext.Current.CancellationToken.IsCancellationRequested)
                     {
                         await Task.Delay(200, TestContext.Current.CancellationToken);
                     }
@@ -112,9 +112,10 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
             while (!Output()[before.Length..].Contains("error HUSK100", StringComparison.Ordinal))
             {
                 Assert.True(DateTime.UtcNow < deadline2, Output());
-                Thread.Sleep(50);
+                await Task.Delay(50, TestContext.Current.CancellationToken);
             }
-            Thread.Sleep(1500);
+            // As long as a good save is given to reload, so a late reload is not missed.
+            await Task.Delay(3000, TestContext.Current.CancellationToken);
             Assert.Equal(true, Script(driver, "return window.huskBeforeSave === true;"));
             Assert.Equal("Husk edited", driver.FindElement(By.TagName("h1")).Text);
             Assert.DoesNotContain("Restarting", Output(), StringComparison.Ordinal);

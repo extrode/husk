@@ -43,7 +43,20 @@ public sealed class RunningApp : IDisposable
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
-        using var http = new HttpClient();
+        try
+        {
+            WaitUntilServing();
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+    }
+
+    private void WaitUntilServing()
+    {
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         var until = DateTime.UtcNow.AddSeconds(30);
         while (true)
         {
@@ -54,7 +67,7 @@ public sealed class RunningApp : IDisposable
                 http.GetAsync(Address).GetAwaiter().GetResult();
                 return;
             }
-            catch (HttpRequestException) when (DateTime.UtcNow < until)
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException && DateTime.UtcNow < until)
             {
                 Thread.Sleep(100);
             }

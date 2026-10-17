@@ -25,9 +25,17 @@ public sealed class SampleBrowserTests(PackedFeed feed)
     private IWebDriver Open(string browser)
     {
         var driver = Browsers.Start(browser);
-        driver.Navigate().GoToUrl(feed.Development.App.Address);
-        Browsers.Until(driver, "return document.querySelector('#increment') ? true : null;");
-        return driver;
+        try
+        {
+            driver.Navigate().GoToUrl(feed.Development.App.Address);
+            Browsers.Until(driver, "return document.querySelector('#increment') ? true : null;");
+            return driver;
+        }
+        catch
+        {
+            driver.Dispose();
+            throw;
+        }
     }
 
     [Theory]
@@ -48,6 +56,7 @@ public sealed class SampleBrowserTests(PackedFeed feed)
         Browsers.Until(driver, "return document.querySelector('li[data-id=\"1\"]') ? null : true;");
         Assert.Equal(["2", "3"], driver.FindElements(By.CssSelector("li")).Select(li => li.GetAttribute("data-id")));
 
+        Assert.NotNull(driver.FindElement(By.Id("faded")));
         driver.FindElement(By.Id("toggle")).Click();
         Browsers.Until(driver, "return document.querySelector('#faded') ? null : true;");
 

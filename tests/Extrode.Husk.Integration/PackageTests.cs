@@ -28,9 +28,17 @@ public sealed class PackedFeed : IDisposable
     private (TempProject, RunningApp) StartDevelopment()
     {
         var project = Sample();
-        var (exit, output) = project.Build();
-        Assert.True(exit == 0, output);
-        return (project, new RunningApp(project.Dir, project.P("bin/Debug/net10.0/svelte-app.dll")));
+        try
+        {
+            var (exit, output) = project.Build();
+            Assert.True(exit == 0, output);
+            return (project, new RunningApp(project.Dir, project.P("bin/Debug/net10.0/svelte-app.dll")));
+        }
+        catch
+        {
+            project.Dispose();
+            throw;
+        }
     }
 
     public string Package(string id) => Path.Combine(Feed.Dir, $"{id}.{Version}.nupkg");
@@ -204,7 +212,7 @@ public sealed class SampleBuildTests(PackedFeed feed)
         var (exit, output) = sample.Build();
         Assert.True(exit == 0, output);
         var warnings = output.Split('\n').Where(l => l.Contains(": warning ", StringComparison.Ordinal)).Distinct().ToList();
-        Assert.Matches(@"/wwwroot/App\.svelte\(39,1\): warning HUSK200: a11y_missing_attribute: ", Assert.Single(warnings));
+        Assert.Matches(@"[/\\]wwwroot[/\\]App\.svelte\(39,1\): warning HUSK200: a11y_missing_attribute: ", Assert.Single(warnings));
         foreach (var name in new[] { "App.svelte.js", "Child.svelte.js", "counter.svelte.js", "format.js", "main.js", "index.html" })
             Assert.True(File.Exists(sample.P(TempProject.PareOut + name)), name);
         Assert.Contains("\"/counter.svelte\": \"/counter.svelte.js\"", sample.Read(TempProject.PareOut + "index.html"), StringComparison.Ordinal);
