@@ -14,9 +14,21 @@ sections that apply; drop the empty ones rather than leaving them blank.
 Merged into `dev`, not yet tagged.
 
 ### Added
-### Changed
-### Fixed
-### Removed
+- `Extrode.Husk.Build`: `.svelte`, `.svelte.ts` and `.svelte.js` under `wwwroot` compile on
+  `dotnet build` with the vendored Svelte 5.57.2 in embedded V8, no Node or Deno. Output is
+  byte-identical to Node running the same compiler: the fixtures, the Svelte repo's 4720 sources
+  and two apps' 430, 0 differences.
+- Incremental per source, parallel across engines, one `husk.css` for every component's CSS, the
+  `svelte` runtime served unbundled under `/_husk/` behind an import map inlined into pages at
+  `<script type="importmap" data-husk></script>`, source maps back to the `.svelte`.
+- Publish ships compiled modules, `husk.css` and the runtime with compressed copies, production
+  builds (`esm-env` development off), and no sources or dev files.
+- `Extrode.Husk.AspNetCore`: `builder.AddHusk()` recompiles a saved component in the running
+  Development app with warm engines (6 ms measured after the first save); `dotnet watch` reloads.
+- Error codes HUSK001, HUSK002, HUSK100 to HUSK102, HUSK200 (`docs/error-codes.md`), a sample
+  app (`samples/svelte-app`), tested in Chrome, Firefox and Safari.
+- Laws L001 (identical to Node), L002 (no change, no compile), L003 (a failed compile keeps the
+  last good output), each proven.
 
 ---
 
