@@ -7,3 +7,4 @@ and this is a window onto one entry of it. If two things are genuinely in flight
 worth seeing here rather than hiding, but it is the exception.
 
 - T5 `Extrode.Husk.Build`: compile `.svelte` on `dotnet build`, incremental, warm engine, CSS, dev mode
+  - Building spec 001 on `feat/001-husk-build`: [docs/specs/001-husk-build/001-tasks.md](../../docs/specs/001-husk-build/001-tasks.md)
