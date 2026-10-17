@@ -98,14 +98,15 @@
     </ItemGroup>
   </Target>
 
-  <!-- Incremental: a source is compiled only when it, the task, the compiler, this file or HuskDev
-       is newer than its outputs. A failed compile writes nothing, so it is retried next build. -->
+  <!-- Incremental in the task: a source is compiled only when it, the task, the compiler, this file
+       or HuskDev is newer than one of its outputs. Not Inputs/Outputs here: MSBuild would build per
+       output item and hand the task part of a source's outputs (HUSK101). A failed compile writes
+       nothing, so it is retried next build. -->
   <!-- No Condition here: MSBuild evaluates it before DependsOnTargets has filled the items. -->
-  <Target Name="HuskCompile" DependsOnTargets="_HuskCollectSources"
-          Inputs="@(_HuskCompileSource);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath);$(MSBuildThisFileFullPath);$(_HuskDevStamp)"
-          Outputs="@(_HuskCompileSource->'%(PareOutputPath)')">
+  <Target Name="HuskCompile" DependsOnTargets="_HuskCollectSources">
     <HuskCompile Condition="'@(_HuskCompileSource)' != ''" Sources="@(_HuskCompileSource)" ProjectDirectory="$(MSBuildProjectDirectory)"
-                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
+                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)"
+                 Inputs="$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath);$(MSBuildThisFileFullPath);$(_HuskDevStamp)" />
   </Target>
 
   <!-- Every build: reads each component's .svelte.css, writes only what changed. No Inputs, since a
@@ -121,8 +122,13 @@
                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
     <ItemGroup>
       <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json" />
-      <None Include="$(_HuskObjRoot)Extrode.Husk.development.json" Link="Extrode.Husk.development.json" Condition="'$(_IsPublishing)' != 'true'"
-            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" Visible="false" />
+    </ItemGroup>
+    <!-- Copied, not a None item: an item would flow on to every project that references this one,
+         a test project's bin among them. As Pare writes its shared map. -->
+    <Copy SourceFiles="$(_HuskObjRoot)Extrode.Husk.development.json" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"
+          Condition="'$(_IsPublishing)' != 'true'" />
+    <ItemGroup Condition="'$(_IsPublishing)' != 'true'">
+      <FileWrites Include="$(OutDir)Extrode.Husk.development.json" />
     </ItemGroup>
   </Target>
 

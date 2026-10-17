@@ -23,6 +23,12 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
 
     public bool Dev { get; set; }
 
+    /// <summary>When set, the build is incremental: a source is compiled only when an output is
+    /// missing or older than the source or one of these (the task, the compiler, the targets, the
+    /// HuskDev stamp). Decided per source over all its outputs, not by MSBuild per item, which would
+    /// hand the task some of a source's outputs and not the others.</summary>
+    public ITaskItem[] Inputs { get; set; } = [];
+
     // Not under TaskHostFactory (Visual Studio's MSBuild), whose host exits after the task.
     internal static SvelteCompiler CompilerFor(string compilerPath) => SvelteCompiler.Shared(compilerPath);
 
@@ -57,14 +63,24 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
     public override bool Execute()
     {
         var sw = Stopwatch.StartNew();
-        var sources = Sources
-            .GroupBy(s => s.GetMetadata("FullPath"), StringComparer.Ordinal)
-            .Select(g => (Path: g.Key, Outputs: g.ToDictionary(o => o.GetMetadata("PareOutputExtension"), o => o.GetMetadata("PareOutputPath"), StringComparer.Ordinal)))
-            .ToList();
+        var sources = new List<(string Path, Dictionary<string, string> Outputs)>();
+        foreach (var g in Sources.GroupBy(s => s.GetMetadata("FullPath"), StringComparer.Ordinal))
+        {
+            if (g.GroupBy(o => o.GetMetadata("PareOutputExtension"), StringComparer.Ordinal).FirstOrDefault(e => e.Count() > 1) is { } twice)
+            {
+                Log.LogError(null, "HUSK101", null, g.Key, 0, 0, 0, 0,
+                    $"is listed twice, with outputs {string.Join(" and ", twice.Select(o => o.GetMetadata("PareOutputPath")))}. Remove one item, e.g. <HuskComponent Remove=\"...\" /> before the Include that sets its metadata.");
+                continue;
+            }
+            sources.Add((g.Key, g.ToDictionary(o => o.GetMetadata("PareOutputExtension"), o => o.GetMetadata("PareOutputPath"), StringComparer.Ordinal)));
+        }
+        var newestInput = Inputs.Length == 0 ? (DateTime?)null : Inputs.Select(i => File.GetLastWriteTimeUtc(i.ItemSpec)).Max();
         var readable = new List<(string Path, Dictionary<string, string> Outputs)>();
         var inputs = new List<CompileInput>();
         foreach (var source in sources)
         {
+            if (newestInput is { } newest && UpToDate(source.Path, source.Outputs.Values, newest))
+                continue;
             try
             {
                 inputs.Add(new CompileInput(SvelteCompiler.Filename(ProjectDirectory, source.Path), File.ReadAllText(source.Path)));
@@ -75,7 +91,7 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
                 Log.LogError(null, "HUSK102", null, source.Path, 0, 0, 0, 0, "cannot read the source: " + e.Message);
             }
         }
-        var results = Compile(inputs);
+        var results = inputs.Count == 0 ? [] : Compile(inputs);
 
         int compiled = 0;
         for (int i = 0; i < readable.Count; i++)
@@ -99,6 +115,13 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
         }
         Log.LogMessage(MessageImportance.High, $"husk: compiled {compiled} of {sources.Count} sources in {sw.ElapsedMilliseconds} ms");
         return !Log.HasLoggedErrors;
+    }
+
+    // File.GetLastWriteTimeUtc gives 1601 for a missing file, older than any input.
+    private static bool UpToDate(string source, IEnumerable<string> outputs, DateTime newestInput)
+    {
+        var newest = File.GetLastWriteTimeUtc(source) is var s && s > newestInput ? s : newestInput;
+        return outputs.All(o => File.GetLastWriteTimeUtc(o) >= newest);
     }
 
     private bool Write(string path, Dictionary<string, string> outputs, CompileResult result)

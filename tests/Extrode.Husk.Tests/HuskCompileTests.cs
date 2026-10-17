@@ -187,6 +187,68 @@ public sealed class HuskCompileTests : IDisposable
         Assert.True(File.Exists(P("obj/pare/Plain.svelte.js")));
     }
 
+    private bool RunIncremental(TaskItem[] source)
+    {
+        File.WriteAllText(P("stamp.txt"), "");
+        File.SetLastWriteTimeUtc(P("stamp.txt"), DateTime.UtcNow.AddDays(-2));
+        return new HuskCompile
+        {
+            BuildEngine = _engine,
+            Sources = source,
+            ProjectDirectory = _dir.FullName,
+            CompilerPath = ExpectedRow.CompilerPath,
+            Inputs = [new TaskItem(P("stamp.txt"))],
+        }.Execute();
+    }
+
+    [Fact]
+    public void Incremental_a_source_older_than_its_outputs_is_not_compiled()
+    {
+        var items = Source("wwwroot/Plain.svelte");
+        File.SetLastWriteTimeUtc(P("wwwroot/Plain.svelte"), DateTime.UtcNow.AddDays(-1));
+        Assert.True(RunIncremental(items));
+        var written = File.GetLastWriteTimeUtc(P("obj/pare/Plain.svelte.js"));
+
+        Assert.True(RunIncremental(items));
+
+        Assert.Equal(written, File.GetLastWriteTimeUtc(P("obj/pare/Plain.svelte.js")));
+        Assert.Contains(_engine.Messages, m => m.StartsWith("husk: compiled 0 of 1 sources", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Incremental_one_stale_output_recompiles_all_of_its_source()
+    {
+        var items = Source("wwwroot/Styled.svelte");
+        File.SetLastWriteTimeUtc(P("wwwroot/Styled.svelte"), DateTime.UtcNow.AddDays(-1));
+        Assert.True(RunIncremental(items));
+        foreach (var name in new[] { "Styled.svelte.js", "Styled.svelte.js.map" })
+            File.WriteAllText(P("obj/pare/" + name), "stale");
+        File.SetLastWriteTimeUtc(P("obj/pare/Styled.svelte.css"), DateTime.UtcNow.AddDays(-1.5));
+
+        Assert.True(RunIncremental(items));
+
+        Assert.Empty(_engine.Errors);
+        var row = ExpectedRow.Find("wwwroot/Styled.svelte", false);
+        Assert.Equal(row.Js, ExpectedRow.Sha(File.ReadAllText(P("obj/pare/Styled.svelte.js")).Split("\n//# sourceMappingURL=")[0]));
+    }
+
+    [Fact]
+    public void A_source_listed_twice_is_husk101_not_a_crash()
+    {
+        var items = Source("wwwroot/Plain.svelte");
+        var again = items.Select(i => new TaskItem(i.ItemSpec, new Dictionary<string, string>
+        {
+            ["PareOutputExtension"] = i.GetMetadata("PareOutputExtension"),
+            ["PareOutputPath"] = P("obj/pare/x/" + Path.GetFileName(i.GetMetadata("PareOutputPath"))),
+        })).ToArray();
+
+        Assert.False(Run(false, items, again, Source("wwwroot/Image.svelte")));
+
+        var error = Assert.Single(_engine.Errors);
+        Assert.Equal(("HUSK101", P("wwwroot/Plain.svelte")), (error.Code, error.File));
+        Assert.True(File.Exists(P("obj/pare/Image.svelte.js")));
+    }
+
     [Fact]
     public void A_component_missing_an_output_item_is_husk101()
     {

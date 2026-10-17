@@ -42,7 +42,43 @@ public sealed partial class CompileBuildTests
 
         (exit, output) = project.Build();
         Assert.True(exit == 0, output);
-        Assert.Null(Compiled(output));
+        Assert.Equal(0, Compiled(output));
+    }
+
+    [Fact]
+    public void A_source_newer_than_one_of_its_outputs_recompiles_all_of_them()
+    {
+        using var project = App();
+        Assert.Equal(0, project.Build().Exit);
+        var old = DateTime.UtcNow.AddMinutes(-10);
+        File.SetLastWriteTimeUtc(project.P(TempProject.PareOut + "Styled.svelte.css"), old);
+        File.SetLastWriteTimeUtc(project.P("wwwroot/Styled.svelte"), old.AddMinutes(1));
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(1, Compiled(output));
+        Assert.True(project.Stamp(TempProject.PareOut + "Styled.svelte.css") > old.AddMinutes(1));
+    }
+
+    [Fact]
+    public void A_project_referencing_the_app_gets_no_development_map()
+    {
+        using var app = App();
+        using var consumer = new TempProject();
+        consumer.Put("ref.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+              <ItemGroup><ProjectReference Include="{{app.P("app.csproj")}}" /></ItemGroup>
+            </Project>
+            """);
+
+        var (exit, output) = consumer.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.True(File.Exists(app.P("bin/Debug/net10.0/Extrode.Husk.development.json")), output);
+        Assert.True(File.Exists(consumer.P("bin/Debug/net10.0/app.dll")), output);
+        Assert.False(File.Exists(consumer.P("bin/Debug/net10.0/Extrode.Husk.development.json")));
     }
 
     [Fact]
