@@ -4,6 +4,10 @@
        <style>) and .svelte.js.map; each @(HuskModule) (.svelte.ts, .svelte.js) two, <name>.js and
        .js.map. Pare places, serves, publishes and deletes them as it does its own .ts output; the
        HuskCompile target writes them. Metadata set on an item (PareServeAt) carries over.
+       The app-wide files go under obj/<cfg>/<tfm>/husk/, outside Pare's folder so its stale deletion
+       leaves them, and are served below $(StaticWebAssetBasePath)_husk/: husk.css (every
+       component's CSS), importmap.json, and the vendored runtime (svelte/, esm-env/, clsx/).
+       Extrode.Husk.development.json goes to the build output, never to a publish.
        Properties:
          HuskDev            Svelte's dev option; default true in Debug, false otherwise
          HuskTaskAssembly   the task dll; tests point it at a build output
@@ -16,7 +20,9 @@
     <HuskVendorDir>$([MSBuild]::EnsureTrailingSlash('$(HuskVendorDir)'))</HuskVendorDir>
     <_HuskCompilerPath>$(HuskVendorDir)svelte\compiler\index.js</_HuskCompilerPath>
     <_HuskCompilerAssembly>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))\Extrode.Husk.Compiler.dll</_HuskCompilerAssembly>
-    <PareCompileDependsOn>$(PareCompileDependsOn);_HuskCollectSources;HuskCompile</PareCompileDependsOn>
+    <PareCompileDependsOn>_HuskCheckPlatform;$(PareCompileDependsOn);_HuskCollectSources;HuskCompile</PareCompileDependsOn>
+    <ResolveStaticWebAssetsInputsDependsOn>$(ResolveStaticWebAssetsInputsDependsOn);_HuskDefineStaticWebAssets</ResolveStaticWebAssetsInputsDependsOn>
+    <_HuskServed Condition="'$(UsingMicrosoftNETSdkStaticWebAssets)' == 'true' and '$(PareEmbed)' != 'true' and '$(PareOutDir)' == ''">true</_HuskServed>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,13 +43,32 @@
              Condition="'$(MSBuildRuntimeType)' == 'Core'" />
   <UsingTask TaskName="Extrode.Husk.Build.HuskCompile" AssemblyFile="$(HuskTaskAssembly)"
              Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
 
-  <!-- Runs inside PareStripTypeScript, after Pare computed each PareCompileSource's PareOutputPath. -->
-  <Target Name="_HuskCollectSources">
+  <!-- The build machine, not the publish target: ClearScript's V8 ships for these six only
+       (decision 006). A source-built SDK names its distro (ubuntu.24.04-x64), which is glibc Linux. -->
+  <Target Name="_HuskCheckPlatform">
+    <PropertyGroup>
+      <_HuskRid>$(NETCoreSdkRuntimeIdentifier)</_HuskRid>
+      <_HuskSupported Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^(win|osx|linux)-(x64|arm64)\z'))">true</_HuskSupported>
+      <_HuskSupported Condition="'$(_HuskSupported)' != 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^[a-z]+\.[0-9.]+-(x64|arm64)\z')) and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', 'musl|alpine|freebsd|illumos|solaris|android|ios|tvos|maccatalyst'))">true</_HuskSupported>
+    </PropertyGroup>
+    <Error Code="HUSK001" Condition="'$(_HuskSupported)' != 'true'"
+           Text="Husk cannot build on $(_HuskRid): its compiler runs on V8, which ships for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64 and linux-arm64 (glibc) only. Build on one of those; the output runs anywhere." />
+  </Target>
+
+  <Target Name="_HuskComputePaths">
     <PropertyGroup>
       <_HuskObjRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'husk'))</_HuskObjRoot>
       <_HuskDevStamp>$(_HuskObjRoot)dev.txt</_HuskDevStamp>
     </PropertyGroup>
+  </Target>
+
+  <!-- Runs inside PareStripTypeScript, after Pare computed each PareCompileSource's PareOutputPath. -->
+  <Target Name="_HuskCollectSources" DependsOnTargets="_HuskComputePaths">
     <ItemGroup>
       <_HuskCompileSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk'" />
     </ItemGroup>
@@ -64,5 +89,55 @@
           Outputs="@(_HuskCompileSource->'%(PareOutputPath)')">
     <HuskCompile Condition="'@(_HuskCompileSource)' != ''" Sources="@(_HuskCompileSource)" ProjectDirectory="$(MSBuildProjectDirectory)"
                  CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
+  </Target>
+
+  <!-- Every build: reads each component's .svelte.css, writes only what changed. No Inputs, since a
+       removed component changes the outputs without any input being newer. -->
+  <Target Name="HuskAssets" AfterTargets="PareStripTypeScript" BeforeTargets="BeforeBuild"
+          DependsOnTargets="_HuskComputePaths" Condition="'$(_HuskServed)' == 'true'">
+    <HuskAssets Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)" OutputDirectory="$(_HuskObjRoot)"
+                RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
+                CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
+    <ItemGroup>
+      <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json" />
+      <None Include="$(_HuskObjRoot)Extrode.Husk.development.json" Link="Extrode.Husk.development.json" Condition="'$(_IsPublishing)' != 'true'"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+  <!-- As Pare registers its outputs (_PareDefineStaticWebAssets): computed assets in the inputs
+       stage, so the SDK compresses them like files in wwwroot. -->
+  <Target Name="_HuskDefineStaticWebAssets" DependsOnTargets="ResolveStaticWebAssetsConfiguration;PareStripTypeScript;HuskAssets"
+          Condition="'$(_HuskServed)' == 'true'">
+    <ItemGroup>
+      <_HuskAppCandidate Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json" />
+      <_HuskAppCandidate RelativePath="_husk/%(Filename)%(Extension)" />
+      <!-- The folder as metadata, the path in a second step: %(...) in an Include's metadata would
+           batch over the items already added and add each file once per batch. -->
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)svelte/src/**/*.js" Folder="svelte/src/" />
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)esm-env/*.js" Folder="esm-env/" />
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)clsx/dist/clsx.mjs" Folder="clsx/dist/" />
+      <_HuskRuntimeCandidate RelativePath="_husk/%(Folder)$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+    </ItemGroup>
+    <DefineStaticWebAssets CandidateAssets="@(_HuskAppCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssets CandidateAssets="@(_HuskRuntimeCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(HuskVendorDir)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssetEndpoints Condition="'@(_HuskStaticWebAsset)' != ''" CandidateAssets="@(_HuskStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)" ContentTypeMappings="@(StaticWebAssetContentTypeMapping)">
+      <Output TaskParameter="Endpoints" ItemName="_HuskStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAsset Include="@(_HuskStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(_HuskStaticWebAssetEndpoint)" />
+    </ItemGroup>
   </Target>
 </Project>
