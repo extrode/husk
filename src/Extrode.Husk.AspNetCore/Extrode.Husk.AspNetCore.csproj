@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Recompiles on save in Development through Pare's watcher. References no ClearScript: the
+       compiler is loaded from the build package's folder (docs/architecture/003). -->
+  <PropertyGroup>
+    <RootNamespace>Extrode.Husk.AspNetCore</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Extrode.Pare.AspNetCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Extrode.Husk.Tests" />
+  </ItemGroup>
+</Project>
