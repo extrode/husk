@@ -1,5 +1,5 @@
 # 001 — Compile Svelte on `dotnet build`
-Status: draft
+Status: done
 Created: 2026-10-17
 
 ## Problem

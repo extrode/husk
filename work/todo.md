@@ -30,3 +30,20 @@ Real, but needs a decision, a dependency, or more information first. Say which.
 Not doing, with the reason. Kept so the same idea does not get re-raised every quarter.
 
 - (nothing yet)
+- Husk build: run the `TaskHostFactory` `UsingTask` under Visual Studio's `MSBuild.exe` on Windows (spec 001 T13; not run, macOS only here).
+- Pare 0.6.0 warns PARE200 ("Delete it") on every same-name compiled output (`clock.svelte.js`, each `wwwroot/*.html` page). Fixed on pare `dev` (fix/pare200-same-name-output); Husk moves to the release that carries it.
+- Husk: `SvelteCompiler.Shared` disposes the replaced compiler while another caller may still be compiling on it (needs a refcount or deferred dispose); dev saves are serialized by Pare, so only concurrent in-proc builds can hit it
+- Husk: `CompilerBridge` compares only ClearScript.V8's version before sharing the app's ClearScript; ClearScript.Core and a compiler folder with no ClearScript.V8.dll are not checked
+- Husk: in Development an unmarked page that is not UTF-8 (UTF-16, Latin-1) is re-encoded as UTF-8 by Pare's watcher, while the build copies its bytes; IPareCompiler gets text only
+- Pare: ship `build/` as `buildTransitive/` too, so a project referencing only Extrode.Husk.Build gets Pare's targets and HUSK002 (direct Pare.Build reference) can go
+- Husk: Extrode.Husk.Build nupkg is 82.6 MB (six V8 natives + ICU data); per-RID packages are the later option (plan, Risks)
+- Integration tests pick a free port by bind-and-release; another process can take it before the app binds (RunningApp, SampleWatchTests).
+- Each Sample()/Consumer() restores into its own globalPackagesFolder, so ClearScript natives download per copy; share one per PackedFeed.
+- Two Extrode.Husk.Build versions in one reused MSBuild node load two ClearScript natives into one process (crash risk); consider TaskHostFactory or a version check.
+- HuskPage globs wwwroot/**/*.html regardless of the user's Content Remove/Update metadata, so an excluded page is served and published again.
+- PareKeepSources=true with Husk: a page or .svelte.js keeps its source's name, so wwwroot and obj/pare register one asset path twice (SDK error).
+- Outside wwwroot / non-web projects, a component's next-to-source output (Child.svelte.js) overwrites a hand-written file of that name without warning.
+- HuskSession caches the map's mtime before the read succeeds; a half-written map on a coarse-mtime filesystem stays broken until the next build.
+- NativeProbe sets a DllImportResolver on a ClearScript the app shares; the app's own later SetDllImportResolver then throws.
+- HuskAssets decides "served" with OrdinalIgnoreCase on every OS; Linux paths differing only in case are misclassified.
+- A marked page with invalid UTF-8 is decoded with replacement chars, changing bytes outside the marker (build and dev).

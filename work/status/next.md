@@ -4,4 +4,4 @@ Exactly **one** task, the next one to start, pulled from `../tasklist.md` when t
 advances. The full task list for this body of work is `../tasklist.md`; the unscheduled backlog is
 `../todo.md`; where the project is going is `../milestones.md`.
 
-- T6 Import map, content-hashed output, modulepreload
+- (none: T6 is the last task in `../tasklist.md`)

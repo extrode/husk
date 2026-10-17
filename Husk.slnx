@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Extrode.Husk.AspNetCore/Extrode.Husk.AspNetCore.csproj" />
+    <Project Path="src/Extrode.Husk.Build/Extrode.Husk.Build.csproj" />
+    <Project Path="src/Extrode.Husk.Compiler/Extrode.Husk.Compiler.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Extrode.Husk.Integration/Extrode.Husk.Integration.csproj" />
+    <Project Path="tests/Extrode.Husk.Tests/Extrode.Husk.Tests.csproj" />
+  </Folder>
+</Solution>

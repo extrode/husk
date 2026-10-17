@@ -1,0 +1,8 @@
+<Project>
+  <!-- Each prototype stands alone: no shared props. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

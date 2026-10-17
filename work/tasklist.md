@@ -39,5 +39,5 @@ tick.
 - [x] T2 Cloudflare and Deno survey of saaaat.com and riwalqalb.com — done when: `docs/architecture/002-cloudflare-and-deno.md` (2026-10-17)
 - [x] T3 Open decisions answered (browser floor 003, first app 004, type checking 005, musl 006) — done when: one decision record each in `docs/decisions/` (2026-10-17)
 - [x] T4 Pare extension point for compile-to-JavaScript steps, in `../pare` — done when: released in a Pare version and documented there (2026-10-17: released in Pare 0.6.0, GitHub prerelease `v0.6.0`; README "Other compilers")
-- [ ] T5 `Extrode.Husk.Build`: compile `.svelte` on `dotnet build`, incremental, warm engine, CSS, dev mode — done when: a sample builds and runs in three browsers. Spec 001: tasks in `docs/specs/001-husk-build/001-tasks.md`
+- [x] T5 `Extrode.Husk.Build`: compile `.svelte` on `dotnet build`, incremental, warm engine, CSS, dev mode — done when: a sample builds and runs in three browsers. Spec 001: tasks in `docs/specs/001-husk-build/001-tasks.md` (2026-10-17: merged to dev, unpublished)
 - [ ] T6 Import map, content-hashed output, modulepreload — done when: the sample deploys to Cloudflare through the assets upload API
