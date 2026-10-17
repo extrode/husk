@@ -30,3 +30,4 @@ Real, but needs a decision, a dependency, or more information first. Say which.
 Not doing, with the reason. Kept so the same idea does not get re-raised every quarter.
 
 - (nothing yet)
+- Husk build: run the `TaskHostFactory` `UsingTask` under Visual Studio's `MSBuild.exe` on Windows (spec 001 T13; not run, macOS only here).
