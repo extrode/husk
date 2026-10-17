@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <SvelteCompiler>$(MSBuildThisFileDirectory)../../js/node_modules/svelte/compiler/index.js</SvelteCompiler>
+  </PropertyGroup>
+  <UsingTask TaskName="SvelteSpike.SvelteCompile" AssemblyFile="$(MSBuildThisFileDirectory)../bin/Release/net10.0/SvelteTask.dll"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="SvelteSpike.SvelteCompile" AssemblyFile="$(MSBuildThisFileDirectory)../bin/Release/net10.0/SvelteTask.dll"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <ItemGroup>
+    <SvelteSource Include="src/**/*.svelte" />
+  </ItemGroup>
+  <Target Name="CompileSvelte" BeforeTargets="BeforeBuild">
+    <SvelteCompile Sources="@(SvelteSource)" CompilerPath="$(SvelteCompiler)" OutputDirectory="$(MSBuildThisFileDirectory)wwwroot/js" RootDirectory="$(MSBuildThisFileDirectory)" />
+  </Target>
+</Project>

@@ -17,7 +17,12 @@ Small, clear, and could be picked up without a design decision.
 
 Real, but needs a decision, a dependency, or more information first. Say which.
 
-- (nothing yet)
+- Why ClearScript's V8 is 1.4-1.6x slower than Node on the same bundle: V8 version, build flags.
+  Needs nothing; a profiling session.
+- Not yet checked: a Linux and a win-arm64 run, memory per engine, `compileModule` for
+  `.svelte.ts`, source maps. Before T5 ships.
+- Cloudflare account limits (files per deployment, file size) against the two apps' output.
+  Before T6.
 
 ## Dropped
 

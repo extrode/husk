@@ -1,27 +1,25 @@
 # husk
 
-<One sentence: what this is and who it is for. If you cannot write it in one sentence, the
-project does not know what it is yet.>
+Svelte components for .NET projects without Node or Deno: the Svelte compiler runs in an
+embedded V8 inside MSBuild, components compile to ES modules, and the `svelte` runtime is served
+unbundled behind an import map. Built on [Pare](https://github.com/extrode/pare).
 
-## Run it
+**Status: research.** No product code yet. Start with
+[docs/handoffs/2026-10-17-start-here.md](docs/handoffs/2026-10-17-start-here.md).
 
-```
-<the single command that gets it running from a clean clone>
+## Run the spike
+
+```sh
+npm --prefix prototypes/001-engine-spike/js ci --ignore-scripts
 ```
 
-## Build and test
-
-```
-<build command>
-<test command>
-```
+Then follow [prototypes/001-engine-spike/README.md](prototypes/001-engine-spike/README.md).
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `src/` | <the code> |
-| `tests/` | <the tests> |
+| `prototypes/` | Spikes, numbered; throwaway code with its own README |
 | `work/` | Current work: tasklist, status window, backlog, milestones |
 | `docs/` | Specs, plans, architecture, decisions, conventions, lessons |
 | `scripts/` | Operational scripts. `scripts/cleanup/` is written but never run |

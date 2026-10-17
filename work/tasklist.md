@@ -33,7 +33,11 @@ tick.
   duplicating it — two copies of a task list is one stale copy.
 - `milestones.md` is where the project is going. A tasklist is how one milestone gets done.
 
-## Current work: <name it>
+## Current work: from spike to a first build
 
-- [ ] T1 <title> — done when: <acceptance>
-- [ ] T2 …
+- [x] T1 Engine spike: Svelte compiler in ClearScript V8 and Jint — done when: results in `docs/architecture/001-compiler-engine.md` (2026-10-17)
+- [x] T2 Cloudflare and Deno survey of saaaat.com and riwalqalb.com — done when: `docs/architecture/002-cloudflare-and-deno.md` (2026-10-17)
+- [ ] T3 Open decisions answered (browser floor, first app, type checking, musl) — done when: one decision record each in `docs/decisions/`
+- [ ] T4 Pare extension point for compile-to-JavaScript steps, in `../pare` — done when: released in a Pare version and documented there
+- [ ] T5 `Extrode.Husk.Build`: compile `.svelte` on `dotnet build`, incremental, warm engine, CSS, dev mode — done when: a sample builds and runs in three browsers
+- [ ] T6 Import map, content-hashed output, modulepreload — done when: the sample deploys to Cloudflare through the assets upload API
