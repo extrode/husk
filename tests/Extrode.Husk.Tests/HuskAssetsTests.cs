@@ -36,6 +36,7 @@ public sealed class HuskAssetsTests : IDisposable
         RuntimeImports = Path.Combine(RepoPaths.Vendored, "runtime-imports.json"),
         CompilerAssembly = "/c/Extrode.Husk.Compiler.dll",
         CompilerPath = "/c/index.js",
+        ProjectDirectory = _dir.FullName,
         Dev = true,
     }.Execute();
 
@@ -95,6 +96,7 @@ public sealed class HuskAssetsTests : IDisposable
         var map = JsonDocument.Parse(File.ReadAllText(P("obj/husk/Extrode.Husk.development.json"))).RootElement;
         Assert.Equal("/c/Extrode.Husk.Compiler.dll", map.GetProperty("compiler").GetString());
         Assert.Equal("/c/index.js", map.GetProperty("svelte").GetString());
+        Assert.Equal(_dir.FullName, map.GetProperty("projectDirectory").GetString());
         Assert.True(map.GetProperty("dev").GetBoolean());
         Assert.Equal(P("obj/husk/husk.css"), map.GetProperty("stylesheet").GetString());
         Assert.Equal(["A.svelte", "B.svelte"], map.GetProperty("styles").EnumerateArray().Select(s => s.GetProperty("name").GetString()));

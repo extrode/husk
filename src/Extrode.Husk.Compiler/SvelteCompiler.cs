@@ -18,6 +18,26 @@ public sealed class SvelteCompiler : IDisposable
     internal SvelteCompiler(string compilerPath, TimeSpan idleTimeout, Func<long>? now = null) =>
         Pool = new EnginePool(compilerPath, idleTimeout, now);
 
+    // Engines stay warm for the life of the process (a reused MSBuild node, the Development app) and
+    // are released when idle. A compiler file rewritten in place gets a fresh pool: the old one holds
+    // the old source.
+    private static readonly Dictionary<string, (DateTime Stamp, SvelteCompiler Compiler)> SharedCompilers = new(StringComparer.Ordinal);
+
+    /// <summary>One compiler per compiler file in this process.</summary>
+    public static SvelteCompiler Shared(string compilerPath)
+    {
+        var stamp = File.GetLastWriteTimeUtc(compilerPath);
+        lock (SharedCompilers)
+        {
+            if (SharedCompilers.TryGetValue(compilerPath, out var cached) && cached.Stamp == stamp)
+                return cached.Compiler;
+            cached.Compiler?.Dispose();
+            var compiler = new SvelteCompiler(compilerPath);
+            SharedCompilers[compilerPath] = (stamp, compiler);
+            return compiler;
+        }
+    }
+
     /// <summary>The <c>filename</c> Svelte is given: the path below the project, with <c>/</c>.</summary>
     public static string Filename(string projectDirectory, string path) =>
         Path.GetRelativePath(projectDirectory, path).Replace('\\', '/');

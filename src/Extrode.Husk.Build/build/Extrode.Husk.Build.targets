@@ -110,6 +110,7 @@
     <HuskAssets Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)" OutputDirectory="$(_HuskObjRoot)"
                 ServedRoot="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'pare'))"
                 RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
+                ProjectDirectory="$(MSBuildProjectDirectory)"
                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
     <ItemGroup>
       <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json" />

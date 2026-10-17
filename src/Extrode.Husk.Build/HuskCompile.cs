@@ -23,24 +23,8 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
 
     public bool Dev { get; set; }
 
-    // Engines stay warm across builds in a reused MSBuild node (not in a TaskHostFactory host, which
-    // exits after the task), and are released when idle. A compiler file rewritten in place gets a
-    // fresh pool: the old one holds the old source.
-    private static readonly Dictionary<string, (DateTime Stamp, SvelteCompiler Compiler)> Compilers = new(StringComparer.Ordinal);
-
-    internal static SvelteCompiler CompilerFor(string compilerPath)
-    {
-        var stamp = File.GetLastWriteTimeUtc(compilerPath);
-        lock (Compilers)
-        {
-            if (Compilers.TryGetValue(compilerPath, out var cached) && cached.Stamp == stamp)
-                return cached.Compiler;
-            cached.Compiler?.Dispose();
-            var compiler = new SvelteCompiler(compilerPath);
-            Compilers[compilerPath] = (stamp, compiler);
-            return compiler;
-        }
-    }
+    // Not under TaskHostFactory (Visual Studio's MSBuild), whose host exits after the task.
+    internal static SvelteCompiler CompilerFor(string compilerPath) => SvelteCompiler.Shared(compilerPath);
 
     public override bool Execute()
     {
@@ -87,13 +71,11 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
 
     private bool Write(string path, Dictionary<string, string> outputs, CompileResult result)
     {
-        bool component = path.EndsWith(".svelte", StringComparison.Ordinal);
-        string jsExtension = component ? ".svelte.js" : ".js";
-        if (!outputs.TryGetValue(jsExtension, out var js) || !outputs.TryGetValue(jsExtension + ".map", out var map)
-            || (component && !outputs.ContainsKey(".svelte.css")))
+        var extensions = CompiledFiles.Extensions(path);
+        if (!extensions.All(outputs.ContainsKey))
         {
             Log.LogError(null, "HUSK101", null, path, 0, 0, 0, 0,
-                $"needs outputs {jsExtension}, {jsExtension}.map{(component ? " and .svelte.css" : "")}; got {string.Join(", ", outputs.Keys)}.");
+                $"needs outputs {string.Join(", ", extensions)}; got {string.Join(", ", outputs.Keys)}.");
             return false;
         }
         // Outside a web project Pare places output next to its source, and x.svelte.js compiles to x.svelte.js.
@@ -106,12 +88,11 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
         // A failed write leaves that output older than the source, so the next build compiles it again.
         try
         {
-            foreach (var output in outputs.Values)
-                Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-            File.WriteAllText(js, WithMapUrl(result.Js!, Path.GetFileName(map)));
-            File.WriteAllText(map, result.Map!);
-            if (component)
-                File.WriteAllText(outputs[".svelte.css"], result.Css!);
+            foreach (var (extension, text) in CompiledFiles.Texts(path, result))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(outputs[extension])!);
+                File.WriteAllText(outputs[extension], text);
+            }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -120,10 +101,6 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
         }
         return true;
     }
-
-    /// <summary>The compiled JS with a <c>sourceMappingURL</c> comment naming the map beside it.</summary>
-    public static string WithMapUrl(string js, string mapFileName) =>
-        js + (js.EndsWith('\n') ? "" : "\n") + "//# sourceMappingURL=" + mapFileName + "\n";
 
     internal static string Message(CompileDiagnostic d) => $"{d.Code}: {d.Message.ReplaceLineEndings(" ")}";
 }

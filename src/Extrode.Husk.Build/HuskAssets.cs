@@ -32,6 +32,9 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
 
     [Required] public string CompilerAssembly { get; set; } = "";
 
+    /// <summary>The project folder: Svelte's <c>filename</c> is the path below it.</summary>
+    [Required] public string ProjectDirectory { get; set; } = "";
+
     [Required] public string CompilerPath { get; set; } = "";
 
     public bool Dev { get; set; }
@@ -82,6 +85,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             json.WriteStartObject();
             json.WriteString("compiler", CompilerAssembly);
             json.WriteString("svelte", CompilerPath);
+            json.WriteString("projectDirectory", ProjectDirectory);
             json.WriteBoolean("dev", Dev);
             json.WriteString("stylesheet", stylesheet);
             json.WriteString("importMap", importMap);

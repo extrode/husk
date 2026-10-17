@@ -1,3 +1,4 @@
+using Extrode.Husk.Compiler;
 using Extrode.Husk.Build;
 using Microsoft.Build.Utilities;
 
@@ -177,5 +178,5 @@ public sealed class HuskCompileTests : IDisposable
     [InlineData("a\n", "a\n//# sourceMappingURL=a.js.map\n")]
     [InlineData("a", "a\n//# sourceMappingURL=a.js.map\n")]
     public void The_map_url_goes_on_its_own_line(string js, string expected) =>
-        Assert.Equal(expected, HuskCompile.WithMapUrl(js, "a.js.map"));
+        Assert.Equal(expected, CompiledFiles.WithMapUrl(js, "a.js.map"));
 }
