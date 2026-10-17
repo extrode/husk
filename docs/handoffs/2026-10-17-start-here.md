@@ -38,9 +38,8 @@ TypeScript type stripper with an MSBuild package) and does not fork it.
 
 ## Open decisions (the user's)
 
-1. Browser floor for Husk output: import-map browsers only (Chrome 89, Safari 16.4, Firefox 108),
-   or a downlevel path too. Decides whether riwalqalb's frontend can move.
-2. First target app: saaaat.com (needs the router) or riwalqalb.com (needs the floor decision).
+1. ~~Browser floor~~: import-map browsers first, older ones later as an opt-in (decision 003).
+2. ~~First target app~~: saaaat.com (decision 004).
 3. Type checking without Deno: keep `svelte-check`/`tsc` under a runtime in CI, or find a native
    checker.
 4. linux-musl: unsupported, or a Jint fallback at 13-25x the build time.
