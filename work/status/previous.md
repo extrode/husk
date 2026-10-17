@@ -5,4 +5,5 @@ The task that just finished: merged into `dev`, not necessarily released. One ta
 `../tasklist.md` into `next`. When a release is tagged, the same work is summarised in
 `../../CHANGELOG.md`.
 
-- T3 Open decisions — done 2026-10-17, decisions 003-006
+- T4 Pare extension point — merged to pare `dev` 2026-10-17, unpushed, 0.6.0 unpublished. `PareCompileSource` +
+  `PareCompileDependsOn` (MSBuild), `IPareCompiler.CompileAsync` (runtime); pare decision 005, README "Other compilers"
