@@ -46,6 +46,8 @@ TypeScript type stripper with an MSBuild package) and does not fork it.
 
 ## Next steps
 
+Superseded in part by [the second handoff](2026-10-17-decisions-done.md): decisions 1-4 are made.
+
 See `work/tasklist.md`. In order: Pare's extension point (in `../pare`), the Husk MSBuild package
 (compile, incremental, warm engine, CSS, dev mode), import map and hashed output, then the router
 if saaaat.com is first.
