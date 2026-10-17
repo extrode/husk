@@ -1,0 +1,6 @@
+# Generated HTML twins: byte-for-byte restatements of the markdown beside
+# them, so indexing both returns each document twice and pushes a real result
+# out of the top hits. The markdown is canonical, so the markdown is what
+# search should return.
+/docs/**/*.html
+/tmp/*.html
