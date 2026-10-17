@@ -9,3 +9,4 @@ non-obvious dependency, a trap in the codebase — APPEND it here (one terse imp
 next agent doesn't hit it. Keep entries true; delete stale ones.
 
 - (nothing yet)
+- `git merge`'s auto `pack-refs` (gc --auto) is refused by the dotfiles reference-transaction hook as "deleting 'main'"; the merge itself lands, refs stay intact. Ignore it; don't set GIT_ALLOW_PROTECTED to silence it.
