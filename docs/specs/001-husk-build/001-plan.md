@@ -34,8 +34,8 @@ Two alternatives were rejected:
 | `Microsoft.ClearScript.V8` + `.Native.{osx-arm64,osx-x64,linux-x64,linux-arm64,win-x64,win-arm64}` | 7.5.1.1 | `Extrode.Husk.Compiler`, packed into Husk.Build's task folder | approved 2026-10-17 |
 | `Extrode.Pare.Build`, `Extrode.Pare.AspNetCore`, `Extrode.Pare` (library) | 0.6.0 | package dependencies; the library strips `.svelte.ts` before `compileModule` | approved 2026-10-17; vendored under `packages/` from the GitHub release (not on nuget.org) |
 | `Microsoft.Build.Framework`, `Microsoft.Build.Utilities.Core` | 18.9.6 | task, `PrivateAssets` | approved 2026-10-17 |
-| `xunit.v3` | 4.0.2 | tests only | **needs approval** |
-| Browser driver with no Node: `Selenium.WebDriver` | 4.51.0 | tests only: Chrome, Firefox, Safari (WebKit, macOS) | **needs approval**. Playwright is out: its .NET package bundles and runs Node |
+| `xunit.v3` | 4.0.2 | tests only | approved 2026-10-17 |
+| Browser driver with no Node: `Selenium.WebDriver` | 4.51.0 | tests only: Chrome, Firefox, Safari (WebKit, macOS) | approved 2026-10-17. Playwright is out: its .NET package bundles and runs Node |
 | Svelte compiler and runtime | 5.57.2 | vendored files, not a package | pinned by AGENTS.md |
 
 - .NET 10 SDK, `global.json` as in Pare (`10.0.100`, `latestFeature`, Microsoft.Testing.Platform).
