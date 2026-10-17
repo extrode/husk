@@ -29,3 +29,5 @@ Real, but needs a decision, a dependency, or more information first. Say which.
 Not doing, with the reason. Kept so the same idea does not get re-raised every quarter.
 
 - (nothing yet)
+- Evaluate `svelte-check-native` 1.9.1 against `svelte-check` on saaaat.com's 78 components (decision 005; needs package approval).
+- Fetch dependencies' `.d.ts` for type checking without a package manager runtime (decision 005).
