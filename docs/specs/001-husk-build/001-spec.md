@@ -42,8 +42,9 @@ point).
 - R2 Husk compiles `.svelte.ts` and `.svelte.js` rune modules on build, to ES modules.
 - R3 Husk carries its own pinned Svelte compiler and the `svelte` runtime; the build reads
   nothing from `node_modules` and runs no JavaScript runtime installed on the machine.
-- R4 For every input, the compiled JavaScript and CSS are identical to what the official compiler
-  of the pinned version produces under Node with the same options.
+- R4 For every input, the compiler's JavaScript and CSS results are identical to what the official
+  compiler of the pinned version produces under Node with the same options. (Husk appends one
+  source map comment line to the JavaScript file; identity is on the compiler's result.)
 - R5 The CSS of every component is joined into one stylesheet for the app, which a page links.
 - R6 Husk generates an import map for the runtime and the compiled modules that a page includes,
   so the output runs in Chromium, Firefox and WebKit as served.
@@ -51,12 +52,14 @@ point).
 - R8 A build compiles only the sources changed since the last build; a build with no changes
   compiles nothing.
 - R9 A clean build compiles in parallel across cores.
-- R10 Successive builds in one session reuse the loaded compiler, so an incremental build does not
-  pay the compiler's start-up again.
+- R10 In the running Development app, successive compiles reuse the loaded compiler, so a save
+  does not pay the compiler's start-up again.
 - R11 In Development under `dotnet watch`, saving a component or rune module recompiles it in the
   running app, the stylesheet is updated, and an open browser reloads.
 - R12 A Debug build, and the Development app, compile with the compiler's development checks on;
   a Release build and publish compile without them.
+- R17 Compiler warnings are reported with file, line and column, as build warnings and in the
+  Development log.
 - R13 A component with a compile error fails the build with an error naming the file, line and
   column and the compiler's message; on save in Development it is logged and the previous output
   stays.
@@ -64,7 +67,7 @@ point).
   Pare's TypeScript output is; `.svelte` sources are not published.
 - R15 On a platform Husk does not support, the build fails with one error naming the platform and
   the supported ones.
-- R16 A sample app shows R1-R13 working.
+- R16 A sample app shows R1-R13 and R17 working.
 
 ## Acceptance criteria
 - R1, R6, R16: Given the sample, when built with `dotnet build` and run, then its pages work in
@@ -83,21 +86,26 @@ point).
   compiled; when one component changes, then exactly that one is compiled.
 - R9: Given the spike's 201 components on a 10-core machine, when built clean, then compiling
   takes less time than one engine compiling them one after another.
-- R10: Given a build that just ran, when one component changes and it builds again in the same
-  session, then that build adds no more than about 50 ms to compile it.
+- R10: Given the sample running under `dotnet watch` after one save, when a component is saved
+  again, then compiling it takes no more than about 50 ms. (`dotnet build` starts the compiler
+  each run, about 200 ms measured; R8 keeps that to one start per build.)
 - R11: Given the sample running under `dotnet watch` with a browser open, when a component's markup or
   style is saved, then the browser shows the change within about a second, with no manual refresh.
-- R12: Given the sample, when built Debug and run, then the compiler's development warnings appear
-  in the browser console; when published, then the output carries no development code.
+- R12: Given the sample, when built Debug and run, then the compiler's development checks run in the
+  browser; when published, then the compiled modules carry no development code and the runtime's
+  development flag is off.
 - R13: Given a component with a syntax error, when built, then the build fails with
   `File.svelte(line,col): error ...`; when saved in Development, then the error is logged and the
   page keeps the last good version.
 - R14: Given a published sample, then compiled modules, the stylesheet and the runtime are
   published with compressed copies, and no `.svelte` file is.
+- R17: Given a component with an `<img>` without `alt`, when built, then the build prints a
+  warning naming its file, line and column.
 - R15: Given a linux-musl host, when built, then the build fails with one error naming the cause.
 
 ## Law candidates
-- L1 (R4): for every input, Husk's output is identical to the official compiler's under Node.
+- L1 (R4): for every input, Husk's compiler result is identical to the official compiler's under
+  Node.
 - L2 (R8): after any sequence of builds, a build with no source changed compiles nothing.
 - L3 (R13): a component that fails to compile never replaces its last good output.
 
