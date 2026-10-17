@@ -11,9 +11,10 @@ namespace Extrode.Husk.AspNetCore;
 internal sealed class HuskCompiler(string mapPath) : IPareCompiler
 {
     private readonly Lock _gate = new();
-    private bool _loaded;
+    private DateTime _mapStamp;
     private HuskDevelopmentMap? _map;
     private CompilerBridge? _bridge;
+    private string? _bridgePath;
 
     public string Name => "husk";
 
@@ -27,18 +28,20 @@ internal sealed class HuskCompiler(string mapPath) : IPareCompiler
             return null;
         string file = Path.GetRelativePath(map.ProjectDirectory, sourcePath);
         var sw = Stopwatch.StartNew();
-        string json;
         try
         {
-            json = bridge.Compile(map.Svelte, map.ProjectDirectory, sourcePath, source, map.Dev);
+            using var result = JsonDocument.Parse(bridge.Compile(map.Svelte, map.ProjectDirectory, sourcePath, source, map.Dev));
+            return Read(result.RootElement, file, outputPaths, logger, sw);
         }
         catch (Exception e)
         {
             logger.LogError(e, "{File}: error HUSK100: the compiler failed", file);
             return null;
         }
-        using var result = JsonDocument.Parse(json);
-        var root = result.RootElement;
+    }
+
+    private static Dictionary<string, string>? Read(JsonElement root, string file, IReadOnlyList<string> outputPaths, ILogger logger, Stopwatch sw)
+    {
         foreach (var warning in root.GetProperty("warnings").EnumerateArray())
             logger.LogWarning("{File}({Line},{Column}): warning HUSK200: {Code}: {Message}", file, warning.GetProperty("line").GetInt32(),
                 warning.GetProperty("column").GetInt32() + 1, warning.GetProperty("code").GetString(), OneLine(warning));
@@ -63,19 +66,37 @@ internal sealed class HuskCompiler(string mapPath) : IPareCompiler
         return texts;
     }
 
+    // The map is read again whenever a build rewrites it, so a build while the app runs is picked up.
+    // The compiler stays loaded: a load context cannot drop V8, so a new compiler path needs a restart.
     private (HuskDevelopmentMap, CompilerBridge)? Load(ILogger logger)
     {
         lock (_gate)
         {
-            if (!_loaded)
+            var stamp = File.GetLastWriteTimeUtc(mapPath);
+            if (stamp != _mapStamp)
             {
-                _loaded = true;
-                _map = HuskDevelopmentMap.Read(mapPath);
-                if (_map is null)
-                    logger.LogError("{Path} is missing; build the project again to compile on save", mapPath);
-                else
-                    _bridge = CompilerBridge.Load(_map.Compiler, logger);
+                _mapStamp = stamp;
+                _map = null;
+                try
+                {
+                    _map = HuskDevelopmentMap.Read(mapPath);
+                    if (_map is null)
+                        logger.LogError("{Path} is missing; build the project again to compile on save", mapPath);
+                    else if (_bridge is null)
+                        _bridge = CompilerBridge.Load(_map.Compiler, logger);
+                    else if (_bridgePath != _map.Compiler)
+                        logger.LogWarning("Husk's compiler moved to {Path}; restart the app to compile saves with it", _map.Compiler);
+                    if (_bridge is not null && _map is not null)
+                        _bridgePath ??= _map.Compiler;
+                }
+                catch (Exception e)
+                {
+                    _map = null;
+                    logger.LogError(e, "Husk could not load its compiler from {Path}; build the project again to compile on save", mapPath);
+                }
             }
+            else if (_map is null || _bridge is null)
+                logger.LogError("Husk is not compiling saves (see the error above); build the project again to compile on save");
             return _map is not null && _bridge is not null ? (_map, _bridge) : null;
         }
     }

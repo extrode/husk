@@ -147,6 +147,23 @@ public sealed class HuskDevelopmentTests : IDisposable
     }
 
     [Fact]
+    public async Task A_bad_map_is_logged_not_thrown_and_a_rebuilt_map_is_picked_up()
+    {
+        File.WriteAllText(HuskMap, "{\"compiler\": \"x\"}");
+        File.SetLastWriteTimeUtc(HuskMap, DateTime.UtcNow.AddMinutes(-1));
+        var compiler = new HuskCompiler(HuskMap);
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Null(await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p>one</p>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct));
+        Assert.Null(await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p>one</p>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct));
+        Assert.Equal(2, _log.Lines(LogLevel.Error).Count());
+
+        WriteMaps();
+        var outputs = await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p>one</p>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct);
+        Assert.Contains("one", outputs![ComponentOutputs("Hello")[0]]);
+    }
+
+    [Fact]
     public async Task An_output_the_compiler_does_not_write_is_HUSK101()
     {
         WriteMaps();

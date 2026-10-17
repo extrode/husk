@@ -32,3 +32,5 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - (nothing yet)
 - Husk build: run the `TaskHostFactory` `UsingTask` under Visual Studio's `MSBuild.exe` on Windows (spec 001 T13; not run, macOS only here).
 - Pare 0.6.0 warns PARE200 ("Delete it") on every same-name compiled output (`clock.svelte.js`, each `wwwroot/*.html` page). Fixed on pare `dev` (fix/pare200-same-name-output); Husk moves to the release that carries it.
+- Husk: `SvelteCompiler.Shared` disposes the replaced compiler while another caller may still be compiling on it (needs a refcount or deferred dispose); dev saves are serialized by Pare, so only concurrent in-proc builds can hit it
+- Husk: `CompilerBridge` compares only ClearScript.V8's version before sharing the app's ClearScript; ClearScript.Core and a compiler folder with no ClearScript.V8.dll are not checked
