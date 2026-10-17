@@ -61,6 +61,20 @@ public sealed partial class CompileBuildTests
     }
 
     [Fact]
+    public void A_missing_output_recompiles_its_source()
+    {
+        using var project = App();
+        Assert.Equal(0, project.Build().Exit);
+        string css = project.Read(TempProject.PareOut + "Styled.svelte.css");
+
+        File.Delete(project.P(TempProject.PareOut + "Styled.svelte.css"));
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(css, project.Read(TempProject.PareOut + "Styled.svelte.css"));
+    }
+
+    [Fact]
     public void A_newer_compiler_rebuilds_every_source()
     {
         // A copy of the vendored Svelte, so touching it leaves the shared one alone.
@@ -130,7 +144,9 @@ public sealed partial class CompileBuildTests
     public void A_build_needs_nothing_on_PATH_but_dotnet()
     {
         using var project = App();
-        project.PathOverride = Path.GetDirectoryName(DotnetPath());
+        // The resolved folder, not a shared bin such as /opt/homebrew/bin that may hold node too.
+        var dotnet = new FileInfo(DotnetPath());
+        project.PathOverride = Path.GetDirectoryName(dotnet.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? dotnet.FullName);
 
         var (exit, output) = project.Build();
 

@@ -48,19 +48,21 @@
       <_HuskCompileSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk'" />
     </ItemGroup>
     <!-- A changed HuskDev rebuilds everything: the stamp is an input, rewritten only when it differs. -->
-    <MakeDir Directories="$(_HuskObjRoot)" />
-    <WriteLinesToFile File="$(_HuskDevStamp)" Lines="$(HuskDev)" Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <ItemGroup>
+    <MakeDir Directories="$(_HuskObjRoot)" Condition="'@(_HuskCompileSource)' != ''" />
+    <WriteLinesToFile File="$(_HuskDevStamp)" Lines="$(HuskDev)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Condition="'@(_HuskCompileSource)' != ''" />
+    <ItemGroup Condition="'@(_HuskCompileSource)' != ''">
       <FileWrites Include="$(_HuskDevStamp)" />
     </ItemGroup>
   </Target>
 
   <!-- Incremental: a source is compiled only when it, the task, the compiler, this file or HuskDev
        is newer than its outputs. A failed compile writes nothing, so it is retried next build. -->
-  <Target Name="HuskCompile" DependsOnTargets="_HuskCollectSources" Condition="'@(_HuskCompileSource)' != ''"
+  <!-- No Condition here: MSBuild evaluates it before DependsOnTargets has filled the items. -->
+  <Target Name="HuskCompile" DependsOnTargets="_HuskCollectSources"
           Inputs="@(_HuskCompileSource);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath);$(MSBuildThisFileFullPath);$(_HuskDevStamp)"
           Outputs="@(_HuskCompileSource->'%(PareOutputPath)')">
-    <HuskCompile Sources="@(_HuskCompileSource)" ProjectDirectory="$(MSBuildProjectDirectory)"
+    <HuskCompile Condition="'@(_HuskCompileSource)' != ''" Sources="@(_HuskCompileSource)" ProjectDirectory="$(MSBuildProjectDirectory)"
                  CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" />
   </Target>
 </Project>

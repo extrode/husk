@@ -44,11 +44,10 @@ public sealed class HuskCompileTests : IDisposable
         Assert.True(Run(false, Source(row.Filename)));
 
         string js = File.ReadAllText(P("obj/pare/Styled.svelte.js"));
-        const string MapUrl = "//# sourceMappingURL=Styled.svelte.js.map\n";
+        // Svelte's js.code has no trailing newline; WithMapUrl adds one before the comment.
+        const string MapUrl = "\n//# sourceMappingURL=Styled.svelte.js.map\n";
         Assert.EndsWith(MapUrl, js);
-        // js.code, with or without the newline WithMapUrl adds before the comment.
-        string code = js[..^MapUrl.Length];
-        Assert.Contains(row.Js, new[] { ExpectedRow.Sha(code), ExpectedRow.Sha(code[..^1]) });
+        Assert.Equal(row.Js, ExpectedRow.Sha(js[..^MapUrl.Length]));
         Assert.Equal(row.Css, ExpectedRow.Sha(File.ReadAllText(P("obj/pare/Styled.svelte.css"))));
         Assert.Equal(row.Map, ExpectedRow.Sha(File.ReadAllText(P("obj/pare/Styled.svelte.js.map"))));
         Assert.Contains(_engine.Messages, m => m.StartsWith("husk: compiled 1 of 1 sources", StringComparison.Ordinal));
@@ -62,14 +61,76 @@ public sealed class HuskCompileTests : IDisposable
         Assert.Equal("", File.ReadAllText(P("obj/pare/Plain.svelte.css")));
     }
 
-    [Fact]
-    public void A_module_writes_js_and_map()
+    [Theory]
+    [InlineData("wwwroot/counter.svelte.ts", "counter.svelte")]
+    [InlineData("wwwroot/clock.svelte.js", "clock.svelte")]
+    public void A_module_writes_js_and_map_as_node_does(string filename, string name)
     {
-        Assert.True(Run(true, Source("wwwroot/counter.svelte.ts"), Source("wwwroot/clock.svelte.js")));
+        var row = ExpectedRow.Find(filename, true);
 
-        Assert.EndsWith("//# sourceMappingURL=counter.svelte.js.map\n", File.ReadAllText(P("obj/pare/counter.svelte.js")));
-        Assert.True(File.Exists(P("obj/pare/counter.svelte.js.map")));
-        Assert.EndsWith("//# sourceMappingURL=clock.svelte.js.map\n", File.ReadAllText(P("obj/pare/clock.svelte.js")));
+        Assert.True(Run(true, Source(filename)));
+
+        string js = File.ReadAllText(P($"obj/pare/{name}.js"));
+        string mapUrl = $"\n//# sourceMappingURL={name}.js.map\n";
+        Assert.EndsWith(mapUrl, js);
+        Assert.Equal(row.Js, ExpectedRow.Sha(js[..^mapUrl.Length]));
+        Assert.Equal(row.Map, ExpectedRow.Sha(File.ReadAllText(P($"obj/pare/{name}.js.map"))));
+    }
+
+    [Fact]
+    public void An_output_that_is_its_own_source_is_husk101_and_the_source_stays()
+    {
+        string path = P("clock.svelte.js");
+        File.Copy(Path.Combine(RepoPaths.Fixtures, "wwwroot/clock.svelte.js"), path);
+        string original = File.ReadAllText(path);
+        TaskItem[] items =
+        [
+            new(path, new Dictionary<string, string> { ["PareOutputExtension"] = ".js", ["PareOutputPath"] = path }),
+            new(path, new Dictionary<string, string> { ["PareOutputExtension"] = ".js.map", ["PareOutputPath"] = path + ".map" }),
+        ];
+
+        Assert.False(Run(true, items));
+
+        Assert.Equal("HUSK101", Assert.Single(_engine.Errors).Code);
+        Assert.Equal(original, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void An_unwritable_output_is_husk102()
+    {
+        var items = Source("wwwroot/Plain.svelte");
+        Directory.CreateDirectory(P("obj/pare/Plain.svelte.css"));
+
+        Assert.False(Run(false, items));
+
+        Assert.Equal("HUSK102", Assert.Single(_engine.Errors).Code);
+    }
+
+    [Fact]
+    public void A_missing_source_is_husk102_and_the_rest_compile()
+    {
+        var plain = Source("wwwroot/Plain.svelte");
+        var gone = Source("wwwroot/Styled.svelte");
+        File.Delete(P("wwwroot/Styled.svelte"));
+
+        Assert.False(Run(false, plain, gone));
+
+        Assert.Equal("HUSK102", Assert.Single(_engine.Errors).Code);
+        Assert.True(File.Exists(P("obj/pare/Plain.svelte.js")));
+    }
+
+    [Fact]
+    public void A_rewritten_compiler_file_gets_a_fresh_compiler()
+    {
+        string compiler = P("compiler/index.js");
+        Directory.CreateDirectory(P("compiler"));
+        File.Copy(ExpectedRow.CompilerPath, compiler);
+
+        var first = HuskCompile.CompilerFor(compiler);
+        Assert.Same(first, HuskCompile.CompilerFor(compiler));
+        File.SetLastWriteTimeUtc(compiler, DateTime.UtcNow.AddMinutes(1));
+
+        Assert.NotSame(first, HuskCompile.CompilerFor(compiler));
     }
 
     [Fact]

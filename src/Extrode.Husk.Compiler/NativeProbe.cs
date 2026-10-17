@@ -10,19 +10,25 @@ namespace Extrode.Husk.Compiler;
 /// ClearScriptV8.&lt;rid&gt;.&lt;ext&gt;, so no rid is guessed.</summary>
 internal static class NativeProbe
 {
-    private static int _registered;
+    private static readonly Lock Gate = new();
+    private static bool _registered;
 
+    // Under the lock: parallel engine starts must not pass here before the resolver is set.
     public static void Register()
     {
-        if (Interlocked.Exchange(ref _registered, 1) == 1)
-            return;
-        try
+        lock (Gate)
         {
-            NativeLibrary.SetDllImportResolver(typeof(V8ScriptEngine).Assembly, Resolve);
-        }
-        catch (InvalidOperationException)
-        {
-            // The app set its own resolver for ClearScript; it knows where its native is.
+            if (_registered)
+                return;
+            try
+            {
+                NativeLibrary.SetDllImportResolver(typeof(V8ScriptEngine).Assembly, Resolve);
+            }
+            catch (InvalidOperationException)
+            {
+                // The app set its own resolver for ClearScript; it knows where its native is.
+            }
+            _registered = true;
         }
     }
 
