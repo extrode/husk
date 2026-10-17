@@ -24,8 +24,9 @@ internal sealed class Engine : IDisposable
         _engine = new V8ScriptEngine();
         try
         {
-            _engine.Execute(new DocumentInfo("svelte/compiler/index.js"), compilerSource);
+            // The glue first: it defines what the compiler looks for as it loads.
             _engine.Execute(new DocumentInfo("husk-compile.js"), glueSource);
+            _engine.Execute(new DocumentInfo("svelte/compiler/index.js"), compilerSource);
             _svelte = _engine.Script.svelte;
             _compile = (ScriptObject)_engine.Script.huskCompile;
         }
