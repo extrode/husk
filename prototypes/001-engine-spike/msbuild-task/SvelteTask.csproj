@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <SpikeRid Condition="'$(SpikeRid)' == ''">osx-arm64</SpikeRid>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="app/**" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="18.9.6" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.9.6" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.1.1" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.$(SpikeRid)" Version="7.5.1.1" />
+  </ItemGroup>
+</Project>

@@ -8,3 +8,11 @@
 # Scratch: probes, screenshots, dumps. The one directory an agent may delete
 # without asking, which is why it is the only place scratch goes.
 tmp/
+
+# .NET and npm build output, and the prototypes' generated files.
+bin/
+obj/
+node_modules/
+prototypes/*/msbuild-task/app/wwwroot/js/
+prototypes/*/*.tsv
+prototypes/*/*.txt

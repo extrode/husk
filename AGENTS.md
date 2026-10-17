@@ -83,6 +83,18 @@ When the whole tasklist is done: summarise it into `CHANGELOG.md` under `## [Unr
 
 ## Rules
 
+- Husk is a separate product built on Pare (`../pare`), not a fork:
+  [docs/decisions/2026-10-17-001-separate-product.md](docs/decisions/2026-10-17-001-separate-product.md).
+  Plumbing Husk needs from Pare is added to Pare as a public extension point, in Pare's repo.
+- No Node or Deno at build time in what Husk ships. Node may appear in research (reference runs).
+- Ask before adding any package. Approved so far: ClearScript 7.5.1.1 and Jint 4.17.0, for
+  `prototypes/001-engine-spike` only (2026-10-17).
+- The Svelte compiler is pinned to one version; outputs are checked byte for byte against Node
+  running the same bundle.
+- `prototypes/<NNN>-<slug>/` holds spikes: throwaway, a README each, results written up under
+  `docs/architecture/`.
+- C# sources stay ASCII.
+
 - Cleanup is never performed, only written: `scripts/cleanup/<work>.ps1` (or `.sh`) for the user
   to run. Dry run is the default; `--execute` / `-e` is the only way to act.
 - New files and directories are `kebab-case`, except names someone else's tooling reads.

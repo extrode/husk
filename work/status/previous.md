@@ -5,4 +5,4 @@ The task that just finished: merged into `dev`, not necessarily released. One ta
 `../tasklist.md` into `next`. When a release is tagged, the same work is summarised in
 `../../CHANGELOG.md`.
 
-- (nothing yet)
+- T2 Cloudflare and Deno survey of saaaat.com and riwalqalb.com — done 2026-10-17, `docs/architecture/002-cloudflare-and-deno.md`
