@@ -14,7 +14,8 @@
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_HuskCompilerInPackage</TargetsForTfmSpecificContentInPackage>
     <!-- NU5100: the dlls under tasks/ are meant to sit outside lib/. -->
     <NoWarn>$(NoWarn);NU5100</NoWarn>
-    <_HuskCompilerOutput>$(MSBuildThisFileDirectory)..\Extrode.Husk.Compiler\bin\$(Configuration)\$(TargetFramework)\</_HuskCompilerOutput>
+    <!-- ClearScript's dependency, whose license ships too; the pack fails when the compiler resolves another. -->
+    <_HuskNewtonsoftVersion>13.0.3</_HuskNewtonsoftVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" PrivateAssets="all" ExcludeAssets="runtime" />
@@ -29,7 +30,7 @@
     <None Include="..\..\third-party\svelte-5.57.2\**" Pack="true" PackagePath="third-party/svelte-5.57.2/" Visible="false" />
     <None Include="$(NuGetPackageRoot)microsoft.clearscript.v8/$(ClearScriptVersion)/License.txt" Pack="true" PackagePath="third-party/clearscript-$(ClearScriptVersion)/" Visible="false" />
     <None Include="$(NuGetPackageRoot)microsoft.clearscript.v8/$(ClearScriptVersion)/licenses/V8/*" Pack="true" PackagePath="third-party/clearscript-$(ClearScriptVersion)/V8/" Visible="false" />
-    <None Include="$(NuGetPackageRoot)newtonsoft.json/13.0.3/LICENSE.md" Pack="true" PackagePath="third-party/newtonsoft.json-13.0.3/" Visible="false" />
+    <None Include="$(NuGetPackageRoot)newtonsoft.json/$(_HuskNewtonsoftVersion)/LICENSE.md" Pack="true" PackagePath="third-party/newtonsoft.json-$(_HuskNewtonsoftVersion)/" Visible="false" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Extrode.Husk.Tests" />
@@ -37,6 +38,16 @@
 
   <!-- The compiler's whole output, natives under runtimes/ included, goes next to the task. -->
   <Target Name="_HuskCompilerInPackage">
+    <MSBuild Projects="..\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)">
+      <Output TaskParameter="TargetOutputs" PropertyName="_HuskCompilerDll" />
+    </MSBuild>
+    <PropertyGroup>
+      <_HuskCompilerOutput>$([System.IO.Path]::GetDirectoryName('$(_HuskCompilerDll)'))/</_HuskCompilerOutput>
+      <_HuskCompilerDeps>$([System.IO.File]::ReadAllText('$(_HuskCompilerOutput)Extrode.Husk.Compiler.deps.json'))</_HuskCompilerDeps>
+    </PropertyGroup>
+    <Error Condition="!$(_HuskCompilerDeps.Contains('&quot;Newtonsoft.Json/$(_HuskNewtonsoftVersion)&quot;'))"
+           Text="The compiler no longer resolves Newtonsoft.Json $(_HuskNewtonsoftVersion): update _HuskNewtonsoftVersion and NOTICE.md." />
     <ItemGroup>
       <_HuskCompilerFile Include="$(_HuskCompilerOutput)**" Exclude="$(_HuskCompilerOutput)*.runtimeconfig.json" />
       <TfmSpecificPackageFile Include="@(_HuskCompilerFile)" PackagePath="tasks/$(TargetFramework)/%(RecursiveDir)%(Filename)%(Extension)" />

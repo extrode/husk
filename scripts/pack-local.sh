@@ -9,7 +9,8 @@ feed="${HUSK_FEED:-$root/tmp/feed}"
 for project in Extrode.Husk.Build Extrode.Husk.AspNetCore; do
   dotnet pack "$root/src/$project" -c Release -o "$feed" -p:Version="$version" -v q -nologo
 done
-if [ -d "$root/samples/svelte-app" ]; then
+# The sample's nuget.config names tmp/feed, so another feed has nothing to re-restore.
+if [ -z "${HUSK_FEED:-}" ] && [ -d "$root/samples/svelte-app" ]; then
   dotnet restore "$root/samples/svelte-app" --force-evaluate -v q
 fi
 echo "packed Extrode.Husk.Build and Extrode.Husk.AspNetCore $version into $feed"

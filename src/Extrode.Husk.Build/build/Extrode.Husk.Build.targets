@@ -73,7 +73,7 @@
        folder only into projects that reference it directly, so the project references both. -->
   <Target Name="_HuskCheckPare" BeforeTargets="BeforeBuild" Condition="'$(PareTaskAssembly)' == ''">
     <Error Code="HUSK002"
-           Text="Husk needs Extrode.Pare.Build: add &lt;PackageReference Include=&quot;Extrode.Pare.Build&quot; Version=&quot;0.6.0&quot; /&gt; to $(MSBuildProjectFile) beside Extrode.Husk.Build." />
+           Text="Husk needs Extrode.Pare.Build: add &lt;PackageReference Include=&quot;Extrode.Pare.Build&quot; Version=&quot;0.6.0&quot; /&gt; (0.6.0 or later) to $(MSBuildProjectFile) beside Extrode.Husk.Build." />
   </Target>
 
   <Target Name="_HuskComputePaths">
