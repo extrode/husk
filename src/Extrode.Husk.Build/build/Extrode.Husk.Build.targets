@@ -69,6 +69,13 @@
            Text="Husk cannot build on $(_HuskRid): its compiler runs on V8, which ships for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64 and linux-arm64 (glibc) only. Build on one of those; the output runs anywhere." />
   </Target>
 
+  <!-- Pare's targets do the placing, serving and publishing, and NuGet imports a package's build/
+       folder only into projects that reference it directly, so the project references both. -->
+  <Target Name="_HuskCheckPare" BeforeTargets="BeforeBuild" Condition="'$(PareTaskAssembly)' == ''">
+    <Error Code="HUSK002"
+           Text="Husk needs Extrode.Pare.Build: add &lt;PackageReference Include=&quot;Extrode.Pare.Build&quot; Version=&quot;0.6.0&quot; /&gt; to $(MSBuildProjectFile) beside Extrode.Husk.Build." />
+  </Target>
+
   <Target Name="_HuskComputePaths">
     <PropertyGroup>
       <_HuskObjRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'husk'))</_HuskObjRoot>
