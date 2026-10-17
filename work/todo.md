@@ -17,7 +17,6 @@ Small, clear, and could be picked up without a design decision.
 
 Real, but needs a decision, a dependency, or more information first. Say which.
 
-- Evaluate `svelte-check-native` 1.9.1 against `svelte-check` on saaaat.com's 78 components (decision 005; needs package approval).
 - Fetch dependencies' `.d.ts` for type checking without a package manager runtime (decision 005).
 - Why ClearScript's V8 is 1.4-1.6x slower than Node on the same bundle: V8 version, build flags.
   Needs nothing; a profiling session.
