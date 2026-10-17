@@ -47,16 +47,16 @@ point).
 - R5 The CSS of every component is joined into one stylesheet for the app, which a page links.
 - R6 Husk generates an import map for the runtime and the compiled modules that a page includes,
   so the output runs in Chromium, Firefox and WebKit as served.
-- R7 Each compiled output has a source map, so browser devtools show the original source.
+- R7 Each compiled module has a source map, so browser devtools show the original source.
 - R8 A build compiles only the sources changed since the last build; a build with no changes
   compiles nothing.
 - R9 A clean build compiles in parallel across cores.
 - R10 Successive builds in one session reuse the loaded compiler, so an incremental build does not
   pay the compiler's start-up again.
-- R11 In Development, saving a component or rune module recompiles it in the running app, the
-  stylesheet is updated, and an open browser reloads.
-- R12 In Development, components compile with the compiler's development checks on; outside
-  Development, without them.
+- R11 In Development under `dotnet watch`, saving a component or rune module recompiles it in the
+  running app, the stylesheet is updated, and an open browser reloads.
+- R12 A Debug build, and the Development app, compile with the compiler's development checks on;
+  a Release build and publish compile without them.
 - R13 A component with a compile error fails the build with an error naming the file, line and
   column and the compiler's message; on save in Development it is logged and the previous output
   stays.
@@ -85,9 +85,9 @@ point).
   takes less time than one engine compiling them one after another.
 - R10: Given a build that just ran, when one component changes and it builds again in the same
   session, then that build adds no more than about 50 ms to compile it.
-- R11: Given the sample running in Development with a browser open, when a component's markup or
+- R11: Given the sample running under `dotnet watch` with a browser open, when a component's markup or
   style is saved, then the browser shows the change within about a second, with no manual refresh.
-- R12: Given the sample, when run in Development, then the compiler's development warnings appear
+- R12: Given the sample, when built Debug and run, then the compiler's development warnings appear
   in the browser console; when published, then the output carries no development code.
 - R13: Given a component with a syntax error, when built, then the build fails with
   `File.svelte(line,col): error ...`; when saved in Development, then the error is logged and the
@@ -102,8 +102,5 @@ point).
 - L3 (R13): a component that fails to compile never replaces its last good output.
 
 ## Open questions
-- (for /plan) R10's "session": a reused MSBuild node keeps it across builds, `dotnet watch` keeps
-  it in the app process; which of those the 50 ms target binds to.
-- (for /plan) R11's reload channel and how the page learns of a save.
-- (for /plan) How R4's Node reference runs are produced for the test corpus without making Node a
-  build dependency (research only, per AGENTS.md).
+- None. The three design questions raised here (R10's session, R11's reload channel, R4's
+  Node reference) are answered in [001-plan.md](001-plan.md).
