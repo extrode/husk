@@ -40,4 +40,11 @@ tick.
 - [x] T3 Open decisions answered (browser floor 003, first app 004, type checking 005, musl 006) — done when: one decision record each in `docs/decisions/` (2026-10-17)
 - [x] T4 Pare extension point for compile-to-JavaScript steps, in `../pare` — done when: released in a Pare version and documented there (2026-10-17: released in Pare 0.6.0, GitHub prerelease `v0.6.0`; README "Other compilers")
 - [x] T5 `Extrode.Husk.Build`: compile `.svelte` on `dotnet build`, incremental, warm engine, CSS, dev mode — done when: a sample builds and runs in three browsers. Spec 001: tasks in `docs/specs/001-husk-build/001-tasks.md` (2026-10-17: merged to dev, unpublished)
-- [ ] T6 Import map, content-hashed output, modulepreload — done when: the sample deploys to Cloudflare through the assets upload API
+- [ ] T6 Content-hashed output, import map pointing at it, modulepreload — done when: the sample builds with hashed names, browser tests pass in three browsers, L001 to L003 hold. Plan: `docs/plans/2026-10-30-001-t6-hashed-output-and-deploy.md`
+- [ ] T7 Deploy command for the Workers assets upload API — done when: tests against a fake server pin the three-step upload and skip unchanged files
+- [ ] T8 Cloudflare limits (files per deployment, file size) against the sample, saaaat web and riwalqalb frontend output — done when: numbers are in `docs/architecture/002-cloudflare-and-deno.md`
+- [ ] T9 Backlog bug batch from `work/todo.md` (HuskPage glob, mtime cache, case compare, free-port race, shared package folder) — done when: each has a test that failed before its fix
+- [ ] T10 CI workflows for macOS, Linux, Windows — done when: `.github/workflows/ci.yml` runs build, tests and `laws-check.js --run` (written, not run)
+- [ ] T11 Public-readiness docs — done when: `docs/release.md` lists the release steps, `CHANGELOG.md` has a 0.1.0 draft
+- [ ] T12 saaaat client router and `$app/*` shims — done when: a spec exists in `docs/specs/` (milestone 2)
+- [ ] T13 User-only: license, Cloudflare token and real deploy, NuGet publish and Pare release, repo visibility, test approach without jsdom — done when: the user has answered or done each
