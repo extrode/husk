@@ -15,8 +15,8 @@ direct reference; without Pare the build stops with HUSK002):
 ```xml
 <ItemGroup>
   <PackageReference Include="Extrode.Pare.Build" Version="0.6.0" PrivateAssets="all" />
-  <PackageReference Include="Extrode.Husk.Build" Version="0.1.0" PrivateAssets="all" />
-  <PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0" />
+  <PackageReference Include="Extrode.Husk.Build" Version="0.1.0-preview.1" PrivateAssets="all" />
+  <PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-preview.1" />
 </ItemGroup>
 ```
 

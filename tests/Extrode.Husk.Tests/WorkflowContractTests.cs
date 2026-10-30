@@ -44,6 +44,14 @@ public sealed class WorkflowContractTests
     }
 
     [Fact]
+    public void A_0_x_version_carries_a_prerelease_suffix_so_nuget_org_and_GitHub_agree()
+    {
+        string props = File.ReadAllText(Path.Combine(RepoPaths.Root, "Directory.Build.props"));
+
+        Assert.Matches(@"<Version>0\.\d+\.\d+-[0-9A-Za-z.]+</Version>", props);
+    }
+
+    [Fact]
     public void Release_publishes_only_for_a_tag_push_and_only_when_the_pinned_Pare_is_on_nuget_org()
     {
         string job = Job(Workflow("release.yml"), "release");
