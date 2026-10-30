@@ -28,7 +28,7 @@ public sealed class TempProject : IDisposable
 
     public string Dir => _dir.FullName;
 
-    public string P(string relative) => Path.Combine(_dir.FullName, relative);
+    public string P(string relative) => Path.Combine(_dir.FullName, relative.Replace('/', Path.DirectorySeparatorChar));
 
     // Windows keeps a killed app's .exe locked for a moment after the kill returns.
     public void Dispose()

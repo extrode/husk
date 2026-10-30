@@ -20,7 +20,7 @@ public sealed class HuskDevelopmentTests : IDisposable
     private readonly DirectoryInfo _dir = Directory.CreateTempSubdirectory("husk-dev-");
     private readonly LogSink _log = new();
 
-    private string P(string relative) => Path.Combine(_dir.FullName, relative);
+    private string P(string relative) => Path.Combine(_dir.FullName, relative.Replace('/', Path.DirectorySeparatorChar));
     private string HuskMap => P("Extrode.Husk.development.json");
 
     public void Dispose()
@@ -330,7 +330,7 @@ public sealed class HuskDevelopmentTests : IDisposable
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-            _lines.Enqueue((logLevel, formatter(state, exception)));
+            _lines.Enqueue((logLevel, formatter(state, exception).Replace('\\', '/')));
 
         public IEnumerable<string> Lines(LogLevel level) => _lines.Where(l => l.Level == level).Select(l => l.Text);
         public int Count(LogLevel level, string contains) => Lines(level).Count(l => l.Contains(contains, StringComparison.Ordinal));
