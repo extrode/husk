@@ -47,4 +47,4 @@ tick.
 - [ ] T10 CI workflows for macOS, Linux, Windows — done when: `.github/workflows/ci.yml` runs build, tests and `laws-check.js --run` (written, not run)
 - [ ] T11 Public-readiness docs — done when: `docs/release.md` lists the release steps, `CHANGELOG.md` has a 0.1.0 draft
 - [ ] T12 saaaat client router and `$app/*` shims — done when: a spec exists in `docs/specs/` (milestone 2)
-- [ ] T13 User-only: license, Cloudflare token and real deploy, NuGet publish and Pare release, repo visibility, test approach without jsdom — done when: the user has answered or done each
+- [ ] T13 User-only: (license done 2026-10-30: ISL-P 1.2 + ISL-OE 1.2), Cloudflare token and real deploy, NuGet publish and Pare release, repo visibility, test approach without jsdom — done when: the user has answered or done each

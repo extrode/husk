@@ -162,6 +162,25 @@ public sealed class PackageTests(PackedFeed feed)
                 .Order(StringComparer.Ordinal));
     }
 
+    [Theory]
+    [InlineData("Extrode.Husk.Build")]
+    [InlineData("Extrode.Husk.AspNetCore")]
+    public void Both_packages_declare_ISL_P_and_carry_the_license_text_and_notice(string id)
+    {
+        var entries = Entries(id);
+        using var zip = ZipFile.OpenRead(feed.Package(id));
+        string nuspec = new StreamReader(zip.GetEntry(id + ".nuspec")!.Open()).ReadToEnd();
+
+        Assert.Contains("<license type=\"file\">LICENSE.md</license>", nuspec, StringComparison.Ordinal);
+        Assert.Contains("<repository type=\"git\" url=\"https://github.com/extrode/husk\"", nuspec, StringComparison.Ordinal);
+        Assert.Contains("LICENSE.md", entries);
+        Assert.Contains("README.md", entries);
+        using var license = new StreamReader(zip.GetEntry("LICENSE.md")!.Open());
+        Assert.StartsWith("# Islamic Software License - Permissive (ISL-P), Version 1.2", license.ReadToEnd(), StringComparison.Ordinal);
+        using var notice = new StreamReader(zip.GetEntry("NOTICE.md")!.Open());
+        Assert.Contains("LicenseRef-ISL-P-1.2 WITH AdditionRef-ISL-OE-1.2", notice.ReadToEnd(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void The_runtime_package_carries_no_V8()
     {
