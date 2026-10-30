@@ -49,3 +49,4 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - A marked page with invalid UTF-8 is decoded with replacement chars, changing bytes outside the marker (build and dev).
 - SampleWatchTests.Saves_reload_the_page_with_the_change_and_a_broken_save_keeps_it times out waiting for h1 "Husk edited" on base 0b24e5e and after T6; find out why (dotnet watch reload in Chrome) before relying on T21.
 - CI (written, never run; review ccb60ff..4460a6a): macOS Safari theories need `safaridriver --enable` on the runner and no step runs it; Windows needs Git's `sh` on PATH and MSYS path conversion for scripts/pack-local.sh. Confirm on the first run.
+- Release: add the required reviewer to the `packages` environment once extrode/husk is public (private plan rejects it): gh api -X PUT repos/extrode/husk/environments/packages -F 'reviewers[][type]=User' -F "reviewers[][id]=$(gh api user --jq .id)"
