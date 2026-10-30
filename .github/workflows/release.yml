@@ -1,0 +1,106 @@
+# Publishes Extrode.Husk.Build and Extrode.Husk.AspNetCore to nuget.org and attaches them to a
+# GitHub Release. Triggered by version tags only:
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# The tag must match <Version> in Directory.Build.props; the guard step fails the run otherwise.
+#
+# Trusted publishing (OIDC), not a stored key, as in jauntyq (decision 008). The nuget.org policy
+# names this file, release.yml, and the repository extrode/husk; the variable NUGET_USER is the
+# nuget.org profile name. The job below declares the environment `packages`, whose required
+# reviewer (Settings > Environments) is the gate between a tag and a published package.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  # Dispatch only proves the token exchange works, so the policy can be checked (and a new
+  # policy kept active, nuget.org asks for a first use within 7 days) before a release needs it.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-trusted-publishing:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: packages
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: NuGet.org login (OIDC, short-lived key)
+        id: nuget-login
+        # Pinned by digest: this step mints the publishing key. v1 = 8d19675.
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Report
+        run: |
+          if [ -n "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" ]; then
+            echo "::notice title=Trusted publishing works::nuget.org issued a short-lived key."
+          else
+            echo "::error title=No key issued::Check the policy's workflow file name, repository and package pattern."
+            exit 1
+          fi
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: packages
+    permissions:
+      contents: write   # gh release create
+      id-token: write   # NuGet/login
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Guard - tag matches Directory.Build.props Version
+        run: |
+          PROP_VERSION=$(sed -n 's/.*<Version>\(.*\)<\/Version>.*/\1/p' Directory.Build.props | head -1)
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "props=$PROP_VERSION tag=$TAG_VERSION"
+          [ "$PROP_VERSION" = "$TAG_VERSION" ] || { echo "::error::tag $GITHUB_REF_NAME != <Version>$PROP_VERSION"; exit 1; }
+
+      - name: Test
+        run: dotnet test --solution Husk.slnx -c Release
+
+      - name: Pack
+        run: |
+          for project in Extrode.Husk.Build Extrode.Husk.AspNetCore; do
+            dotnet pack "src/$project" -c Release -o dist/packages
+          done
+
+      - name: NuGet.org login (OIDC, short-lived key)
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      - name: Push to NuGet.org
+        # --skip-duplicate: nuget.org rejects a re-push of a version, so a re-run of a partly
+        # failed release would otherwise stop at the first package that already landed.
+        run: |
+          for pkg in dist/packages/*.nupkg; do
+            dotnet nuget push "$pkg" \
+              --source "https://api.nuget.org/v3/index.json" \
+              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --skip-duplicate
+          done
+
+      - name: GitHub Release with the packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in
+            v0.*|*-*) prerelease="--prerelease" ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" dist/packages/* --generate-notes --verify-tag $prerelease
