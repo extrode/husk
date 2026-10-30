@@ -48,7 +48,7 @@ public sealed class StaticServer : IDisposable
             // Browsers refuse a module script served without a JavaScript type.
             response.ContentType = Path.GetExtension(file) switch
             {
-                ".js" => "text/javascript",
+                ".js" or ".mjs" => "text/javascript",
                 ".css" => "text/css",
                 ".map" or ".json" => "application/json",
                 _ => "text/html; charset=utf-8",

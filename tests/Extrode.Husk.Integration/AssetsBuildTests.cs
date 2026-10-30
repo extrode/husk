@@ -76,7 +76,7 @@ public sealed class AssetsBuildTests
         Assert.Empty(Directory.EnumerateFiles(project.P("out"), "*.svelte", SearchOption.AllDirectories));
         Assert.Empty(Directory.EnumerateFiles(project.P("out"), "*.svelte.ts", SearchOption.AllDirectories));
         var imports = JsonDocument.Parse(File.ReadAllText(project.P("out/wwwroot/_husk/importmap.json"))).RootElement.GetProperty("imports");
-        Assert.Equal("/_husk/esm-env/false.js", imports.GetProperty("esm-env/development").GetString());
+        Assert.Matches(@"^/_husk/esm-env/false\.[0-9a-f]{10}\.js$", imports.GetProperty("esm-env/development").GetString());
 
         Assert.Equal(0, project.Build().Exit);
         var map = JsonDocument.Parse(project.Read("bin/Debug/net10.0/Extrode.Husk.development.json")).RootElement;

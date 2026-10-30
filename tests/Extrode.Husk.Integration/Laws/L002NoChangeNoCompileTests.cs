@@ -3,7 +3,8 @@ using System.Text.RegularExpressions;
 namespace Extrode.Husk.Integration.Laws;
 
 /// <summary>L002: after any sequence of builds, a build with nothing changed compiles nothing and
-/// leaves every output, husk.css and importmap.json with its bytes and last-write time.</summary>
+/// leaves every output, husk.css and importmap.json with its bytes and last-write time, hashed
+/// copies included.</summary>
 [Trait("Law", "L002")]
 public sealed partial class L002NoChangeNoCompileTests
 {
@@ -16,9 +17,12 @@ public sealed partial class L002NoChangeNoCompileTests
     private static void Later(TempProject project, string relative) =>
         File.SetLastWriteTimeUtc(project.P(relative), DateTime.UtcNow);
 
-    [Fact]
-    public void After_each_step_of_a_random_sequence_a_build_with_no_change_compiles_nothing()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void After_each_step_of_a_random_sequence_a_build_with_no_change_compiles_nothing(bool hashNames)
     {
+        string property = "-p:HuskHashNames=" + hashNames;
         using var project = new TempProject();
         project.Project();
         foreach (var file in new[] { "Styled.svelte", "Plain.svelte", "clock.svelte.js", "counter.svelte.ts", "format.ts" })
@@ -35,11 +39,11 @@ public sealed partial class L002NoChangeNoCompileTests
         var random = new Random(2002);
         var applied = new List<string> { "first build" };
 
-        Assert.Equal(0, project.Build().Exit);
+        Assert.Equal(0, project.Build(property).Exit);
         for (int i = 0; i < 6; i++)
         {
             var before = Snapshot(project);
-            var (exit, output) = project.Build();
+            var (exit, output) = project.Build(property);
 
             Assert.True(exit == 0, output);
             Assert.True(Compiled(output) == 0, $"after {string.Join(", ", applied)}: a build with nothing changed compiled {Compiled(output)}\n{output}");
@@ -53,9 +57,11 @@ public sealed partial class L002NoChangeNoCompileTests
                 step = steps[^1];
             step.Apply();
             applied.Add(step.Name);
-            (exit, output) = project.Build();
+            (exit, output) = project.Build(property);
             Assert.True(exit == 0, output);
         }
+        if (hashNames)
+            Assert.NotEmpty(Directory.EnumerateFiles(project.P(TempProject.HuskOut + "hashed"), "*.js", SearchOption.AllDirectories));
     }
 
     private static int? Compiled(string output) =>

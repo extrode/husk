@@ -1,8 +1,9 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Extrode.Husk.Integration;
 
-public sealed class PageBuildTests
+public sealed partial class PageBuildTests
 {
     private const string Marked = "<!doctype html>\n<head><script type=\"importmap\" data-husk></script></head>\n<body></body>\n";
     private const string Unmarked = "<!doctype html>\r\n<p>plain é</p>";
@@ -97,9 +98,68 @@ public sealed class PageBuildTests
         byte[] plain = await http.GetByteArrayAsync("docs/plain.html", TestContext.Current.CancellationToken);
 
         var imports = InlinedMap(page);
-        Assert.Equal("/Plain.svelte.js", imports.GetProperty("/Plain.svelte").GetString());
-        Assert.Equal("/_husk/esm-env/false.js", imports.GetProperty("esm-env/development").GetString());
+        Assert.Matches(@"^/Plain\.svelte\.[0-9a-f]{10}\.js$", imports.GetProperty("/Plain.svelte").GetString());
+        Assert.Matches(@"^/_husk/esm-env/false\.[0-9a-f]{10}\.js$", imports.GetProperty("esm-env/development").GetString());
         Assert.EndsWith("</script></head>\n<body></body>\n", page);
         Assert.Equal(File.ReadAllBytes(project.P("wwwroot/docs/plain.html")), plain);
     }
+
+    private const string Entry = "import { mount } from 'svelte';\nimport Plain from './Plain.svelte';\n\nmount(Plain, { target: document.body, props: { label: 'x' } });\n";
+    private const string WithEntry = "<!doctype html>\n<head>\n  <script type=\"importmap\" data-husk></script>\n  <script type=\"module\" src=\"/main.js\"></script>\n</head>\n";
+
+    [Fact]
+    public async Task A_release_publish_serves_hashed_copies_that_the_map_the_entry_and_the_preloads_name()
+    {
+        using var project = new TempProject();
+        project.Project();
+        project.Fixture("wwwroot/Plain.svelte");
+        project.Put("wwwroot/main.ts", Entry);
+        project.Put("wwwroot/index.html", WithEntry);
+        var (exit, output) = project.Run("publish", "-nologo", "-c", "Release", "-o", "out", "-nodeReuse:false", "--disable-build-servers");
+        Assert.True(exit == 0, output);
+
+        using var server = new StaticServer(project.P("out/wwwroot"));
+        using var http = new HttpClient { BaseAddress = server.Address };
+        string page = await http.GetStringAsync("index.html", TestContext.Current.CancellationToken);
+        var imports = InlinedMap(page);
+        string main = imports.GetProperty("/main.js").GetString()!;
+        string plain = imports.GetProperty("/Plain.svelte").GetString()!;
+        Assert.Matches(@"^/main\.[0-9a-f]{10}\.js$", main);
+        Assert.Contains($"<script type=\"module\" src=\"{main}\"></script>", page);
+        Assert.Equal(plain, imports.GetProperty("/Plain.svelte.js").GetString());
+        Assert.Equal(plain, imports.GetProperty("/Plain").GetString());
+        // The copies are the compiled bytes: only the name differs.
+        Assert.Equal(File.ReadAllBytes(project.P("out/wwwroot/Plain.svelte.js")), await http.GetByteArrayAsync(plain.TrimStart('/'), TestContext.Current.CancellationToken));
+        Assert.Equal(File.ReadAllBytes(project.P("out/wwwroot/main.js")), await http.GetByteArrayAsync(main.TrimStart('/'), TestContext.Current.CancellationToken));
+
+        var preloads = PreloadLine().Matches(page).Select(m => m.Groups[1].Value).ToList();
+        Assert.Equal([main, imports.GetProperty("svelte").GetString()!], preloads[..2]);
+        Assert.Contains(plain, preloads);
+        Assert.Contains(imports.GetProperty("svelte/internal/client").GetString()!, preloads);
+        Assert.All(preloads, p => Assert.Matches(@"\.[0-9a-f]{10}\.m?js$", p));
+        foreach (var preload in preloads)
+            Assert.True((await http.GetAsync(preload.TrimStart('/'), TestContext.Current.CancellationToken)).IsSuccessStatusCode, preload);
+    }
+
+    [Fact]
+    public void A_debug_build_keeps_plain_names_and_preloads_nothing()
+    {
+        using var project = new TempProject();
+        project.Project();
+        project.Fixture("wwwroot/Plain.svelte");
+        project.Put("wwwroot/main.ts", Entry);
+        project.Put("wwwroot/index.html", WithEntry);
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        string page = project.Read(TempProject.PareOut + "index.html");
+        Assert.Equal("/Plain.svelte.js", InlinedMap(page).GetProperty("/Plain.svelte").GetString());
+        Assert.Contains("<script type=\"module\" src=\"/main.js\"></script>", page);
+        Assert.DoesNotContain("modulepreload", page);
+        Assert.False(Directory.Exists(project.P(TempProject.HuskOut + "hashed")) && Directory.EnumerateFiles(project.P(TempProject.HuskOut + "hashed"), "*", SearchOption.AllDirectories).Any());
+    }
+
+    [GeneratedRegex("<link rel=\"modulepreload\" href=\"([^\"]+)\">")]
+    private static partial Regex PreloadLine();
 }

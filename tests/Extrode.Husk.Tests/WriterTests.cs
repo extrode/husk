@@ -99,4 +99,23 @@ public sealed class ImportMapWriterTests
         var keys = JsonNode.Parse(forward)!["imports"]!.AsObject().Select(e => e.Key).ToList();
         Assert.Equal(keys.Order(StringComparer.Ordinal), keys);
     }
+
+    [Fact]
+    public void With_hashed_names_every_key_and_the_plain_url_point_at_the_hashed_url()
+    {
+        var hashed = new Dictionary<string, string>
+        {
+            ["/x/Child.svelte.js"] = "/x/Child.svelte.aaaaaaaaaa.js",
+            ["/_husk/svelte/src/internal/client/index.js"] = "/_husk/svelte/src/internal/client/index.bbbbbbbbbb.js",
+        };
+
+        var imports = JsonNode.Parse(ImportMapWriter.Write(Runtime, "/_husk/", true, [new("/x/Child.svelte", "/x/Child.svelte.js")], hashed))!["imports"]!.AsObject();
+
+        Assert.Equal("/x/Child.svelte.aaaaaaaaaa.js", (string?)imports["/x/Child.svelte"]);
+        Assert.Equal("/x/Child.svelte.aaaaaaaaaa.js", (string?)imports["/x/Child"]);
+        Assert.Equal("/x/Child.svelte.aaaaaaaaaa.js", (string?)imports["/x/Child.svelte.js"]);
+        Assert.Equal("/_husk/svelte/src/internal/client/index.bbbbbbbbbb.js", (string?)imports["svelte/internal/client"]);
+        Assert.Equal("/_husk/svelte/src/internal/client/index.bbbbbbbbbb.js", (string?)imports["/_husk/svelte/src/internal/client/index.js"]);
+        Assert.Equal("/_husk/svelte/src/index-client.js", (string?)imports["svelte"]);
+    }
 }

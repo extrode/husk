@@ -28,10 +28,13 @@ public sealed class RuntimeImports(IReadOnlyDictionary<string, string> imports, 
 /// <summary>Writes the import map. Compiled code keeps the specifiers the compiler wrote
 /// (<c>./Child.svelte</c>, <c>svelte/internal/client</c>), so the map resolves them:
 /// each runtime specifier to its file under the runtime base URL, and each source URL, with its
-/// extension and without its last one, to its output URL. Keys are sorted ordinally.</summary>
+/// extension and without its last one, to its output URL. Keys are sorted ordinally. With
+/// <paramref name="hashed"/> (plain URL to hashed URL), every value it names becomes the hashed URL,
+/// and each plain URL is a key too, for the relative imports between modules.</summary>
 public static class ImportMapWriter
 {
-    public static string Write(RuntimeImports runtime, string runtimeBase, bool dev, IEnumerable<ImportMapSource> sources)
+    public static string Write(RuntimeImports runtime, string runtimeBase, bool dev, IEnumerable<ImportMapSource> sources,
+        IReadOnlyDictionary<string, string>? hashed = null)
     {
         var imports = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var (specifier, file) in runtime.Imports)
@@ -49,6 +52,13 @@ public static class ImportMapWriter
         foreach (var group in bare)
             if (group.Select(s => s.OutputUrl).Distinct(StringComparer.Ordinal).Count() == 1)
                 imports[group.Key] = group.First().OutputUrl;
+        if (hashed is not null)
+        {
+            foreach (var (key, value) in imports.ToList())
+                imports[key] = hashed.GetValueOrDefault(value, value);
+            foreach (var (plain, url) in hashed)
+                imports.TryAdd(plain, url);
+        }
 
         var map = new JsonObject();
         foreach (var (key, value) in imports)

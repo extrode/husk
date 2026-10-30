@@ -28,4 +28,57 @@ public sealed class PageWriterTests
     public void Only_the_first_marker_is_filled() =>
         Assert.Equal("<script type=importmap data-husk>{}</script><script type=importmap data-husk></script>",
             PageWriter.Inline("<script type=importmap data-husk></script><script type=importmap data-husk></script>", "{}\n"));
+
+    private const string HashedMap = """
+        {
+          "imports": {
+            "/main.js": "/main.m.js",
+            "/App.svelte": "/App.svelte.a.js",
+            "svelte": "/_husk/index.s.js"
+          }
+        }
+
+        """;
+
+    private const string Graph = """
+        {
+          "/main.m.js": ["/_husk/index.s.js", "/App.svelte.a.js"],
+          "/App.svelte.a.js": ["/_husk/index.s.js"],
+          "/_husk/index.s.js": [],
+          "/unreached.u.js": []
+        }
+        """;
+
+    [Fact]
+    public void With_a_graph_the_entry_points_at_its_hashed_url_and_what_it_reaches_is_preloaded()
+    {
+        const string Page = "<head>\n  <script type=\"importmap\" data-husk></script>\n  <script type=\"module\" src=\"main.js\"></script>\n</head>";
+
+        string page = PageWriter.Inline(Page, HashedMap, "/", Graph)!;
+
+        Assert.Equal($"""
+            <head>
+              <script type="importmap" data-husk>{HashedMap.TrimEnd('\n')}</script>
+              <link rel="modulepreload" href="/main.m.js">
+              <link rel="modulepreload" href="/_husk/index.s.js">
+              <link rel="modulepreload" href="/App.svelte.a.js">
+              <script type="module" src="/main.m.js"></script>
+            </head>
+            """, page);
+    }
+
+    [Fact]
+    public void With_a_graph_an_inline_module_script_s_imports_are_preloaded_and_its_text_kept()
+    {
+        const string Page = "<script type=importmap data-husk></script><script type=module>import App from '/App.svelte';</script><script src=\"/main.js\"></script>";
+
+        Assert.Equal(
+            $"<script type=importmap data-husk>{HashedMap.TrimEnd('\n')}</script>\n<link rel=\"modulepreload\" href=\"/App.svelte.a.js\">\n"
+            + "<link rel=\"modulepreload\" href=\"/_husk/index.s.js\"><script type=module>import App from '/App.svelte';</script><script src=\"/main.js\"></script>",
+            PageWriter.Inline(Page, HashedMap, "/", Graph));
+    }
+
+    [Fact]
+    public void With_a_graph_a_page_without_the_marker_is_left_alone() =>
+        Assert.Null(PageWriter.Inline("<script type=module src=/main.js></script>", HashedMap, "/", Graph));
 }

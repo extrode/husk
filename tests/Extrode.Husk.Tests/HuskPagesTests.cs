@@ -75,6 +75,27 @@ public sealed class HuskPagesTests : IDisposable
     }
 
     [Fact]
+    public void With_a_graph_a_page_below_a_base_path_preloads_what_its_relative_entry_reaches()
+    {
+        Directory.CreateDirectory(P("docs"));
+        File.WriteAllText(P("docs/a.html"), "<script type=importmap data-husk></script><script type=module src=\"../main.js\"></script>");
+        File.WriteAllText(P("importmap.json"), "{\"imports\":{\"/app/main.js\":\"/app/main.h.js\"}}\n");
+        File.WriteAllText(P("modulegraph.json"), "{\"/app/main.h.js\":[]}\n");
+
+        Assert.True(new HuskPages
+        {
+            BuildEngine = new FakeBuildEngine(),
+            Pages = [new TaskItem(P("docs/a.html"), new Dictionary<string, string> { ["PareOutputPath"] = P("out/docs/a.html"), ["PareRelativePath"] = "docs/a.html" })],
+            ImportMap = P("importmap.json"),
+            Graph = P("modulegraph.json"),
+            BasePath = "app",
+        }.Execute());
+
+        Assert.Equal("<script type=importmap data-husk>{\"imports\":{\"/app/main.js\":\"/app/main.h.js\"}}</script>\n<link rel=\"modulepreload\" href=\"/app/main.h.js\">"
+            + "<script type=module src=\"/app/main.h.js\"></script>", File.ReadAllText(P("out/docs/a.html")));
+    }
+
+    [Fact]
     public void A_missing_import_map_is_named_as_the_cause()
     {
         var engine = new FakeBuildEngine();
