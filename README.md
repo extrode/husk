@@ -1,5 +1,9 @@
 # Husk
 
+<p align="center">
+  <img src="docs/assets/logo/husk-mark.svg" alt="Husk" width="160">
+</p>
+
 Svelte for .NET. No Node.
 
 I wanted to write Svelte components in an ASP.NET Core app without putting a second toolchain on

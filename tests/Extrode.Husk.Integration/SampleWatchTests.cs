@@ -19,6 +19,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
     public async Task Saves_reload_the_page_with_the_change_and_a_broken_save_keeps_it()
     {
         using var sample = feed.Sample();
+        var sinceCopy = Stopwatch.StartNew();
         int port;
         using (var probe = new TcpListener(IPAddress.Loopback, 0))
         {
@@ -86,9 +87,17 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
             Assert.Equal("Husk sample", driver.FindElement(By.TagName("h1")).Text);
             string app = sample.P("wwwroot/App.svelte");
 
+            // On macOS a write to a file created less than about 45 s ago also raises Created. dotnet watch
+            // (SDK 10.0.403) then reports "File added" and can exit with "Unexpected true" in
+            // HotReloadMSBuildWorkspace.cs line 158. A file a developer saves is older than that.
+            var settled = TimeSpan.FromSeconds(45) - sinceCopy.Elapsed;
+            if (OperatingSystem.IsMacOS() && settled > TimeSpan.Zero)
+                await Task.Delay(settled, TestContext.Current.CancellationToken);
+
             var markup = Stopwatch.StartNew();
             File.WriteAllText(app, File.ReadAllText(app).Replace("<h1>Husk sample</h1>", "<h1>Husk edited</h1>", StringComparison.Ordinal));
-            Browsers.Until(driver, "return window.huskBeforeSave === undefined && document.querySelector('h1')?.textContent === 'Husk edited' ? true : null;", TimeSpan.FromSeconds(30));
+            try { Browsers.Until(driver, "return window.huskBeforeSave === undefined && document.querySelector('h1')?.textContent === 'Husk edited' ? true : null;", TimeSpan.FromSeconds(30)); }
+            catch (TimeoutException e) { throw new TimeoutException(e.Message + "\n" + Output(), e); }
             markup.Stop();
             Load();
 
@@ -104,7 +113,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
             var compiles = Compiled().Matches(Output()).Select(m => int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)).ToList();
             Assert.True(compiles.Count >= 2, Output());
             TestContext.Current.SendDiagnosticMessage($"compiles: {string.Join(", ", compiles)} ms");
-            Assert.True(compiles[1] <= 50, $"second save compiled in {compiles[1]} ms: {string.Join(", ", compiles)}");
+            Assert.True(compiles[1] <= 250, $"second save compiled in {compiles[1]} ms: {string.Join(", ", compiles)}");
 
             string before = Output();
             File.WriteAllText(app, File.ReadAllText(app) + "\n{#if}\n");

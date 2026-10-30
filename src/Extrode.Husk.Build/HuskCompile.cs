@@ -55,7 +55,7 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
         }
         catch (Exception e)
         {
-            Log.LogError(null, "HUSK100", null, Path.Combine(ProjectDirectory, input.Filename), 0, 0, 0, 0, "the compiler failed: " + e.Message);
+            Log.LogError(null, "HUSK100", null, Path.GetFullPath(Path.Combine(ProjectDirectory, input.Filename)), 0, 0, 0, 0, "the compiler failed: " + e.Message);
             return null;
         }
     }
