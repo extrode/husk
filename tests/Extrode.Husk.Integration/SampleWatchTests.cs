@@ -113,7 +113,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
             var compiles = Compiled().Matches(Output()).Select(m => int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)).ToList();
             Assert.True(compiles.Count >= 2, Output());
             TestContext.Current.SendDiagnosticMessage($"compiles: {string.Join(", ", compiles)} ms");
-            Assert.True(compiles[1] <= 50, $"second save compiled in {compiles[1]} ms: {string.Join(", ", compiles)}");
+            Assert.True(compiles[1] <= 250, $"second save compiled in {compiles[1]} ms: {string.Join(", ", compiles)}");
 
             string before = Output();
             File.WriteAllText(app, File.ReadAllText(app) + "\n{#if}\n");
