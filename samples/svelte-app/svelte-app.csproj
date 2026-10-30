@@ -3,13 +3,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Pare 0.6.0 reports a compiled output that keeps its source's name (index.html) as PARE200;
-         fixed on Pare's dev. Drop this line with the Pare release that carries the fix. -->
-    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);PARE200</MSBuildWarningsAsMessages>
   </PropertyGroup>
   <ItemGroup>
     <!-- Husk builds on Pare's targets, which NuGet imports only for a direct reference. -->
-    <PackageReference Include="Extrode.Pare.Build" Version="0.6.0" PrivateAssets="all" />
+    <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" PrivateAssets="all" />
     <!-- 0.1.0-*: the newest build that scripts/pack-local.sh put in tmp/feed. A consumer pins a
          release version instead. -->
     <PackageReference Include="Extrode.Husk.Build" Version="0.1.0-*" PrivateAssets="all" />

@@ -17,7 +17,7 @@ V8, so it does exactly that. You save a component, `dotnet watch` reloads the pa
 You need the .NET 10 SDK. In a web project:
 
 ```sh
-dotnet add package Extrode.Pare.Build --version 0.6.0
+dotnet add package Extrode.Pare.Build --version 0.6.1
 dotnet add package Extrode.Husk.Build --version 0.1.0-preview.1
 dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.1
 ```
@@ -79,7 +79,6 @@ scripts/pack-local.sh                       # packs into tmp/feed
 dotnet watch --project samples/svelte-app   # the sample app
 ```
 
-Until Pare 0.6.1 is on nuget.org, the Pare packages come from the `packages/` folder in this repo.
 Third-party licenses ship in the build package: [NOTICE](src/Extrode.Husk.Build/NOTICE.md).
 
 ## License

@@ -31,7 +31,6 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 
 - (nothing yet)
 - Husk build: run the `TaskHostFactory` `UsingTask` under Visual Studio's `MSBuild.exe` on Windows (spec 001 T13; not run, macOS only here).
-- Pare 0.6.0 warns PARE200 ("Delete it") on every same-name compiled output (`clock.svelte.js`, each `wwwroot/*.html` page). Fixed on pare `dev` (fix/pare200-same-name-output); Husk moves to the release that carries it.
 - Husk: `SvelteCompiler.Shared` disposes the replaced compiler while another caller may still be compiling on it (needs a refcount or deferred dispose); dev saves are serialized by Pare, so only concurrent in-proc builds can hit it
 - Husk: `CompilerBridge` compares only ClearScript.V8's version before sharing the app's ClearScript; ClearScript.Core and a compiler folder with no ClearScript.V8.dll are not checked
 - Husk: in Development an unmarked page that is not UTF-8 (UTF-16, Latin-1) is re-encoded as UTF-8 by Pare's watcher, while the build copies its bytes; IPareCompiler gets text only
@@ -50,3 +49,4 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - CI (written, never run; review ccb60ff..4460a6a): macOS Safari theories need `safaridriver --enable` on the runner and no step runs it; Windows needs Git's `sh` on PATH and MSYS path conversion for scripts/pack-local.sh. Confirm on the first run.
 - Release: add the required reviewer to the `packages` environment once extrode/husk is public (private plan rejects it): gh api -X PUT repos/extrode/husk/environments/packages -F 'reviewers[][type]=User' -F "reviewers[][id]=$(gh api user --jq .id)"
 - Pages workflow: configure-pages, upload-pages-artifact and deploy-pages are pinned by movable tag (@v6/@v5/@v5), checkout by SHA; pin by digest (review 654d521..d32db26, same in jauntyq).
+- CorpusTests (saaaat, riwalqalb) fail when the sibling checkouts lack the files the corpus lists, e.g. ../../ikhbat.org/riwalqalb.com/.worktrees/fix/whisper-window-skip/frontend/src/App.svelte is gone: make the corpus skip a missing root or read from the main checkout (seen 2026-10-30, not caused by the Pare 0.6.1 bump).
