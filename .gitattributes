@@ -1,3 +1,6 @@
+# Text is LF in the working tree on every OS: tests compare file text and newlines exactly.
+* text=auto eol=lf
+
 # Compiler inputs and vendored files are hashed byte for byte against Node's output: no CRLF.
 tests/fixtures/** -text
 third-party/** -text

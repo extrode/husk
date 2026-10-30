@@ -11,7 +11,7 @@ public sealed class HuskCompileTests : IDisposable
 
     public void Dispose() => _dir.Delete(recursive: true);
 
-    private string P(string relative) => Path.Combine(_dir.FullName, relative);
+    private string P(string relative) => Path.Combine(_dir.FullName, relative.Replace('/', Path.DirectorySeparatorChar));
 
     // The fixture copied into the project, and the items Pare would hand the task for it.
     private TaskItem[] Source(string filename)

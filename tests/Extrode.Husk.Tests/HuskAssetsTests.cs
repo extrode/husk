@@ -12,7 +12,7 @@ public sealed class HuskAssetsTests : IDisposable
 
     public void Dispose() => _dir.Delete(recursive: true);
 
-    private string P(string relative) => Path.Combine(_dir.FullName, relative);
+    private string P(string relative) => Path.Combine(_dir.FullName, relative.Replace('/', Path.DirectorySeparatorChar));
 
     private TaskItem Output(string relative, string source, string compiler = "husk", string text = "")
     {

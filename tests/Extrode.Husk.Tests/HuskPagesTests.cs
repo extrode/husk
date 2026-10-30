@@ -10,7 +10,7 @@ public sealed class HuskPagesTests : IDisposable
 
     public void Dispose() => _dir.Delete(recursive: true);
 
-    private string P(string relative) => Path.Combine(_dir.FullName, relative);
+    private string P(string relative) => Path.Combine(_dir.FullName, relative.Replace('/', Path.DirectorySeparatorChar));
 
     private bool Run(string name, byte[] page)
     {
