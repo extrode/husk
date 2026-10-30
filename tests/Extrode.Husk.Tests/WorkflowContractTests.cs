@@ -58,7 +58,9 @@ public sealed class WorkflowContractTests
 
         Assert.Contains("if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')", job, StringComparison.Ordinal);
         Assert.Contains("<PareVersion>", job, StringComparison.Ordinal);
-        Assert.True(job.IndexOf("is not on nuget.org", StringComparison.Ordinal) < job.IndexOf("dotnet nuget push", StringComparison.Ordinal));
+        int guard = job.IndexOf("is not on nuget.org", StringComparison.Ordinal);
+        Assert.True(guard >= 0);
+        Assert.True(guard < job.IndexOf("dotnet nuget push", StringComparison.Ordinal));
     }
 
     [Fact]
