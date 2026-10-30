@@ -61,6 +61,20 @@ public sealed class WorkflowContractTests
         Assert.DoesNotContain("NuGet/login", backfill, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("Extrode.Husk.Build")]
+    [InlineData("Extrode.Husk.AspNetCore")]
+    public void Both_packages_carry_the_Husk_icon(string project)
+    {
+        string props = File.ReadAllText(Path.Combine(RepoPaths.Root, "Directory.Build.props"));
+        string csproj = File.ReadAllText(Path.Combine(RepoPaths.Root, "src", project, $"{project}.csproj"));
+        string icon = Path.Combine(RepoPaths.Root, "docs", "assets", "logo", "husk-icon-128.png");
+
+        Assert.Contains("<PackageIcon>husk-icon-128.png</PackageIcon>", props, StringComparison.Ordinal);
+        Assert.Contains(@"docs\assets\logo\husk-icon-128.png"" Pack=""true"" PackagePath=""""", csproj, StringComparison.Ordinal);
+        Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, File.ReadAllBytes(icon)[..4]);
+    }
+
     [Fact]
     public void Release_refuses_a_tag_that_differs_from_the_version_in_Directory_Build_props()
     {
