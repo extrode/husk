@@ -71,6 +71,14 @@ scripts/pack-local.sh
 dotnet watch --project samples/svelte-app
 ```
 
+## License
+
+Husk is licensed under the Islamic Software License - Permissive (ISL-P) 1.2, with the Output
+Exception (ISL-OE) 1.2, the same terms as Pare: [LICENSE.md](LICENSE.md), [NOTICE.md](NOTICE.md).
+The exception lets you ship what Husk generates (the compiled modules) as part of your own app.
+These are source-available, ethically restricted licenses, not OSI-approved open source. Svelte,
+ClearScript and V8 keep their MIT and BSD licenses.
+
 ## Layout
 
 | Path | What |

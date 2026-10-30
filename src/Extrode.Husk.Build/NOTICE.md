@@ -2,6 +2,11 @@
 
 Extrode.Husk.Build, Copyright (c) 2026 Extrode (extrode.com).
 
+Licensed under the Islamic Software License - Permissive (ISL-P), Version 1.2, WITH the Islamic
+Software License - Output Exception (ISL-OE), Version 1.2. The text is in `LICENSE.md`.
+
+SPDX-License-Identifier: LicenseRef-ISL-P-1.2 WITH AdditionRef-ISL-OE-1.2
+
 This package redistributes the following third-party software, each under its own license. The
 license texts ship in the package under `third-party/`.
 

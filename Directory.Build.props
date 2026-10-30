@@ -12,5 +12,9 @@
     <Authors>Extrode</Authors>
     <Company>Extrode</Company>
     <Copyright>Copyright (c) 2026 Extrode (extrode.com)</Copyright>
+    <RepositoryUrl>https://github.com/extrode/husk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 </Project>
