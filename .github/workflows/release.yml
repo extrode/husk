@@ -7,7 +7,7 @@
 #
 # Trusted publishing (OIDC), not a stored key, as in jauntyq (decision 008). The nuget.org policy
 # names this file, release.yml, and the repository extrode/husk; the variable NUGET_USER is the
-# nuget.org profile name. The job below declares the environment `packages`, whose required
+# nuget.org profile name. Each job below declares the environment `packages`, whose required
 # reviewer (Settings > Environments) is the gate between a tag and a published package.
 name: release
 
@@ -23,7 +23,8 @@ permissions:
 
 jobs:
   verify-trusted-publishing:
-    if: github.event_name == 'workflow_dispatch'
+    # Not from a tag: that dispatch is the GitHub Packages backfill, which needs no nuget.org key.
+    if: github.event_name == 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment: packages
     permissions:
@@ -134,6 +135,17 @@ jobs:
               --skip-duplicate
           done
 
+      - name: GitHub Release with the packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in
+            v0.*|*-*) prerelease="--prerelease" ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" dist/packages/* --generate-notes --verify-tag $prerelease
+
+      # After the release exists, so a failure here leaves the release for the backfill job to read.
       - name: Push to GitHub Packages
         env:
           GH_TOKEN: ${{ github.token }}
@@ -144,13 +156,3 @@ jobs:
               --api-key "$GH_TOKEN" \
               --skip-duplicate
           done
-
-      - name: GitHub Release with the packages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          prerelease=""
-          case "$GITHUB_REF_NAME" in
-            v0.*|*-*) prerelease="--prerelease" ;;
-          esac
-          gh release create "$GITHUB_REF_NAME" dist/packages/* --generate-notes --verify-tag $prerelease
