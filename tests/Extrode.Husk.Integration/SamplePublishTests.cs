@@ -45,7 +45,7 @@ public sealed class SamplePublishTests(PackedFeed feed)
     public void Published_modules_are_Node_s_production_output()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.6.0" />
+            <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);

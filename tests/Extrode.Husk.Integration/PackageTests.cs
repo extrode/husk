@@ -43,8 +43,8 @@ public sealed class PackedFeed : IDisposable
 
     public string Package(string id) => Path.Combine(Feed.Dir, $"{id}.{Version}.nupkg");
 
-    /// <summary>A nuget.config for <paramref name="project"/>: Husk from this feed, Pare from the
-    /// repo's packages/, the rest from nuget.org, into a package folder of the project's own.</summary>
+    /// <summary>A nuget.config for <paramref name="project"/>: Husk from this feed, the rest
+    /// from nuget.org, into a package folder of the project's own.</summary>
     public void NuGetConfig(TempProject project)
     {
         Assert.True(Pack.Exit == 0, Pack.Output);
@@ -55,12 +55,10 @@ public sealed class PackedFeed : IDisposable
               <packageSources>
                 <clear />
                 <add key="husk" value="{Feed.Dir}" />
-                <add key="pare" value="{Path.Combine(TempProject.RepoRoot, "packages")}" />
                 <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
               </packageSources>
               <packageSourceMapping>
                 <packageSource key="husk"><package pattern="Extrode.Husk*" /></packageSource>
-                <packageSource key="pare"><package pattern="Extrode.Pare*" /></packageSource>
                 <packageSource key="nuget.org"><package pattern="*" /></packageSource>
               </packageSourceMapping>
             </configuration>
@@ -194,7 +192,7 @@ public sealed class PackageTests(PackedFeed feed)
     public void A_fresh_project_restores_both_from_the_feed_and_builds_a_component()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.6.0" />
+            <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);
