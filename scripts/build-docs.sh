@@ -20,6 +20,11 @@ mkdir -p "$stage"
 cp -R docs/0[0-6]-* docs/assets "$stage"/
 dotnet run --project "$tool" -- "$stage" "$out" --site-name husk
 echo "husk.extrode.com" > "$out/CNAME"
+cp docs/assets/logo/favicon.svg "$out/favicon.svg"
+# The shared Docs tool writes no favicon link, so each page gets one here.
+for page in "$out"/*.html; do
+  perl -pi -e 's|</head>|<link rel="icon" type="image/svg+xml" href="favicon.svg"></head>|' "$page"
+done
 # Swapped in only after the build succeeded, so a failed build leaves the committed site alone.
 rm -rf dist/docs-site
 mkdir -p dist
