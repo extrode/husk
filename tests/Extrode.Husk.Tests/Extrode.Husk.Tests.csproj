@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Build.Framework" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Husk.Build\Extrode.Husk.Build.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Husk.AspNetCore\Extrode.Husk.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Husk.Deploy\Extrode.Husk.Deploy.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,202 @@
+<Project>
+  <!-- Compiles Svelte through Pare's compile extension point (Pare 0.6.0). Each @(HuskComponent)
+       becomes three PareCompileSource items, outputs <name>.svelte.js, .svelte.css (empty with no
+       <style>) and .svelte.js.map; each @(HuskModule) (.svelte.ts, .svelte.js) two, <name>.js and
+       .js.map. Pare places, serves, publishes and deletes them as it does its own .ts output; the
+       HuskCompile target writes them. Metadata set on an item (PareServeAt) carries over.
+       The app-wide files go under obj/<cfg>/<tfm>/husk/, outside Pare's folder so its stale deletion
+       leaves them, and are served below $(StaticWebAssetBasePath)_husk/: husk.css (every
+       component's CSS), importmap.json, and the vendored runtime (svelte/, esm-env/, clsx/).
+       Each @(HuskPage) (wwwroot/**/*.html) is served from obj/ at its own URL, with the import map
+       inlined when it holds <script type="importmap" data-husk></script>, unchanged otherwise.
+       Extrode.Husk.development.json goes to the build output, never to a publish.
+       With HuskHashNames, every served module and runtime file is also served as name.<hash>.js from
+       obj/<cfg>/<tfm>/husk/hashed/, the map points at those, and marked pages get their module
+       scripts pointed there and modulepreload links for the modules they reach (decision 007).
+       Properties:
+         HuskDev            Svelte's dev option; default true in Debug, false otherwise
+         HuskHashNames      hashed names, map and modulepreload; default false in Debug, true otherwise
+         HuskTaskAssembly   the task dll; tests point it at a build output
+         HuskVendorDir      the vendored Svelte (compiler, runtime, runtime-imports.json) -->
+  <PropertyGroup>
+    <HuskDev Condition="'$(HuskDev)' == '' and '$(Configuration)' == 'Debug'">true</HuskDev>
+    <HuskDev Condition="'$(HuskDev)' == ''">false</HuskDev>
+    <HuskHashNames Condition="'$(HuskHashNames)' == '' and '$(Configuration)' == 'Debug'">false</HuskHashNames>
+    <HuskHashNames Condition="'$(HuskHashNames)' == ''">true</HuskHashNames>
+    <HuskTaskAssembly Condition="'$(HuskTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\tasks\net10.0\Extrode.Husk.Build.dll</HuskTaskAssembly>
+    <HuskVendorDir Condition="'$(HuskVendorDir)' == ''">$(MSBuildThisFileDirectory)..\third-party\svelte-5.57.2\</HuskVendorDir>
+    <HuskVendorDir>$([MSBuild]::EnsureTrailingSlash('$(HuskVendorDir)'))</HuskVendorDir>
+    <_HuskCompilerPath>$(HuskVendorDir)svelte\compiler\index.js</_HuskCompilerPath>
+    <_HuskCompilerAssembly>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))\Extrode.Husk.Compiler.dll</_HuskCompilerAssembly>
+    <PareCompileDependsOn>_HuskCheckPlatform;$(PareCompileDependsOn);_HuskCollectSources;HuskCompile</PareCompileDependsOn>
+    <ResolveStaticWebAssetsInputsDependsOn>$(ResolveStaticWebAssetsInputsDependsOn);_HuskDefineStaticWebAssets</ResolveStaticWebAssetsInputsDependsOn>
+    <_HuskServed Condition="'$(UsingMicrosoftNETSdkStaticWebAssets)' == 'true' and '$(PareEmbed)' != 'true' and '$(PareOutDir)' == ''">true</_HuskServed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js" />
+    <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.css" />
+    <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js.map" />
+    <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js" />
+    <PareCompileSource Include="@(HuskModule)" PareCompiler="husk" PareOutputExtension=".js.map" />
+    <!-- Served apps only: embedded or under PareOutDir, a page stays the plain Content it was. -->
+    <PareCompileSource Include="@(HuskPage)" PareCompiler="husk-page" PareOutputExtension=".html" Condition="'$(_HuskServed)' == 'true'" />
+    <!-- Here, not in the props: every package's props import before any package's targets, so this
+         sees Pare's default Include whichever order NuGet imports the two packages' props. Without
+         it Pare would strip a .svelte.ts as well, and both outputs would claim one URL (PARE201). -->
+    <TypeScriptSource Remove="@(HuskModule)" />
+  </ItemGroup>
+
+  <!-- The task targets .NET. Visual Studio's MSBuild (.NET Framework) runs it in MSBuild 18's .NET
+       task host, out of process. -->
+  <UsingTask TaskName="Extrode.Husk.Build.HuskCompile" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskCompile" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskPages" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskPages" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+
+  <!-- The build machine, not the publish target: ClearScript's V8 ships for these six only
+       (decision 006). A source-built SDK names its distro (ubuntu.24.04-x64, arch-x64), which is
+       glibc Linux unless the name says otherwise. -->
+  <Target Name="_HuskCheckPlatform">
+    <PropertyGroup>
+      <_HuskRid>$(NETCoreSdkRuntimeIdentifier)</_HuskRid>
+      <_HuskSupported Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^(win|osx|linux)-(x64|arm64)\z'))">true</_HuskSupported>
+      <_HuskSupported Condition="'$(_HuskSupported)' != 'true' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', '^[a-z]+(\.[0-9.]+)?-(x64|arm64)\z')) and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(_HuskRid)', 'musl|alpine|freebsd|illumos|solaris|android|ios|tvos|maccatalyst'))">true</_HuskSupported>
+    </PropertyGroup>
+    <Error Code="HUSK001" Condition="'$(_HuskSupported)' != 'true'"
+           Text="Husk cannot build on $(_HuskRid): its compiler runs on V8, which ships for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64 and linux-arm64 (glibc) only. Build on one of those; the output runs anywhere." />
+  </Target>
+
+  <!-- Pare's targets do the placing, serving and publishing, and NuGet imports a package's build/
+       folder only into projects that reference it directly, so the project references both. -->
+  <Target Name="_HuskCheckPare" BeforeTargets="BeforeBuild" Condition="'$(PareTaskAssembly)' == ''">
+    <Error Code="HUSK002"
+           Text="Husk needs Extrode.Pare.Build: add &lt;PackageReference Include=&quot;Extrode.Pare.Build&quot; Version=&quot;0.6.1&quot; /&gt; (0.6.0 or later) to $(MSBuildProjectFile) beside Extrode.Husk.Build." />
+  </Target>
+
+  <Target Name="_HuskComputePaths">
+    <PropertyGroup>
+      <_HuskObjRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'husk'))</_HuskObjRoot>
+      <_HuskDevStamp>$(_HuskObjRoot)dev.txt</_HuskDevStamp>
+      <_HuskGraph Condition="'$(HuskHashNames)' == 'true'">$(_HuskObjRoot)modulegraph.json</_HuskGraph>
+    </PropertyGroup>
+  </Target>
+
+  <!-- The runtime files served below _husk/, each with its RelativePath. -->
+  <Target Name="_HuskCollectRuntime">
+    <ItemGroup>
+      <!-- The folder as metadata, the path in a second step: %(...) in an Include's metadata would
+           batch over the items already added and add each file once per batch. -->
+      <!-- Not the server runtime: no client module imports it, and runtime-imports.json names none. -->
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)svelte/src/**/*.js" Exclude="$(HuskVendorDir)svelte/src/**/server/**;$(HuskVendorDir)svelte/src/**/*-server.js" Folder="svelte/src/" />
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)esm-env/*.js" Folder="esm-env/" />
+      <_HuskRuntimeCandidate Include="$(HuskVendorDir)clsx/dist/clsx.mjs" Folder="clsx/dist/" />
+      <_HuskRuntimeCandidate RelativePath="_husk/%(Folder)$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Runs inside PareStripTypeScript, after Pare computed each PareCompileSource's PareOutputPath. -->
+  <Target Name="_HuskCollectSources" DependsOnTargets="_HuskComputePaths">
+    <ItemGroup>
+      <_HuskCompileSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk'" />
+      <_HuskPageSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk-page'" />
+    </ItemGroup>
+    <!-- A changed HuskDev rebuilds everything: the stamp is an input, rewritten only when it differs. -->
+    <MakeDir Directories="$(_HuskObjRoot)" Condition="'@(_HuskCompileSource)' != ''" />
+    <WriteLinesToFile File="$(_HuskDevStamp)" Lines="$(HuskDev)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Condition="'@(_HuskCompileSource)' != ''" />
+    <ItemGroup Condition="'@(_HuskCompileSource)' != ''">
+      <FileWrites Include="$(_HuskDevStamp)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Incremental in the task: a source is compiled only when it, the task, the compiler, this file
+       or HuskDev is newer than one of its outputs. Not Inputs/Outputs here: MSBuild would build per
+       output item and hand the task part of a source's outputs (HUSK101). A failed compile writes
+       nothing, so it is retried next build. -->
+  <!-- No Condition here: MSBuild evaluates it before DependsOnTargets has filled the items. -->
+  <Target Name="HuskCompile" DependsOnTargets="_HuskCollectSources">
+    <HuskCompile Condition="'@(_HuskCompileSource)' != ''" Sources="@(_HuskCompileSource)" ProjectDirectory="$(MSBuildProjectDirectory)"
+                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)"
+                 Inputs="$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath);$(MSBuildThisFileFullPath);$(_HuskDevStamp)" />
+  </Target>
+
+  <!-- Every build: reads each component's .svelte.css, writes only what changed. No Inputs, since a
+       removed component changes the outputs without any input being newer. -->
+  <!-- DependsOnTargets as well as AfterTargets: with Husk's targets imported before Pare's,
+       BeforeBuild's list would otherwise run this first, over an empty @(PareOutput). -->
+  <Target Name="HuskAssets" AfterTargets="PareStripTypeScript" BeforeTargets="BeforeBuild"
+          DependsOnTargets="_HuskComputePaths;_HuskCollectRuntime;PareStripTypeScript" Condition="'$(_HuskServed)' == 'true'">
+    <HuskAssets Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)" OutputDirectory="$(_HuskObjRoot)"
+                ServedRoot="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'pare'))"
+                RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
+                ProjectDirectory="$(MSBuildProjectDirectory)"
+                CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" HashNames="$(HuskHashNames)" Runtime="@(_HuskRuntimeCandidate)" />
+    <ItemGroup>
+      <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json;$(_HuskGraph);$(_HuskObjRoot)hashed/**" />
+    </ItemGroup>
+    <!-- Copied, not a None item: an item would flow on to every project that references this one,
+         a test project's bin among them. As Pare writes its shared map. -->
+    <Copy SourceFiles="$(_HuskObjRoot)Extrode.Husk.development.json" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true"
+          Condition="'$(_IsPublishing)' != 'true'" />
+    <ItemGroup Condition="'$(_IsPublishing)' != 'true'">
+      <FileWrites Include="$(OutDir)Extrode.Husk.development.json" />
+    </ItemGroup>
+  </Target>
+
+  <!-- After HuskAssets, which writes the map only when it changed: a new component rewrites every
+       page, an edit to one page rewrites that page. -->
+  <Target Name="HuskPages" AfterTargets="HuskAssets" BeforeTargets="BeforeBuild" DependsOnTargets="HuskAssets" Condition="'$(_HuskServed)' == 'true'"
+          Inputs="@(_HuskPageSource);$(_HuskObjRoot)importmap.json;$(_HuskGraph);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(MSBuildThisFileFullPath)"
+          Outputs="@(_HuskPageSource->'%(PareOutputPath)')">
+    <HuskPages Condition="'@(_HuskPageSource)' != ''" Pages="@(_HuskPageSource)" ImportMap="$(_HuskObjRoot)importmap.json"
+               Graph="$(_HuskGraph)" BasePath="$(StaticWebAssetBasePath)" />
+  </Target>
+
+  <!-- As Pare registers its outputs (_PareDefineStaticWebAssets): computed assets in the inputs
+       stage, so the SDK compresses them like files in wwwroot. -->
+  <Target Name="_HuskDefineStaticWebAssets" DependsOnTargets="ResolveStaticWebAssetsConfiguration;PareStripTypeScript;_HuskCollectRuntime;HuskAssets"
+          Condition="'$(_HuskServed)' == 'true'">
+    <ItemGroup>
+      <_HuskAppCandidate Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json" />
+      <_HuskAppCandidate RelativePath="_husk/%(Filename)%(Extension)" />
+      <!-- Globbed here, after HuskAssets wrote them. Already hashed: not fingerprinted again. -->
+      <_HuskHashedCandidate Include="$(_HuskObjRoot)hashed/**" />
+      <_HuskHashedCandidate RelativePath="$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+    </ItemGroup>
+    <DefineStaticWebAssets CandidateAssets="@(_HuskAppCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssets CandidateAssets="@(_HuskRuntimeCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(HuskVendorDir)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssets Condition="'@(_HuskHashedCandidate)' != ''" CandidateAssets="@(_HuskHashedCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)hashed/" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="false"
+      CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssetEndpoints Condition="'@(_HuskStaticWebAsset)' != ''" CandidateAssets="@(_HuskStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)" ContentTypeMappings="@(StaticWebAssetContentTypeMapping)">
+      <Output TaskParameter="Endpoints" ItemName="_HuskStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+    <ItemGroup>
+      <StaticWebAsset Include="@(_HuskStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(_HuskStaticWebAssetEndpoint)" />
+    </ItemGroup>
+  </Target>
+</Project>

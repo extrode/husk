@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Svelte compiler in V8. Shared by the build task and the Development app, which loads it
+       from the package folder into its own load context (docs/architecture/003), so it carries
+       every native and a deps.json naming them. -->
+  <PropertyGroup>
+    <RootNamespace>Extrode.Husk.Compiler</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Extrode.Pare" />
+    <PackageReference Include="Microsoft.ClearScript.V8" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-arm64" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-x64" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-arm64" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-x64" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-arm64" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="js/husk-compile.js" LogicalName="husk-compile.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Extrode.Husk.Tests" />
+  </ItemGroup>
+</Project>

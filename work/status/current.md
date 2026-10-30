@@ -1,0 +1,1 @@
+- T8 Cloudflare limits against the sample, saaaat web and riwalqalb frontend output - done when: numbers are in docs/architecture/002-cloudflare-and-deno.md

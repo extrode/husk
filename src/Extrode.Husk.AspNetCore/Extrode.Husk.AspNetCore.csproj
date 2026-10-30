@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Recompiles on save in Development through Pare's watcher. References no ClearScript: the
+       compiler is loaded from the build package's folder (docs/architecture/003). -->
+  <PropertyGroup>
+    <RootNamespace>Extrode.Husk.AspNetCore</RootNamespace>
+    <PackageId>Extrode.Husk.AspNetCore</PackageId>
+    <Description>Recompiles saved Svelte components in a running Development app, with Extrode.Husk.Build's compiler. Does nothing outside Development.</Description>
+    <PackageTags>svelte;aspnetcore;hot-reload</PackageTags>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Extrode.Pare.AspNetCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\LICENSE.md;..\..\NOTICE.md;..\..\README.md" Pack="true" PackagePath="" Visible="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Extrode.Husk.Tests" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Slow: real `dotnet build`/`publish` on temp projects, and browsers through WebDriver. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Selenium.WebDriver" />
+    <!-- Only for its build/ folder, which TempProject imports by path. -->
+    <PackageReference Include="Extrode.Pare.Build" ExcludeAssets="all" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Built first; TempProject points HuskTaskAssembly at its output, copied here. -->
+    <ProjectReference Include="..\..\src\Extrode.Husk.Build\Extrode.Husk.Build.csproj" />
+    <!-- CorpusTests compiles with it directly. -->
+    <ProjectReference Include="..\..\src\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="PareBuildDir" Value="$(PkgExtrode_Pare_Build)/build" />
+  </ItemGroup>
+</Project>

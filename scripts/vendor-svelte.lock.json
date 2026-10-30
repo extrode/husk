@@ -1,0 +1,17 @@
+{
+  "svelte": {
+    "version": "5.57.2",
+    "resolved": "https://registry.npmjs.org/svelte/-/svelte-5.57.2.tgz",
+    "integrity": "sha512-1YiPCAXT0Ct6g1vOMmSLa0Nsc3QRMvtDF32ihgglGVrugIuIK38RyDiFNXVDhtQ81TJjSO57NdMw6DyYLqSGDQ=="
+  },
+  "esm-env": {
+    "version": "1.2.2",
+    "resolved": "https://registry.npmjs.org/esm-env/-/esm-env-1.2.2.tgz",
+    "integrity": "sha512-Epxrv+Nr/CaL4ZcFGPJIYLWFom+YeV1DqMLHJoEd9SYRxNbaFruBwfEX/kkHUJf55j2+TUbmDcmuilbP1TmXHA=="
+  },
+  "clsx": {
+    "version": "2.1.1",
+    "resolved": "https://registry.npmjs.org/clsx/-/clsx-2.1.1.tgz",
+    "integrity": "sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA=="
+  }
+}

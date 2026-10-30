@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Husk builds on Pare's targets, which NuGet imports only for a direct reference. -->
+    <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" PrivateAssets="all" />
+    <!-- 0.1.0-*: the newest build that scripts/pack-local.sh put in tmp/feed. A consumer pins a
+         release version instead. -->
+    <PackageReference Include="Extrode.Husk.Build" Version="0.1.0-*" PrivateAssets="all" />
+    <PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-*" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The Web SDK publishes root .config files; this one is a restore input only. -->
+    <Content Update="nuget.config" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+</Project>
