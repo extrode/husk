@@ -27,7 +27,7 @@ Merged into `dev`, not yet tagged.
   builds (`esm-env` development off), and no sources or dev files.
 - `Extrode.Husk.AspNetCore`: `builder.AddHusk()` recompiles a saved component in the running
   Development app with warm engines (6 ms measured after the first save); `dotnet watch` reloads.
-- Error codes HUSK001, HUSK002, HUSK100 to HUSK102, HUSK200 (`docs/error-codes.md`), a sample
+- Error codes HUSK001, HUSK002, HUSK100 to HUSK102, HUSK200 (`docs/03-reference/error-codes.md`), a sample
   app (`samples/svelte-app`), tested in Chrome, Firefox and Safari.
 - Laws L001 (identical to Node), L002 (no change, no compile), L003 (a failed compile keeps the
   last good output), each proven.

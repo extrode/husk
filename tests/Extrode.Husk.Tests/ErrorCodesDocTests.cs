@@ -2,10 +2,10 @@ using System.Text.RegularExpressions;
 
 namespace Extrode.Husk.Tests;
 
-/// <summary>Keeps docs/error-codes.md and the README in step with the codes Husk emits.</summary>
+/// <summary>Keeps docs/03-reference/error-codes.md and the README in step with the codes Husk emits.</summary>
 public sealed partial class ErrorCodesDocTests
 {
-    private static readonly string Doc = File.ReadAllText(Path.Combine(RepoPaths.Root, "docs", "error-codes.md")).ReplaceLineEndings("\n");
+    private static readonly string Doc = File.ReadAllText(Path.Combine(RepoPaths.Root, "docs", "03-reference", "error-codes.md")).ReplaceLineEndings("\n");
 
     // Every code the sources emit, with its kind: a task's LogError/LogWarning, a log line's
     // "error HUSK..."/"warning HUSK...", a targets file's <Error Code=...>.
@@ -47,7 +47,7 @@ public sealed partial class ErrorCodesDocTests
         var named = Code().Matches(readme).Select(m => m.Value).Distinct().ToList();
         Assert.NotEmpty(named);
         Assert.All(named, code => Assert.True(emitted.ContainsKey(code), $"README names {code}, which nothing emits"));
-        Assert.Contains("docs/error-codes.md", readme, StringComparison.Ordinal);
+        Assert.Contains("docs/03-reference/error-codes.md", readme, StringComparison.Ordinal);
     }
 
     [GeneratedRegex(@"(?<kind>LogError|LogWarning)\(null, ""(?<code>HUSK\d{3})""|\b(?<kind>error|warning) (?<code>HUSK\d{3}):|<(?<kind>Error) Code=""(?<code>HUSK\d{3})""")]

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-label="dotnet build runs Pare, which hands .svelte files to Husk; the output is plain JavaScript and CSS served from obj">
+  <style>
+    .box { fill: #fff; stroke: #888; stroke-width: 2; rx: 8; }
+    .hot { fill: #fff3ee; stroke: #ff3e00; stroke-width: 2; rx: 8; }
+    text { font-family: system-ui, sans-serif; font-size: 14px; fill: #222; }
+    .small { font-size: 12px; fill: #555; }
+    .arrow { stroke: #888; stroke-width: 2; fill: none; marker-end: url(#a); }
+  </style>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#888"/></marker></defs>
+  <rect class="box" x="10" y="60" width="150" height="80"/>
+  <text x="85" y="95" text-anchor="middle">Your wwwroot</text>
+  <text class="small" x="85" y="118" text-anchor="middle">.svelte .ts .html</text>
+  <rect class="box" x="210" y="60" width="150" height="80"/>
+  <text x="285" y="95" text-anchor="middle">Pare</text>
+  <text class="small" x="285" y="118" text-anchor="middle">places files, strips .ts</text>
+  <rect class="hot" x="410" y="60" width="150" height="80"/>
+  <text x="485" y="95" text-anchor="middle">Husk</text>
+  <text class="small" x="485" y="118" text-anchor="middle">Svelte compiler in V8</text>
+  <rect class="box" x="610" y="60" width="140" height="80"/>
+  <text x="680" y="95" text-anchor="middle">obj/ output</text>
+  <text class="small" x="680" y="118" text-anchor="middle">plain JS + CSS</text>
+  <path class="arrow" d="M160,100 L205,100"/>
+  <path class="arrow" d="M360,100 L405,100"/>
+  <path class="arrow" d="M560,100 L605,100"/>
+  <text class="small" x="380" y="40" text-anchor="middle">all of this runs inside dotnet build. No Node, no npm.</text>
+</svg>
