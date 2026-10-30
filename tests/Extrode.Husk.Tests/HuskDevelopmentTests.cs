@@ -268,6 +268,23 @@ public sealed class HuskDevelopmentTests : IDisposable
     }
 
     [Fact]
+    public async Task A_compiler_that_failed_to_load_is_not_loaded_again_on_every_save()
+    {
+        WriteMaps();
+        string compiler = Path.Combine(AppContext.BaseDirectory, "Extrode.Husk.Compiler.dll");
+        File.WriteAllText(HuskMap, File.ReadAllText(HuskMap).Replace(JsonSerializer.Serialize(compiler)[1..^1], P("missing/Extrode.Husk.Compiler.dll").Replace("\\", "\\\\"), StringComparison.Ordinal));
+        var husk = new HuskCompiler(new HuskSession(HuskMap));
+        var ct = TestContext.Current.CancellationToken;
+
+        Assert.Null(await husk.CompileAsync(P("wwwroot/Hello.svelte"), "<p/>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct));
+        Assert.Null(await husk.CompileAsync(P("wwwroot/Hello.svelte"), "<p/>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct));
+
+        var errors = _log.Lines(LogLevel.Error).ToList();
+        Assert.Equal(2, errors.Count);
+        Assert.Contains("see the error above", errors[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_output_the_compiler_does_not_write_is_HUSK101()
     {
         WriteMaps();

@@ -25,6 +25,11 @@ internal sealed class HuskSession(string mapPath)
                 try
                 {
                     _map = HuskDevelopmentMap.Read(mapPath);
+                    // Remembered once the map has been read: a half-written one that throws, or a
+                    // missing one, is read again on the next save even at the same timestamp. A
+                    // compiler that fails to load is not retried, which would leak a load context per save.
+                    if (_map is not null)
+                        _mapStamp = stamp;
                     if (_map is null)
                         logger.LogError("{Path} is missing; build the project again to compile on save", mapPath);
                     else if (_bridge is null)
@@ -32,12 +37,7 @@ internal sealed class HuskSession(string mapPath)
                     else if (_bridgePath != _map.Compiler)
                         logger.LogWarning("Husk's compiler moved to {Path}; restart the app to compile saves with it", _map.Compiler);
                     if (_bridge is not null && _map is not null)
-                    {
                         _bridgePath ??= _map.Compiler;
-                        // Remembered only once the map and compiler loaded: a half-written map that is
-                        // completed within the same timestamp is read again on the next save.
-                        _mapStamp = stamp;
-                    }
                 }
                 catch (Exception e)
                 {

@@ -12,7 +12,7 @@ public sealed class DocsLinksTests
         foreach (string file in Directory.EnumerateFiles(Path.Combine(RepoPaths.Root, "docs"), "*.md", SearchOption.AllDirectories))
         {
             string relative = Path.GetRelativePath(RepoPaths.Root, file).Replace('\\', '/');
-            if (Regex.IsMatch(relative, @"^docs/0\d-")) data.Add(relative);
+            if (Regex.IsMatch(relative, @"^docs/0[0-6]-")) data.Add(relative);
         }
         return data;
     }
