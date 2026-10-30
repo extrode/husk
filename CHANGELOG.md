@@ -13,6 +13,18 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 Merged into `dev`, not yet tagged.
 
+---
+
+## [0.1.0-preview.2] — 2026-10-31
+
+### Fixed
+- Both packages carry the Husk icon. `0.1.0-preview.1` was built from a tag that predates it, so nuget.org shows the default icon for that version.
+- Both packages are also published to GitHub Packages (`release.yml`), so the repository's Packages tab lists them.
+
+---
+
+## [0.1.0-preview.1] — 2026-10-30
+
 ### Added
 - License: ISL-P 1.2 with the ISL-OE 1.2 output exception, as Pare. `LICENSE.md` and `NOTICE.md` at the root;
   both packages carry them and declare the license file.
@@ -31,10 +43,3 @@ Merged into `dev`, not yet tagged.
   app (`samples/svelte-app`), tested in Chrome, Firefox and Safari.
 - Laws L001 (identical to Node), L002 (no change, no compile), L003 (a failed compile keeps the
   last good output), each proven.
-
----
-
-## [0.1.0-preview.1] — <date>
-
-### Added
-- (nothing yet)
