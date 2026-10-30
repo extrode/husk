@@ -14,6 +14,8 @@ sections that apply; drop the empty ones rather than leaving them blank.
 Merged into `dev`, not yet tagged.
 
 ### Added
+- License: ISL-P 1.2 with the ISL-OE 1.2 output exception, as Pare. `LICENSE.md` and `NOTICE.md` at the root;
+  both packages carry them and declare the license file.
 - `Extrode.Husk.Build`: `.svelte`, `.svelte.ts` and `.svelte.js` under `wwwroot` compile on
   `dotnet build` with the vendored Svelte 5.57.2 in embedded V8, no Node or Deno. Output is
   byte-identical to Node running the same compiler: the fixtures, the Svelte repo's 4720 sources
