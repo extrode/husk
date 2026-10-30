@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Uploads a static output folder to Cloudflare through the Workers static assets direct-upload
+       API (docs/architecture/004). HttpClient and System.Text.Json only: no Node, no wrangler. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Extrode.Husk.Deploy</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Extrode.Husk.Tests" />
+  </ItemGroup>
+</Project>

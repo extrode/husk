@@ -15,5 +15,6 @@
     <ProjectReference Include="..\..\src\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" />
     <ProjectReference Include="..\..\src\Extrode.Husk.Build\Extrode.Husk.Build.csproj" />
     <ProjectReference Include="..\..\src\Extrode.Husk.AspNetCore\Extrode.Husk.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Extrode.Husk.Deploy\Extrode.Husk.Deploy.csproj" />
   </ItemGroup>
 </Project>
