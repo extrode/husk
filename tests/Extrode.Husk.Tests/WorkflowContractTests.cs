@@ -16,6 +16,14 @@ public sealed class WorkflowContractTests
         return next.Success ? workflow[start..(start + 1 + next.Index)] : workflow[start..];
     }
 
+    private static string Step(string job, string name)
+    {
+        int start = job.IndexOf($"- name: {name}", StringComparison.Ordinal);
+        Assert.True(start >= 0, name);
+        int next = job.IndexOf("\n      - ", start + 1, StringComparison.Ordinal);
+        return next < 0 ? job[start..] : job[start..next];
+    }
+
     [Fact]
     public void Release_publishes_by_tag_through_OIDC_in_the_packages_environment_with_no_stored_key()
     {
@@ -28,7 +36,7 @@ public sealed class WorkflowContractTests
         Assert.Contains("id-token: write", Job(release, "release"), StringComparison.Ordinal);
         Assert.Contains("id-token: write", Job(release, "verify-trusted-publishing"), StringComparison.Ordinal);
         Assert.DoesNotContain("api-key \"${{", release, StringComparison.Ordinal);
-        Assert.Contains("--skip-duplicate", release, StringComparison.Ordinal);
+        Assert.Contains("--skip-duplicate", Step(Job(release, "release"), "Push to NuGet.org"), StringComparison.Ordinal);
         Assert.DoesNotContain("secrets.", release.Replace("secrets.GITHUB_TOKEN", "", StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
@@ -43,6 +51,12 @@ public sealed class WorkflowContractTests
         Assert.Contains("https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json", job, StringComparison.Ordinal);
         Assert.Contains("packages: write", backfill, StringComparison.Ordinal);
         Assert.Contains("https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json", backfill, StringComparison.Ordinal);
+        Assert.Contains("--skip-duplicate", Step(job, "Push to GitHub Packages"), StringComparison.Ordinal);
+        Assert.Contains("--skip-duplicate", Step(backfill, "Push the release's packages to GitHub Packages"), StringComparison.Ordinal);
+        Assert.Contains("github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v')", backfill, StringComparison.Ordinal);
+        Assert.Contains("!startsWith(github.ref, 'refs/tags/')", Job(release, "verify-trusted-publishing"), StringComparison.Ordinal);
+        Assert.True(job.IndexOf("name: GitHub Release with the packages", StringComparison.Ordinal)
+            < job.IndexOf("name: Push to GitHub Packages", StringComparison.Ordinal), "GitHub Packages push must follow the release step");
         Assert.DoesNotContain("api.nuget.org", backfill, StringComparison.Ordinal);
         Assert.DoesNotContain("NuGet/login", backfill, StringComparison.Ordinal);
     }
