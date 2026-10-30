@@ -8,6 +8,14 @@ public sealed class WorkflowContractTests
 {
     private static string Workflow(string name) => File.ReadAllText(Path.Combine(RepoPaths.Root, ".github", "workflows", name));
 
+    private static string Job(string workflow, string name)
+    {
+        int start = workflow.IndexOf($"\n  {name}:\n", StringComparison.Ordinal);
+        Assert.True(start >= 0, name);
+        var next = Regex.Match(workflow[(start + 1)..], @"\n  [a-z-]+:\n");
+        return next.Success ? workflow[start..(start + 1 + next.Index)] : workflow[start..];
+    }
+
     [Fact]
     public void Release_publishes_by_tag_through_OIDC_in_the_packages_environment_with_no_stored_key()
     {
@@ -17,7 +25,9 @@ public sealed class WorkflowContractTests
         Assert.Equal(2, Regex.Matches(release, @"environment: packages").Count);
         Assert.Matches(@"uses: NuGet/login@[0-9a-f]{40} # v1", release);
         Assert.Contains("user: ${{ vars.NUGET_USER }}", release, StringComparison.Ordinal);
-        Assert.Contains("id-token: write", release, StringComparison.Ordinal);
+        Assert.Contains("id-token: write", Job(release, "release"), StringComparison.Ordinal);
+        Assert.Contains("id-token: write", Job(release, "verify-trusted-publishing"), StringComparison.Ordinal);
+        Assert.DoesNotContain("api-key \"${{", release, StringComparison.Ordinal);
         Assert.Contains("--skip-duplicate", release, StringComparison.Ordinal);
         Assert.DoesNotContain("secrets.", release.Replace("secrets.GITHUB_TOKEN", "", StringComparison.Ordinal), StringComparison.Ordinal);
     }
@@ -28,9 +38,19 @@ public sealed class WorkflowContractTests
         string release = Workflow("release.yml");
         string props = File.ReadAllText(Path.Combine(RepoPaths.Root, "Directory.Build.props"));
 
-        Assert.Contains("Directory.Build.props", release, StringComparison.Ordinal);
-        Assert.Contains("!= <Version>", release, StringComparison.Ordinal);
+        Assert.Contains("[ \"$PROP_VERSION\" = \"$TAG_VERSION\" ]", Job(release, "release"), StringComparison.Ordinal);
+        Assert.Contains("sed -n 's/.*<Version>", Job(release, "release"), StringComparison.Ordinal);
         Assert.Matches(@"<Version>\d+\.\d+\.\d+[^<]*</Version>", props);
+    }
+
+    [Fact]
+    public void Release_publishes_only_for_a_tag_push_and_only_when_the_pinned_Pare_is_on_nuget_org()
+    {
+        string job = Job(Workflow("release.yml"), "release");
+
+        Assert.Contains("if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')", job, StringComparison.Ordinal);
+        Assert.Contains("<PareVersion>", job, StringComparison.Ordinal);
+        Assert.True(job.IndexOf("is not on nuget.org", StringComparison.Ordinal) < job.IndexOf("dotnet nuget push", StringComparison.Ordinal));
     }
 
     [Fact]

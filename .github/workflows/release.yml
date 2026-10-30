@@ -47,7 +47,8 @@ jobs:
           fi
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # A manual run from a tag ref must not publish: only the tag push does.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: packages
     permissions:
@@ -69,6 +70,16 @@ jobs:
           echo "props=$PROP_VERSION tag=$TAG_VERSION"
           [ "$PROP_VERSION" = "$TAG_VERSION" ] || { echo "::error::tag $GITHUB_REF_NAME != <Version>$PROP_VERSION"; exit 1; }
 
+      - name: Guard - the Pare version Husk pins is on nuget.org
+        # A package that depends on a version nobody can restore burns its own version number
+        # on nuget.org for good, so stop before the push.
+        run: |
+          PARE_VERSION=$(sed -n 's/.*<PareVersion>\(.*\)<\/PareVersion>.*/\1/p' Directory.Packages.props | head -1)
+          for id in extrode.pare extrode.pare.build extrode.pare.aspnetcore; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://api.nuget.org/v3-flatcontainer/$id/$PARE_VERSION/$id.nuspec")
+            [ "$code" = "200" ] || { echo "::error::$id $PARE_VERSION is not on nuget.org ($code); publish Pare first"; exit 1; }
+          done
+
       - name: Test
         run: dotnet test --solution Husk.slnx -c Release
 
@@ -85,13 +96,15 @@ jobs:
           user: ${{ vars.NUGET_USER }}
 
       - name: Push to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         # --skip-duplicate: nuget.org rejects a re-push of a version, so a re-run of a partly
         # failed release would otherwise stop at the first package that already landed.
         run: |
           for pkg in dist/packages/*.nupkg; do
             dotnet nuget push "$pkg" \
               --source "https://api.nuget.org/v3/index.json" \
-              --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+              --api-key "$NUGET_API_KEY" \
               --skip-duplicate
           done
 
