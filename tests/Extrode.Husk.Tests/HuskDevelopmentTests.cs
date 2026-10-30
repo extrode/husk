@@ -252,6 +252,22 @@ public sealed class HuskDevelopmentTests : IDisposable
     }
 
     [Fact]
+    public async Task A_map_fixed_within_the_same_timestamp_is_still_picked_up()
+    {
+        var stamp = DateTime.UtcNow.AddMinutes(-1);
+        File.WriteAllText(HuskMap, "{\"compiler\": \"x\"");
+        File.SetLastWriteTimeUtc(HuskMap, stamp);
+        var compiler = new HuskCompiler(new HuskSession(HuskMap));
+        var ct = TestContext.Current.CancellationToken;
+        Assert.Null(await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p>one</p>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct));
+
+        WriteMaps();
+        File.SetLastWriteTimeUtc(HuskMap, stamp);
+        var outputs = await compiler.CompileAsync(P("wwwroot/Hello.svelte"), "<p>one</p>", ComponentOutputs("Hello"), _log.CreateLogger("t"), ct);
+        Assert.Contains("one", outputs![ComponentOutputs("Hello")[0]]);
+    }
+
+    [Fact]
     public async Task An_output_the_compiler_does_not_write_is_HUSK101()
     {
         WriteMaps();
