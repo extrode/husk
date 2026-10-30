@@ -20,7 +20,7 @@ public sealed class HuskDevelopmentTests : IDisposable
     private readonly DirectoryInfo _dir = Directory.CreateTempSubdirectory("husk-dev-");
     private readonly LogSink _log = new();
 
-    private string P(string relative) => Path.Combine(_dir.FullName, relative);
+    private string P(string relative) => Path.Combine(_dir.FullName, relative.Replace('/', Path.DirectorySeparatorChar));
     private string HuskMap => P("Extrode.Husk.development.json");
 
     public void Dispose()
@@ -130,8 +130,22 @@ public sealed class HuskDevelopmentTests : IDisposable
         WaitFor(() => ComponentOutputs("Hello").Concat(ComponentOutputs("Other")).All(File.Exists));
         List<byte[]?> Snapshot() => [.. ComponentOutputs("Hello").Concat(ComponentOutputs("Other")).Append(P("obj/husk/husk.css"))
             .Select(f => File.Exists(f) ? File.ReadAllBytes(f) : null)];
+        bool Same(List<byte[]?> a, List<byte[]?> b) => a.Zip(b).All(p => p.First is null ? p.Second is null : p.Second is not null && p.First.AsSpan().SequenceEqual(p.Second));
+        List<byte[]?> Settled()
+        {
+            var last = Snapshot();
+            for (int tries = 0; tries < 100; tries++)
+            {
+                Thread.Sleep(150);
+                var now = Snapshot();
+                if (Same(last, now))
+                    return now;
+                last = now;
+            }
+            throw new TimeoutException("the outputs kept changing");
+        }
         var random = new Random(3003);
-        var good = Snapshot();
+        var good = Settled();
 
         for (int i = 0; i < 8; i++)
         {
@@ -141,7 +155,7 @@ public sealed class HuskDevelopmentTests : IDisposable
                 Put($"wwwroot/{name}.svelte", $"<p class=\"v{i}\">v{i}</p>\n<style>.v{i} {{ color: red; }}</style>\n");
                 WaitFor(() => File.ReadAllText(ComponentOutputs(name)[0]).Contains($"v{i}", StringComparison.Ordinal)
                     && File.Exists(P("obj/husk/husk.css")) && File.ReadAllText(P("obj/husk/husk.css")).Contains($".v{i}", StringComparison.Ordinal));
-                good = Snapshot();
+                good = Settled();
                 continue;
             }
             int errors = _log.Count(LogLevel.Error, "error HUSK100");
@@ -149,7 +163,7 @@ public sealed class HuskDevelopmentTests : IDisposable
             WaitFor(() => _log.Count(LogLevel.Error, "error HUSK100") > errors);
             Thread.Sleep(200);
             var now = Snapshot();
-            Assert.True(good.Zip(now).All(p => p.First is null ? p.Second is null : p.Second is not null && p.First.AsSpan().SequenceEqual(p.Second)),
+            Assert.True(Same(good, now),
                 $"step {i}, {name}: a rejected save changed the last good output");
         }
     }
@@ -316,7 +330,7 @@ public sealed class HuskDevelopmentTests : IDisposable
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-            _lines.Enqueue((logLevel, formatter(state, exception)));
+            _lines.Enqueue((logLevel, formatter(state, exception).Replace('\\', '/')));
 
         public IEnumerable<string> Lines(LogLevel level) => _lines.Where(l => l.Level == level).Select(l => l.Text);
         public int Count(LogLevel level, string contains) => Lines(level).Count(l => l.Contains(contains, StringComparison.Ordinal));

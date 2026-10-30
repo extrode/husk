@@ -114,7 +114,7 @@ static string RuntimeImports(SortedDictionary<string, byte[]> files)
         ["imports"] = Object(imports),
         ["production"] = Object(overrides),
     };
-    return json.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    return json.ToJsonString(new JsonSerializerOptions { WriteIndented = true, NewLine = "\n" });
 
     void Add(string specifier, JsonNode? target, string package)
     {
