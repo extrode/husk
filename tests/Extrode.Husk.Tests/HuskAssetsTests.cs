@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Extrode.Husk.Build;
+using Extrode.Husk.Compiler;
 using Microsoft.Build.Utilities;
 
 namespace Extrode.Husk.Tests;
@@ -101,6 +102,74 @@ public sealed class HuskAssetsTests : IDisposable
         Assert.Equal(P("obj/husk/husk.css"), map.GetProperty("stylesheet").GetString());
         Assert.Equal(["A.svelte", "B.svelte"], map.GetProperty("styles").EnumerateArray().Select(s => s.GetProperty("name").GetString()));
         Assert.Equal(P("obj/pare/A.svelte.css"), map.GetProperty("styles")[0].GetProperty("css").GetString());
+    }
+
+    private bool RunHashed(params TaskItem[] outputs)
+    {
+        string runtime = P("vendor/svelte/src/index-client.js");
+        Directory.CreateDirectory(Path.GetDirectoryName(runtime)!);
+        File.WriteAllText(runtime, "export * from './internal/client/index.js';\n");
+        return new HuskAssets
+        {
+            BuildEngine = _engine,
+            Outputs = outputs,
+            OutputDirectory = P("obj/husk"),
+            ServedRoot = P("obj/pare"),
+            RuntimeImports = Path.Combine(RepoPaths.Vendored, "runtime-imports.json"),
+            CompilerAssembly = "/c/Extrode.Husk.Compiler.dll",
+            CompilerPath = "/c/index.js",
+            ProjectDirectory = _dir.FullName,
+            HashNames = true,
+            Runtime = [new TaskItem(runtime, new Dictionary<string, string> { ["RelativePath"] = "_husk/svelte/src/index-client.js" })],
+        }.Execute();
+    }
+
+    [Fact]
+    public void Hashed_names_get_byte_identical_copies_a_map_to_them_and_a_graph()
+    {
+        const string App = "import { mount } from 'svelte';\nimport Child from './Child.svelte';\n";
+        Assert.True(RunHashed(Output("x/App.svelte.js", "x/App.svelte", text: App), Output("x/Child.svelte.js", "x/Child.svelte", text: "export default 1;\n")));
+
+        string app = "x/App.svelte." + ModuleGraph.Hash(File.ReadAllBytes(P("obj/pare/x/App.svelte.js"))) + ".js";
+        string child = "x/Child.svelte." + ModuleGraph.Hash(File.ReadAllBytes(P("obj/pare/x/Child.svelte.js"))) + ".js";
+        string runtime = "_husk/svelte/src/index-client." + ModuleGraph.Hash(File.ReadAllBytes(P("vendor/svelte/src/index-client.js"))) + ".js";
+        Assert.Equal(App, File.ReadAllText(P("obj/husk/hashed/" + app)));
+        Assert.True(File.Exists(P("obj/husk/hashed/" + runtime)));
+
+        var imports = JsonDocument.Parse(File.ReadAllText(P("obj/husk/importmap.json"))).RootElement.GetProperty("imports");
+        Assert.Equal("/" + child, imports.GetProperty("/x/Child.svelte").GetString());
+        Assert.Equal("/" + child, imports.GetProperty("/x/Child.svelte.js").GetString());
+        Assert.Equal("/" + runtime, imports.GetProperty("svelte").GetString());
+
+        var graph = JsonDocument.Parse(File.ReadAllText(P("obj/husk/modulegraph.json"))).RootElement;
+        Assert.Equal(["/" + runtime, "/" + child], graph.GetProperty("/" + app).EnumerateArray().Select(e => e.GetString()));
+    }
+
+    [Fact]
+    public void A_changed_module_replaces_its_copy_and_leaves_the_others_untouched()
+    {
+        Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "a"), Output("B.svelte.js", "B.svelte", text: "b")));
+        string a = Directory.GetFiles(P("obj/husk/hashed"), "A.svelte.*.js").Single();
+        string b = Directory.GetFiles(P("obj/husk/hashed"), "B.svelte.*.js").Single();
+        var stamp = DateTime.UtcNow.AddDays(-1);
+        File.SetLastWriteTimeUtc(b, stamp);
+
+        Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "a2"), Output("B.svelte.js", "B.svelte", text: "b")));
+
+        Assert.False(File.Exists(a));
+        Assert.Equal("a2", File.ReadAllText(Directory.GetFiles(P("obj/husk/hashed"), "A.svelte.*.js").Single()));
+        Assert.Equal(stamp, File.GetLastWriteTimeUtc(b));
+    }
+
+    [Fact]
+    public void Without_hashed_names_no_copy_is_left()
+    {
+        Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "a")));
+
+        Assert.True(Run("/", Output("A.svelte.js", "A.svelte", text: "a")));
+
+        Assert.Empty(Directory.GetFiles(P("obj/husk/hashed"), "*", SearchOption.AllDirectories));
+        Assert.Equal("/A.svelte.js", JsonDocument.Parse(File.ReadAllText(P("obj/husk/importmap.json"))).RootElement.GetProperty("imports").GetProperty("/A.svelte").GetString());
     }
 
     [Fact]

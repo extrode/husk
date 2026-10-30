@@ -119,6 +119,28 @@ public sealed class SampleBrowserTests(PackedFeed feed)
         var segment = SourceMap.Decode(root.GetProperty("mappings").GetString()!)[generated.i].Last(s => s.Column <= column);
         Assert.Equal(sourceLine, segment.SourceLine);
     }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void The_published_sample_works_from_static_files_loading_hashed_modules_only(string browser)
+    {
+        using var sample = feed.Sample();
+        var (exit, output) = sample.Run("publish", "-nologo", "-c", "Release", "-o", "out", "-nodeReuse:false", "--disable-build-servers");
+        Assert.True(exit == 0, output);
+        using var server = new StaticServer(sample.P("out/wwwroot"));
+        using var driver = Browsers.Start(browser);
+
+        driver.Navigate().GoToUrl(server.Address);
+        Browsers.Until(driver, "return document.querySelector('#increment') ? true : null;");
+        driver.FindElement(By.Id("increment")).Click();
+        Browsers.Until(driver, "return document.querySelector('#increment').textContent === 'clicked 1 time' ? true : null;");
+        Assert.Equal("child sees 1", Text(driver, ".child"));
+
+        var modules = ((IEnumerable<object>)Script(driver, "return performance.getEntriesByType('resource').map(e => new URL(e.name).pathname).filter(p => /\\.m?js$/.test(p));")!)
+            .Cast<string>().ToList();
+        Assert.Contains(modules, m => m.StartsWith("/_husk/svelte/", StringComparison.Ordinal));
+        Assert.All(modules, m => Assert.Matches(@"\.[0-9a-f]{10}\.m?js$", m));
+    }
 }
 
 /// <summary>Source map v3 <c>mappings</c>, decoded per generated line.</summary>

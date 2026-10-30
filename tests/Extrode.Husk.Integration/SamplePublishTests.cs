@@ -37,7 +37,7 @@ public sealed class SamplePublishTests(PackedFeed feed)
         Assert.True(open >= 0, page);
         string map = page[(page.IndexOf('>', open) + 1)..page.IndexOf("</script>", open, StringComparison.Ordinal)];
         string development = JsonDocument.Parse(map).RootElement.GetProperty("imports").GetProperty("esm-env/development").GetString()!;
-        Assert.Equal("/_husk/esm-env/false.js", development);
+        Assert.Matches(@"^/_husk/esm-env/false\.[0-9a-f]{10}\.js$", development);
         Assert.Equal("export default false;", File.ReadAllText(Path.Combine(root, development.TrimStart('/'))).Trim());
     }
 
