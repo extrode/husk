@@ -1,5 +1,1 @@
-
-
-- T5 `Extrode.Husk.Build` — spec 001 done, merged to `dev` 2026-10-17, unpublished. Compile on build
-  identical to Node, incremental, warm dev recompile via `AddHusk`, `husk.css`, import map, publish;
-  sample in three browsers; laws L001 to L003 proven
+- T6 hashed output, import map, modulepreload and T7 deploy command (src/Extrode.Husk.Deploy) merged to dev 2026-10-30, gated. Decision: docs/decisions/2026-10-30-007-hashed-output.md. SampleWatchTests fails on base 0b24e5e too (pre-existing, in work/todo.md)

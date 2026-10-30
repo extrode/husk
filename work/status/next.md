@@ -1,7 +1,1 @@
-# Next
-
-Exactly **one** task, the next one to start, pulled from `../tasklist.md` when the rotation
-advances. The full task list for this body of work is `../tasklist.md`; the unscheduled backlog is
-`../todo.md`; where the project is going is `../milestones.md`.
-
-- (none: T6 is the last task in `../tasklist.md`)
+- T9 Backlog bug batch from work/todo.md - done when: each has a test that failed before its fix

@@ -47,3 +47,4 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - NativeProbe sets a DllImportResolver on a ClearScript the app shares; the app's own later SetDllImportResolver then throws.
 - HuskAssets decides "served" with OrdinalIgnoreCase on every OS; Linux paths differing only in case are misclassified.
 - A marked page with invalid UTF-8 is decoded with replacement chars, changing bytes outside the marker (build and dev).
+- SampleWatchTests.Saves_reload_the_page_with_the_change_and_a_broken_save_keeps_it times out waiting for h1 "Husk edited" on base 0b24e5e and after T6; find out why (dotnet watch reload in Chrome) before relying on T21.
