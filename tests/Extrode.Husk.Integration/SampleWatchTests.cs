@@ -18,11 +18,8 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
     [Fact]
     public async Task Saves_reload_the_page_with_the_change_and_a_broken_save_keeps_it()
     {
-        // macOS reports every write as Changed plus Created, so dotnet watch logs "File added" for the saved
-        // component and, about half the runs, exits with "Unexpected true - HotReloadMSBuildWorkspace.cs line 158"
-        // (SDK 10.0.403) after Husk has compiled the save. Linux and Windows run it.
-        Assert.SkipWhen(OperatingSystem.IsMacOS(), "dotnet watch crashes on a saved wwwroot file on macOS (SDK hot reload bug)");
         using var sample = feed.Sample();
+        var sinceCopy = Stopwatch.StartNew();
         int port;
         using (var probe = new TcpListener(IPAddress.Loopback, 0))
         {
@@ -89,6 +86,13 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
             Load();
             Assert.Equal("Husk sample", driver.FindElement(By.TagName("h1")).Text);
             string app = sample.P("wwwroot/App.svelte");
+
+            // On macOS a write to a file created less than about 45 s ago also raises Created. dotnet watch
+            // (SDK 10.0.403) then reports "File added" and can exit with "Unexpected true" in
+            // HotReloadMSBuildWorkspace.cs line 158. A file a developer saves is older than that.
+            var settled = TimeSpan.FromSeconds(45) - sinceCopy.Elapsed;
+            if (OperatingSystem.IsMacOS() && settled > TimeSpan.Zero)
+                await Task.Delay(settled, TestContext.Current.CancellationToken);
 
             var markup = Stopwatch.StartNew();
             File.WriteAllText(app, File.ReadAllText(app).Replace("<h1>Husk sample</h1>", "<h1>Husk edited</h1>", StringComparison.Ordinal));
