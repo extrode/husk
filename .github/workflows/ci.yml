@@ -1,0 +1,35 @@
+name: CI
+
+# Written, not yet run: the first push to GitHub is its first run. The browser tests use the
+# Chrome and Firefox the hosted runners ship (Selenium Manager finds the drivers); Safari runs
+# on macOS only, and needs safaridriver enabled on the runner.
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Build (warnings are errors)
+        run: dotnet build Husk.slnx -c Release
+
+      # The three laws in docs/laws/ are tagged tests ([Trait("Law", "L00x")]), so this run
+      # proves them; laws-check.js is a local convenience and is not needed here.
+      - name: Test
+        run: dotnet test --solution Husk.slnx -c Release --no-build
