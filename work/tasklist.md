@@ -44,7 +44,7 @@ tick.
 - [x] T7 Deploy command for the Workers assets upload API — done when: tests against a fake server pin the three-step upload and skip unchanged files (2026-10-30: merged to dev)
 - [ ] T8 Cloudflare limits (files per deployment, file size) against the sample, saaaat web and riwalqalb frontend output — done when: numbers are in `docs/architecture/002-cloudflare-and-deno.md`
 - [ ] T9 Backlog bug batch from `work/todo.md` (HuskPage glob, mtime cache, case compare, free-port race, shared package folder) — done when: each has a test that failed before its fix
-- [ ] T10 CI workflows for macOS, Linux, Windows — done when: `.github/workflows/ci.yml` runs build, tests and `laws-check.js --run` (written, not run)
-- [ ] T11 Public-readiness docs — done when: `docs/release.md` lists the release steps, `CHANGELOG.md` has a 0.1.0 draft
+- [ ] T10 CI workflows for macOS, Linux, Windows — done when: `.github/workflows/ci.yml` runs build, tests and `laws-check.js --run`, and `release.yml` (tag, OIDC trusted publishing, decision 008) packs and pushes (both written, not run)
+- [ ] T11 Public-readiness docs — done when: `docs/release.md` lists the release steps, `CHANGELOG.md` has a 0.1.0 draft, user docs build to `dist/docs-site` with the shared `../docs` generator and `pages.yml` is written (husk.extrode.com, decision 008)
 - [ ] T12 saaaat client router and `$app/*` shims — done when: a spec exists in `docs/specs/` (milestone 2)
-- [ ] T13 User-only: (license done 2026-10-30: ISL-P 1.2 + ISL-OE 1.2), Cloudflare token and real deploy, NuGet publish and Pare release, repo visibility, test approach without jsdom — done when: the user has answered or done each
+- [ ] T13 User-only: (license done 2026-10-30: ISL-P 1.2 + ISL-OE 1.2), DNS CNAME `husk` to `extrode.github.io`, nuget.org policy + `NUGET_USER` + `packages` environment, Pare release and public (handoff in pare), Cloudflare token and real deploy, repo visibility and Pages, test approach without jsdom — done when: the user has answered or done each
