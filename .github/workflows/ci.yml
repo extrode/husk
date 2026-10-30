@@ -1,6 +1,6 @@
 name: CI
 
-# Written, not yet run: the first push to GitHub is its first run. The browser tests use the
+# The browser tests use the
 # Chrome and Firefox the hosted runners ship (Selenium Manager finds the drivers); Safari runs
 # on macOS only, and needs safaridriver enabled on the runner.
 on:
