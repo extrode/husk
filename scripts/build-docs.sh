@@ -14,8 +14,13 @@ if [ ! -d "$tool" ]; then
   exit 1
 fi
 stage=tmp/docs-src
-rm -rf "$stage" dist/docs-site
+out=tmp/docs-out
+rm -rf "$stage" "$out"
 mkdir -p "$stage"
 cp -R docs/0[0-6]-* docs/assets "$stage"/
-dotnet run --project "$tool" -- "$stage" dist/docs-site --site-name husk
-echo "husk.extrode.com" > dist/docs-site/CNAME
+dotnet run --project "$tool" -- "$stage" "$out" --site-name husk
+echo "husk.extrode.com" > "$out/CNAME"
+# Swapped in only after the build succeeded, so a failed build leaves the committed site alone.
+rm -rf dist/docs-site
+mkdir -p dist
+cp -R "$out" dist/docs-site

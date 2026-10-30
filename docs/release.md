@@ -13,7 +13,7 @@ Husk publishes to nuget.org by trusted publishing (decision 008): no API key exi
 1. Pare: the `Extrode.Pare*` version in `Directory.Packages.props` must already be on nuget.org. The release job checks and refuses otherwise.
 2. Set `<Version>` in `Directory.Build.props`. While Husk is `0.x` it carries a prerelease suffix (`0.1.0-preview.1`); a test enforces it.
 3. Move `CHANGELOG.md` `[Unreleased]` under the new version.
-4. Regenerate the site and commit it: `scripts/build-docs.sh` (needs the sibling `../docs` checkout).
+4. Regenerate the site and commit it (it tells readers to install packages, so merge it to `main` only once they are on nuget.org): `scripts/build-docs.sh` (needs the sibling `../docs` checkout).
 5. Merge to `main`, tag, push:
 
    ```sh
