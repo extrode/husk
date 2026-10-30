@@ -22,7 +22,7 @@ public sealed class WorkflowContractTests
         string release = Workflow("release.yml");
 
         Assert.Contains("tags: ['v*']", release, StringComparison.Ordinal);
-        Assert.Equal(2, Regex.Matches(release, @"environment: packages").Count);
+        Assert.Equal(3, Regex.Matches(release, @"environment: packages").Count);
         Assert.Matches(@"uses: NuGet/login@[0-9a-f]{40} # v1", release);
         Assert.Contains("user: ${{ vars.NUGET_USER }}", release, StringComparison.Ordinal);
         Assert.Contains("id-token: write", Job(release, "release"), StringComparison.Ordinal);
@@ -30,6 +30,21 @@ public sealed class WorkflowContractTests
         Assert.DoesNotContain("api-key \"${{", release, StringComparison.Ordinal);
         Assert.Contains("--skip-duplicate", release, StringComparison.Ordinal);
         Assert.DoesNotContain("secrets.", release.Replace("secrets.GITHUB_TOKEN", "", StringComparison.Ordinal), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Release_also_pushes_to_GitHub_Packages_so_the_repository_Packages_tab_lists_them()
+    {
+        string release = Workflow("release.yml");
+        string job = Job(release, "release");
+        string backfill = Job(release, "backfill-github-packages");
+
+        Assert.Contains("packages: write", job, StringComparison.Ordinal);
+        Assert.Contains("https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json", job, StringComparison.Ordinal);
+        Assert.Contains("packages: write", backfill, StringComparison.Ordinal);
+        Assert.Contains("https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json", backfill, StringComparison.Ordinal);
+        Assert.DoesNotContain("api.nuget.org", backfill, StringComparison.Ordinal);
+        Assert.DoesNotContain("NuGet/login", backfill, StringComparison.Ordinal);
     }
 
     [Fact]
