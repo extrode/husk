@@ -17,14 +17,19 @@ on:
   # Dispatch only proves the token exchange works, so the policy can be checked (and a new
   # policy kept active, nuget.org asks for a first use within 7 days) before a release needs it.
   workflow_dispatch:
+    inputs:
+      backfill_tag:
+        description: 'Existing release tag (e.g. v0.1.0-preview.1) to push to GitHub Packages only; empty runs the OIDC check'
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
 jobs:
   verify-trusted-publishing:
-    # Not from a tag: that dispatch is the GitHub Packages backfill, which needs no nuget.org key.
-    if: github.event_name == 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+    # Not with a backfill tag: that dispatch needs no nuget.org key.
+    if: github.event_name == 'workflow_dispatch' && inputs.backfill_tag == ''
     runs-on: ubuntu-latest
     environment: packages
     permissions:
@@ -47,10 +52,11 @@ jobs:
             exit 1
           fi
 
-  # Dispatch from a tag ref pushes that release's attached packages to GitHub Packages only,
-  # for a tag released before the release job did. Nothing goes to nuget.org.
+  # Dispatch with backfill_tag pushes that release's attached packages to GitHub Packages only,
+  # for a tag released before the release job did. Run it from main: a run from a tag uses the
+  # workflow file as it was at the tag. Nothing goes to nuget.org.
   backfill-github-packages:
-    if: github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' && startsWith(inputs.backfill_tag, 'v')
     runs-on: ubuntu-latest
     environment: packages
     permissions:
@@ -63,8 +69,9 @@ jobs:
       - name: Push the release's packages to GitHub Packages
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.backfill_tag }}
         run: |
-          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern '*.nupkg' --dir dist/packages
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.nupkg' --dir dist/packages
           for pkg in dist/packages/*.nupkg; do
             dotnet nuget push "$pkg" \
               --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" \
