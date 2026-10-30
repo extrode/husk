@@ -21,7 +21,6 @@ internal sealed class HuskSession(string mapPath)
             var stamp = File.GetLastWriteTimeUtc(mapPath);
             if (stamp != _mapStamp)
             {
-                _mapStamp = stamp;
                 _map = null;
                 try
                 {
@@ -33,7 +32,12 @@ internal sealed class HuskSession(string mapPath)
                     else if (_bridgePath != _map.Compiler)
                         logger.LogWarning("Husk's compiler moved to {Path}; restart the app to compile saves with it", _map.Compiler);
                     if (_bridge is not null && _map is not null)
+                    {
                         _bridgePath ??= _map.Compiler;
+                        // Remembered only once the map and compiler loaded: a half-written map that is
+                        // completed within the same timestamp is read again on the next save.
+                        _mapStamp = stamp;
+                    }
                 }
                 catch (Exception e)
                 {
