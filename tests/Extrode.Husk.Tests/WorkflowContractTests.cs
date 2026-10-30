@@ -53,8 +53,8 @@ public sealed class WorkflowContractTests
         Assert.Contains("https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json", backfill, StringComparison.Ordinal);
         Assert.Contains("--skip-duplicate", Step(job, "Push to GitHub Packages"), StringComparison.Ordinal);
         Assert.Contains("--skip-duplicate", Step(backfill, "Push the release's packages to GitHub Packages"), StringComparison.Ordinal);
-        Assert.Contains("github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v')", backfill, StringComparison.Ordinal);
-        Assert.Contains("!startsWith(github.ref, 'refs/tags/')", Job(release, "verify-trusted-publishing"), StringComparison.Ordinal);
+        Assert.Contains("github.event_name == 'workflow_dispatch' && startsWith(inputs.backfill_tag, 'v')", backfill, StringComparison.Ordinal);
+        Assert.Contains("inputs.backfill_tag == ''", Job(release, "verify-trusted-publishing"), StringComparison.Ordinal);
         Assert.True(job.IndexOf("name: GitHub Release with the packages", StringComparison.Ordinal)
             < job.IndexOf("name: Push to GitHub Packages", StringComparison.Ordinal), "GitHub Packages push must follow the release step");
         Assert.DoesNotContain("api.nuget.org", backfill, StringComparison.Ordinal);
