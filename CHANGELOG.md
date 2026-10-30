@@ -34,7 +34,7 @@ Merged into `dev`, not yet tagged.
 
 ---
 
-## [0.1.0] — <date>
+## [0.1.0-preview.1] — <date>
 
 ### Added
 - (nothing yet)

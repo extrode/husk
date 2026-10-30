@@ -1,7 +1,7 @@
 # Publishes Extrode.Husk.Build and Extrode.Husk.AspNetCore to nuget.org and attaches them to a
 # GitHub Release. Triggered by version tags only:
 #
-#   git tag v0.1.0 && git push origin v0.1.0
+#   git tag v0.1.0-preview.1 && git push origin v0.1.0-preview.1
 #
 # The tag must match <Version> in Directory.Build.props; the guard step fails the run otherwise.
 #
