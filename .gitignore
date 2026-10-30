@@ -16,3 +16,4 @@ node_modules/
 prototypes/*/msbuild-task/app/wwwroot/js/
 prototypes/*/*.tsv
 prototypes/*/*.txt
+.DS_Store
