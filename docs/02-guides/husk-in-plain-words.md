@@ -43,7 +43,7 @@ Husk is built on [Pare](https://github.com/extrode/pare), a TypeScript stripper 
 
 **Does it need Node anywhere?** No. Not to build, not to run, not in CI.
 
-**Is the output the same as Vite's?** The compiler output is the same as Node running Svelte 5.57.2, checked byte for byte. What differs is that there is no bundle: modules load one by one.
+**Is the output the same as Vite's?** The compiler output is the same as Node running Svelte 5.57.3, checked byte for byte. What differs is that there is no bundle: modules load one by one.
 
 **Why 85.2 MB?** It carries V8 for Windows, macOS and Linux on x64 and arm64. It is restored once per machine and is not part of your published app.
 

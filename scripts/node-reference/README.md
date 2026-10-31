@@ -2,7 +2,7 @@
 
 The one place Node runs: by hand, when the Svelte pin or a fixture changes. Never in a build or a
 test. Both scripts run from the repo root, and neither needs `npm install`: `reference.mjs` loads
-the vendored compiler (`third-party/svelte-5.57.2/svelte/compiler/index.js`) and the same glue
+the vendored compiler (`third-party/svelte-5.57.3/svelte/compiler/index.js`) and the same glue
 Husk's engines run (`src/Extrode.Husk.Compiler/js/husk-compile.js`).
 
 ```sh
@@ -31,5 +31,5 @@ with a PARE error.
 scripts/node-reference/corpus.sh
 ```
 
-Measured 2026-10-17: 9440 rows (4720 sources) for Svelte, 176 for saaaat, 684 for riwalqalb,
-0 differences. The sweep found that V8 has no `btoa`, which Svelte needs in dev for injected CSS.
+Measured 2026-10-31 on 5.57.3: 9440 rows (4720 sources) for Svelte, 184 for saaaat, 466 for
+riwalqalb, 0 differences. The sweep found that V8 has no `btoa`, which Svelte needs in dev for injected CSS.

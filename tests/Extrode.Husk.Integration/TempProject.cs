@@ -14,7 +14,7 @@ public sealed class TempProject : IDisposable
     // By path: loading the task type would need the MSBuild assemblies, which only the host ships.
     public static readonly string TaskAssembly = Path.Combine(AppContext.BaseDirectory, "Extrode.Husk.Build.dll");
 
-    public static readonly string VendorDir = Path.Combine(RepoRoot, "third-party", "svelte-5.57.2");
+    public static readonly string VendorDir = Path.Combine(RepoRoot, "third-party", "svelte-5.57.3");
     public static readonly string Fixtures = Path.Combine(RepoRoot, "tests", "fixtures");
 
     // Where a web project's build writes compiled outputs and Husk's own files.

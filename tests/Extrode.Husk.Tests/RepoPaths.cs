@@ -3,7 +3,7 @@ namespace Extrode.Husk.Tests;
 internal static class RepoPaths
 {
     public static readonly string Root = FindRoot();
-    public static readonly string Vendored = Path.Combine(Root, "third-party", "svelte-5.57.2");
+    public static readonly string Vendored = Path.Combine(Root, "third-party", "svelte-5.57.3");
     public static readonly string Fixtures = Path.Combine(Root, "tests", "fixtures");
 
     private static string FindRoot()

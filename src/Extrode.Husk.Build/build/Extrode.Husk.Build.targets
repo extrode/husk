@@ -24,7 +24,7 @@
     <HuskHashNames Condition="'$(HuskHashNames)' == '' and '$(Configuration)' == 'Debug'">false</HuskHashNames>
     <HuskHashNames Condition="'$(HuskHashNames)' == ''">true</HuskHashNames>
     <HuskTaskAssembly Condition="'$(HuskTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\tasks\net10.0\Extrode.Husk.Build.dll</HuskTaskAssembly>
-    <HuskVendorDir Condition="'$(HuskVendorDir)' == ''">$(MSBuildThisFileDirectory)..\third-party\svelte-5.57.2\</HuskVendorDir>
+    <HuskVendorDir Condition="'$(HuskVendorDir)' == ''">$(MSBuildThisFileDirectory)..\third-party\svelte-5.57.3\</HuskVendorDir>
     <HuskVendorDir>$([MSBuild]::EnsureTrailingSlash('$(HuskVendorDir)'))</HuskVendorDir>
     <_HuskCompilerPath>$(HuskVendorDir)svelte\compiler\index.js</_HuskCompilerPath>
     <_HuskCompilerAssembly>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))\Extrode.Husk.Compiler.dll</_HuskCompilerAssembly>

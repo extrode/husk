@@ -8,7 +8,7 @@ Status: active · Last reviewed: 2026-10-31
 
 ## Stack constraints
 - No Node or Deno at build time in what Husk ships. Node may appear in research (reference runs).
-- The Svelte compiler is pinned to one version (5.57.2). Outputs are checked byte for byte against Node running the same bundle.
+- The Svelte compiler is pinned to one version (5.57.3). Outputs are checked byte for byte against Node running the same bundle.
 - Husk is a separate product built on Pare, not a fork (decision 2026-10-17-001). Plumbing Husk needs from Pare is added to Pare as a public extension point, in Pare's repo.
 - No package is added without asking. The approved set is in `AGENTS.md`. Playwright is excluded: its .NET package bundles Node.
 - C# sources stay ASCII.

@@ -5,7 +5,7 @@ namespace Extrode.Husk.Integration;
 /// <summary>scripts/vendor-svelte.cs, run as the README says: from the repo root, with no Node.</summary>
 public sealed class VendorTests : IDisposable
 {
-    private static readonly string Committed = Path.Combine(TempProject.RepoRoot, "third-party", "svelte-5.57.2");
+    private static readonly string Committed = Path.Combine(TempProject.RepoRoot, "third-party", "svelte-5.57.3");
     private static readonly string Cache = Path.Combine(TempProject.RepoRoot, "tmp", "vendor-cache");
     private readonly DirectoryInfo _dir = Directory.CreateTempSubdirectory("husk-vendor-");
 
@@ -57,7 +57,7 @@ public sealed class VendorTests : IDisposable
         Directory.CreateDirectory(cache);
         foreach (var tarball in Directory.GetFiles(Cache, "*.tgz"))
             File.Copy(tarball, Path.Combine(cache, Path.GetFileName(tarball)));
-        string svelte = Path.Combine(cache, "svelte-5.57.2.tgz");
+        string svelte = Path.Combine(cache, "svelte-5.57.3.tgz");
         var bytes = File.ReadAllBytes(svelte);
         bytes[bytes.Length / 2] ^= 0xFF;
         File.WriteAllBytes(svelte, bytes);
@@ -66,7 +66,7 @@ public sealed class VendorTests : IDisposable
         var (exit, output) = Vendor("--out", fresh, "--cache", cache);
 
         Assert.Equal(1, exit);
-        Assert.Contains("svelte-5.57.2.tgz: integrity", output);
+        Assert.Contains("svelte-5.57.3.tgz: integrity", output);
         Assert.Contains("Refusing to unpack", output);
         Assert.False(Directory.Exists(fresh));
     }
