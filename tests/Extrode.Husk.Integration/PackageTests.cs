@@ -183,6 +183,21 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.Contains("LicenseRef-ISL-P-1.2 WITH AdditionRef-ISL-OE-1.2", notice.ReadToEnd(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("Extrode.Husk.Build")]
+    [InlineData("Extrode.Husk.AspNetCore")]
+    public void The_packed_readme_is_the_repo_readme_with_every_link_and_image_absolute(string id)
+    {
+        using var zip = ZipFile.OpenRead(feed.Package(id));
+        string packed = new StreamReader(zip.GetEntry("README.md")!.Open()).ReadToEnd();
+        string tag = "v" + feed.Version + "/";
+
+        Assert.DoesNotMatch(@"\]\((?!https://|#)", packed);
+        Assert.DoesNotMatch(@"src=""(?!https://)", packed);
+        string repo = File.ReadAllText(Path.Combine(TempProject.RepoRoot, "README.md"));
+        Assert.Equal(repo, packed.Replace("https://raw.githubusercontent.com/extrode/husk/" + tag, "").Replace("https://github.com/extrode/husk/blob/" + tag, ""));
+    }
+
     [Fact]
     public void The_runtime_package_carries_no_V8()
     {
