@@ -11,7 +11,7 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | Code | Kind | Message |
 |---|---|---|
 | [HUSK001](#husk001) | error (MSBuild) | Husk cannot build on this platform |
-| [HUSK002](#husk002) | error (MSBuild) | Husk needs Extrode.Pare.Build |
+| [HUSK002](#husk002) | error (MSBuild) | Pare's build targets were not imported |
 | [HUSK003](#husk003) | error (MSBuild) | V8's native library for this machine was not restored |
 | [HUSK004](#husk004) | error (MSBuild) | this build process already loaded a different V8 library |
 | [HUSK100](#husk100) | error | Svelte could not compile the source |
@@ -28,13 +28,11 @@ anywhere.
 
 ## HUSK002
 
-The project references Extrode.Husk.Build but not Extrode.Pare.Build. NuGet imports a package's
-build targets only into projects that reference it directly, and Husk's build runs inside Pare's,
-so the project references both:
-
-```xml
-<PackageReference Include="Extrode.Pare.Build" Version="0.7.0" PrivateAssets="all" />
-```
+Husk's build runs inside Pare's. Extrode.Husk.Build depends on Extrode.Pare.Build, whose
+`buildTransitive/` targets NuGet imports into the project. HUSK002 means they were not imported:
+a direct Extrode.Pare.Build reference excludes its build assets (`ExcludeAssets="build;buildtransitive"`,
+`"all"`, or an `IncludeAssets` without them). A direct reference decides for the package, so
+Husk's dependency does not bring them back. Remove that `ExcludeAssets`, or the reference itself.
 
 ## HUSK003
 

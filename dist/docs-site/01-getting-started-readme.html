@@ -143,10 +143,6 @@
 </thead>
 <tbody>
 <tr>
-<td><code>Extrode.Pare.Build</code></td>
-<td><code>PrivateAssets=&quot;all&quot;</code>, directly</td>
-</tr>
-<tr>
 <td><code>Extrode.Husk.Build</code></td>
 <td><code>PrivateAssets=&quot;all&quot;</code>, directly</td>
 </tr>
@@ -156,7 +152,7 @@
 </tr>
 </tbody>
 </table>
-<p>All three are referenced directly because NuGet imports build targets only for direct references, and Husk's build runs inside Pare's. Leave out <code>Extrode.Pare.Build</code> and the build stops with HUSK002.</p>
+<p>Husk's build runs inside Pare's. <code>Extrode.Husk.Build</code> brings <code>Extrode.Pare.Build</code> in; an app that already references it directly keeps working, at 0.7.2 or later (an older one is NU1605).</p>
 
         </article>
         <div class="page-nav" id="page-nav">

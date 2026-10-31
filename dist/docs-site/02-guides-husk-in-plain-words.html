@@ -178,7 +178,7 @@
 <h2 id="pare-the-part-you-should-know">Pare, the part you should know</h2>
 <p>Husk is built on <a href="https://github.com/extrode/pare">Pare</a>, a TypeScript stripper and build for .NET. You never call it, but three things follow from it:</p>
 <ul>
-<li><strong>You reference <code>Extrode.Pare.Build</code> yourself</strong>, with <code>PrivateAssets=&quot;all&quot;</code>. NuGet imports build targets only for direct references. Without it the build stops with <code>HUSK002</code>.</li>
+<li><strong><code>Extrode.Husk.Build</code> brings <code>Extrode.Pare.Build</code> in.</strong> You do not reference it. An app that already does keeps working, at 0.7.2 or later.</li>
 <li><strong>TypeScript is stripped, not checked.</strong> Types are erased and nothing complains about a type error. Run <code>tsc --noEmit</code> in your editor or CI if you want checking. Some syntax cannot be erased (an <code>enum</code>); in a <code>.svelte.ts</code> the build reports it as <code>HUSK100</code> with a <code>PARE1xx</code> message, and in a component Svelte reports it.</li>
 <li><strong>There is no bundling or minifying.</strong> Pare does neither, and Husk does not add them.</li>
 </ul>

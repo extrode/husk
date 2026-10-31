@@ -12,8 +12,7 @@ The short version: add three packages, put a component under `wwwroot`, call `Ad
 
 | Package | Reference as |
 |---|---|
-| `Extrode.Pare.Build` | `PrivateAssets="all"`, directly |
 | `Extrode.Husk.Build` | `PrivateAssets="all"`, directly |
 | `Extrode.Husk.AspNetCore` | normal reference |
 
-All three are referenced directly because NuGet imports build targets only for direct references, and Husk's build runs inside Pare's. Leave out `Extrode.Pare.Build` and the build stops with HUSK002.
+Husk's build runs inside Pare's. `Extrode.Husk.Build` brings `Extrode.Pare.Build` in; an app that already references it directly keeps working, at 0.7.2 or later (an older one is NU1605).

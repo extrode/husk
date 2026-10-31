@@ -149,7 +149,7 @@ listed in <a href="https://svelte.dev/docs/svelte/compiler-errors">Svelte's docs
 <tr>
 <td><a href="#husk002">HUSK002</a></td>
 <td>error (MSBuild)</td>
-<td>Husk needs Extrode.Pare.Build</td>
+<td>Pare's build targets were not imported</td>
 </tr>
 <tr>
 <td><a href="#husk003">HUSK003</a></td>
@@ -189,17 +189,11 @@ linux-x64 and linux-arm64 (glibc). A musl Linux (Alpine), FreeBSD and the like f
 anything compiles. Build on a supported machine; the output is plain JavaScript and CSS and runs
 anywhere.</p>
 <h2 id="husk002">HUSK002</h2>
-<p>The project references Extrode.Husk.Build but not Extrode.Pare.Build. NuGet imports a package's
-build targets only into projects that reference it directly, and Husk's build runs inside Pare's,
-so the project references both:</p>
-<div class="code-block">
-  <div class="code-header">
-    <span class="code-lang">XML</span>
-    <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
-  </div>
-  <pre data-lang="xml"><code class="language-xml"><span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Pare.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.7.0&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
-</code></pre>
-</div>
+<p>Husk's build runs inside Pare's. Extrode.Husk.Build depends on Extrode.Pare.Build, whose
+<code>buildTransitive/</code> targets NuGet imports into the project. HUSK002 means they were not imported:
+a direct Extrode.Pare.Build reference excludes its build assets (<code>ExcludeAssets=&quot;build;buildtransitive&quot;</code>,
+<code>&quot;all&quot;</code>, or an <code>IncludeAssets</code> without them). A direct reference decides for the package, so
+Husk's dependency does not bring them back. Remove that <code>ExcludeAssets</code>, or the reference itself.</p>
 <h2 id="husk003">HUSK003</h2>
 <p>Extrode.Husk.Build carries no V8 library itself. It depends on Microsoft's
 <code>Microsoft.ClearScript.V8.Native.&lt;rid&gt;</code> packages at exactly 7.5.1.1, and the build looks for the one
