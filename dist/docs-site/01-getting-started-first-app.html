@@ -144,8 +144,8 @@
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="sh"><code class="language-sh"><span class="tok-fn">dotnet</span> add package Extrode.Pare.Build <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">6</span>.<span class="tok-num">1</span>
-<span class="tok-fn">dotnet</span> add package Extrode.Husk.Build <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">1</span>
-<span class="tok-fn">dotnet</span> add package Extrode.Husk.AspNetCore <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">1</span>
+<span class="tok-fn">dotnet</span> add package Extrode.Husk.Build <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">2</span>
+<span class="tok-fn">dotnet</span> add package Extrode.Husk.AspNetCore <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">2</span>
 </code></pre>
 </div>
 <p>Open <code>hello-husk.csproj</code> and add <code>PrivateAssets=&quot;all&quot;</code> to the two <code>.Build</code> references. They are build tools, not code your app needs at run time:</p>
@@ -155,11 +155,11 @@
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
   <pre data-lang="xml"><code class="language-xml"><span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Pare.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.6.1&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
-<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.1&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
-<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.AspNetCore&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.1&quot;</span> <span class="tok-punc">/&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.2&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.AspNetCore&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.2&quot;</span> <span class="tok-punc">/&gt;</span>
 </code></pre>
 </div>
-<p>The first restore downloads the 82.6 MB Husk package. After that it is cached.</p>
+<p>The first restore downloads the 85.2 MB Husk package. After that it is cached.</p>
 <h2 id="3-write-a-component">3. Write a component</h2>
 <p>Create <code>wwwroot/App.svelte</code>:</p>
 <div class="code-block">
