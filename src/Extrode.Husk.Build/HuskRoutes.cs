@@ -101,7 +101,16 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
         if (missing)
             return false;
 
-        string template = AppHtml.Length > 0 ? File.ReadAllText(AppHtml) : AppShell.Default;
+        string template;
+        try
+        {
+            template = AppHtml.Length > 0 ? File.ReadAllText(AppHtml) : AppShell.Default;
+        }
+        catch (IOException e)
+        {
+            Log.LogError(null, "HUSK305", null, AppHtml, 0, 0, 0, 0, "cannot read the app shell: " + e.Message);
+            return false;
+        }
         var env = Env.ToDictionary(e => e.ItemSpec, e => e.GetMetadata("Value"), StringComparer.Ordinal);
         string shell;
         try
