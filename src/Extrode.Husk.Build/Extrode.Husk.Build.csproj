@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="build\*" Pack="true" PackagePath="build" />
+    <None Include="runtime\**" Pack="true" PackagePath="runtime" />
     <None Include="NOTICE.md" Pack="true" PackagePath="" />
     <None Include="..\..\LICENSE.md" Pack="true" PackagePath="" Visible="false" />
     <None Include="..\..\docs\assets\logo\husk-icon-128.png" Pack="true" PackagePath="" Visible="false" />
