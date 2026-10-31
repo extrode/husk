@@ -18,6 +18,13 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
 | [HUSK200](#husk200) | warning | a Svelte compiler warning |
+| [HUSK300](#husk300) | error | two routes for one address |
+| [HUSK301](#husk301) | error | a SvelteKit feature Husk does not provide |
+| [HUSK302](#husk302) | error | an import of a SvelteKit name Husk's router does not provide |
+| [HUSK303](#husk303) | error | a `kit` option in `svelte.config.js` Husk does not support |
+| [HUSK304](#husk304) | error | a route file the build does not compile or serve |
+| [HUSK305](#husk305) | error | the app shell lacks a placeholder |
+| [HUSK306](#husk306) | error | the routes folder does not exist |
 
 ## HUSK001
 
@@ -80,3 +87,50 @@ A Svelte compiler warning, such as `a11y_missing_attribute` for an `<img>` witho
 not fail the build; `<TreatWarningsAsErrors>` or `<WarningsAsErrors>HUSK200</WarningsAsErrors>`
 makes it. Then, as with HUSK100, that source's outputs are left as they were, so the next build
 fails on it again instead of finding it up to date.
+
+## HUSK300
+
+Two folders below the routes folder make one address (`a/[x]` and `(group)/a/[y]`: the parameter's
+name does not tell them apart), or one page has two load files (`+page.ts` and `+page.js`). The
+message names the first file. Rename or remove one. No `routes.js` is written.
+
+## HUSK301
+
+A route file or folder uses something Husk's router does not provide: a rest (`[...rest]`), optional
+(`[[opt]]`) or matcher (`[id=int]`) parameter, `+server.ts`, a `+page.server.ts` or
+`+layout.server.ts`, a layout reset (`+page@.svelte`), an error page below the routes folder, or an
+unknown `+` file. Husk builds client-only apps; a server feature has no place in them. The message
+names the feature. No `routes.js` is written.
+
+## HUSK302
+
+A source file imports a name the router does not provide: a `$app/*` module other than `navigation`,
+`state` and `environment` (`$app/stores`, `$app/forms`, `$app/paths`), a `$env/*` module,
+`$service-worker`, a name beyond `goto`, `beforeNavigate`, `afterNavigate` and `preloadCode` from
+`$app/navigation`, beyond `page` from `$app/state`, beyond `browser`, `dev`, `building` and `version`
+from `$app/environment`, or beyond `redirect`, `error`, `isRedirect` and `isHttpError` from
+`@sveltejs/kit`. The error carries the file and line. Type-only imports (`import type`) are erased and
+are not reported. No `routes.js` is written.
+
+## HUSK303
+
+`svelte.config.js` sets a `kit` option other than `adapter`, `alias`, `paths` and `csp`. Husk does not
+read the file to run it; it reads it to refuse an option whose absence would change the app.
+`alias`, `paths` and `adapter` are not honoured but not needed (`$lib` is set with `HuskAlias`); `csp` is
+not delivered yet.
+
+## HUSK304
+
+A file in the routes folder, or the client hooks file, is not among the build's compiled or served
+outputs, so `routes.js` has nothing to import. Include it: `.svelte` files as `HuskComponent`, `.svelte.ts`
+as `HuskModule`, `.ts` as `TypeScriptSource` (with `PareServeAt` for files outside `wwwroot`).
+
+## HUSK305
+
+The shell (`app.html`) must contain `%sveltekit.head%` and `%sveltekit.body%`, as SvelteKit's does:
+Husk fills the first with the import map, stylesheet and entry script, the second with the element the
+app mounts in.
+
+## HUSK306
+
+The `HuskRoutes` item names a folder that is not there. Its default is `src/routes`.

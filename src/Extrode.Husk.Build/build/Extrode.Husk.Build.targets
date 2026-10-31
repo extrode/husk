@@ -44,6 +44,16 @@
     <_HuskPageNotContent Remove="@(_HuskPageNotContent)" />
   </ItemGroup>
 
+  <!-- A router app (a @(HuskRoutes) item, normally src/routes): the router's own components and state
+       module are compiled like the app's, served below _husk/. -->
+  <PropertyGroup>
+    <_HuskPackageRuntime>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', 'runtime'))</_HuskPackageRuntime>
+  </PropertyGroup>
+  <ItemGroup Condition="'@(HuskRoutes)' != ''">
+    <HuskComponent Include="$(_HuskPackageRuntime)Root.svelte;$(_HuskPackageRuntime)ErrorFallback.svelte" PareServeAt="_husk" />
+    <HuskModule Include="$(_HuskPackageRuntime)app/state.svelte.js" PareServeAt="_husk/app" />
+  </ItemGroup>
+
   <ItemGroup>
     <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js" />
     <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.css" />
@@ -67,6 +77,10 @@
   <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
              Condition="'$(MSBuildRuntimeType)' == 'Core'" />
   <UsingTask TaskName="Extrode.Husk.Build.HuskAssets" AssemblyFile="$(HuskTaskAssembly)"
+             Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskRoutes" AssemblyFile="$(HuskTaskAssembly)"
+             Condition="'$(MSBuildRuntimeType)' == 'Core'" />
+  <UsingTask TaskName="Extrode.Husk.Build.HuskRoutes" AssemblyFile="$(HuskTaskAssembly)"
              Runtime="NET" TaskFactory="TaskHostFactory" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
   <UsingTask TaskName="Extrode.Husk.Build.HuskPages" AssemblyFile="$(HuskTaskAssembly)"
              Condition="'$(MSBuildRuntimeType)' == 'Core'" />
@@ -164,17 +178,44 @@
                  Inputs="$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath);$(MSBuildThisFileFullPath);$(_HuskDevStamp)" />
   </Target>
 
+  <!-- Router apps: routes.js, the plain router files and the shell template, written from the route
+       folder and Pare's outputs. Their files join the runtime, so they are hashed with it. -->
+  <Target Name="_HuskRoutes" DependsOnTargets="_HuskComputePaths;PareStripTypeScript" Condition="'$(_HuskServed)' == 'true' and '@(HuskRoutes)' != ''">
+    <PropertyGroup>
+      <_HuskRoutesRoot>%(HuskRoutes.FullPath)</_HuskRoutesRoot>
+      <_HuskAppHtml Condition="'@(HuskShell)' != ''">%(HuskShell.FullPath)</_HuskAppHtml>
+      <_HuskHooks Condition="'$(HuskHooks)' != ''">$([System.IO.Path]::GetFullPath('$(HuskHooks)', '$(MSBuildProjectDirectory)'))</_HuskHooks>
+    </PropertyGroup>
+    <HuskRoutes RoutesRoot="$(_HuskRoutesRoot)" Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)"
+                ServedRoot="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'pare'))"
+                RuntimeDirectory="$(_HuskPackageRuntime)" OutputDirectory="$(_HuskObjRoot)" AppHtml="$(_HuskAppHtml)"
+                Hooks="$(_HuskHooks)" Dev="$(HuskDev)" Env="@(HuskEnv)" SvelteConfig="$(MSBuildProjectDirectory)/svelte.config.js">
+      <Output TaskParameter="AppFiles" ItemName="_HuskAppFile" />
+      <Output TaskParameter="ShellTemplate" PropertyName="_HuskShellTemplate" />
+    </HuskRoutes>
+    <ItemGroup>
+      <FileWrites Include="@(_HuskAppFile);$(_HuskShellTemplate);$(_HuskObjRoot)app/index.html" />
+      <!-- The shell is the page every address serves: processed like a page of the project's. -->
+      <_HuskPageSource Include="$(_HuskShellTemplate)" PareOutputPath="$(_HuskObjRoot)app/index.html" PareRelativePath="index.html" />
+    </ItemGroup>
+  </Target>
+
   <!-- Every build: reads each component's .svelte.css, writes only what changed. No Inputs, since a
        removed component changes the outputs without any input being newer. -->
   <!-- DependsOnTargets as well as AfterTargets: with Husk's targets imported before Pare's,
        BeforeBuild's list would otherwise run this first, over an empty @(PareOutput). -->
   <Target Name="HuskAssets" AfterTargets="PareStripTypeScript" BeforeTargets="BeforeBuild"
-          DependsOnTargets="_HuskComputePaths;_HuskCollectRuntime;PareStripTypeScript" Condition="'$(_HuskServed)' == 'true'">
+          DependsOnTargets="_HuskComputePaths;_HuskCollectRuntime;PareStripTypeScript;_HuskRoutes" Condition="'$(_HuskServed)' == 'true'">
+    <PropertyGroup>
+      <_HuskRouting>false</_HuskRouting>
+      <_HuskRouting Condition="'@(HuskRoutes)' != ''">true</_HuskRouting>
+    </PropertyGroup>
     <HuskAssets Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)" OutputDirectory="$(_HuskObjRoot)"
                 ServedRoot="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'pare'))"
                 RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
                 ProjectDirectory="$(MSBuildProjectDirectory)"
-                CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" HashNames="$(HuskHashNames)" Runtime="@(_HuskRuntimeCandidate)" />
+                CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" HashNames="$(HuskHashNames)" Runtime="@(_HuskRuntimeCandidate);@(_HuskAppFile)"
+                Aliases="@(HuskAlias)" Imports="@(HuskImport)" Routing="$(_HuskRouting)" />
     <ItemGroup>
       <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json;$(_HuskGraph);$(_HuskObjRoot)hashed/**" />
     </ItemGroup>
@@ -211,6 +252,20 @@
       ContentRoot="$(_HuskObjRoot)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
       AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
       FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssets Condition="'@(_HuskAppFile)' != ''" CandidateAssets="@(_HuskAppFile)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)app/" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <ItemGroup Condition="'@(_HuskAppFile)' != ''">
+      <_HuskShellCandidate Include="$(_HuskObjRoot)app/index.html" RelativePath="index.html" />
+    </ItemGroup>
+    <DefineStaticWebAssets Condition="'@(_HuskShellCandidate)' != ''" CandidateAssets="@(_HuskShellCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)app/" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="false" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
       <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
     </DefineStaticWebAssets>
     <DefineStaticWebAssets CandidateAssets="@(_HuskRuntimeCandidate)" SourceType="Computed" SourceId="$(PackageId)"

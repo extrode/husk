@@ -36,11 +36,13 @@ internal static class CloudflareApi
     public const string AssetsField = "assets";
     public const string ConfigField = "config";
 
-    /// <summary>Cloudflare's defaults, written out so the deploy does not depend on them.</summary>
-    public static JsonObject AssetsConfig() => new()
+    /// <summary>Cloudflare's defaults, written out so the deploy does not depend on them. With
+    /// <paramref name="singlePage"/> a navigation to an address with no file gets the root index.html;
+    /// a request for a script or image that has no file is still a 404.</summary>
+    public static JsonObject AssetsConfig(bool singlePage = false) => new()
     {
         ["html_handling"] = "auto-trailing-slash",
-        ["not_found_handling"] = "none",
+        ["not_found_handling"] = singlePage ? "single-page-application" : "none",
     };
 
     public const int HashHexLength = 32;

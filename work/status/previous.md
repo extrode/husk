@@ -1,1 +1,1 @@
-- T12 done 2026-10-31: spec 002 (draft) in docs/specs/002-saaaat-router-and-app-shims/. Next body of work: /plan 002, /tasks, /implement, after the user reviews the spec.
+- Spec 002 built 2026-10-31 (saaaat router and $app/* shims): T1-T12, T14-T17 done; T13 partial (route add/remove in Development needs a rebuild). All 17 saaaat pages render in Chrome, Firefox, Safari. Laws L004-L007 drafted (proposed).

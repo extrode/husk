@@ -1,1 +1,0 @@
-- T13 User-only items (DNS, nuget.org policy, Pare release, Cloudflare token, repo visibility). Then /plan 002 once the spec is reviewed.
