@@ -7,7 +7,7 @@ internal static class Program
     public const string TokenVariable = "CLOUDFLARE_API_TOKEN";
 
     private const string Usage =
-        "usage: Extrode.Husk.Deploy --dir <folder> --script <name> --account <id> --compatibility-date <yyyy-mm-dd> [--dry-run]\n" +
+        "usage: Extrode.Husk.Deploy --dir <folder> --script <name> --account <id> --compatibility-date <yyyy-mm-dd> [--spa] [--dry-run]\n" +
         "  The API token is read from " + TokenVariable + ".";
 
     private static readonly string[] Options = ["--dir", "--script", "--account", "--compatibility-date"];
@@ -24,11 +24,13 @@ internal static class Program
         HttpClient http, Uri baseUrl, bool allowInsecureBaseUrl = false)
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
-        bool dryRun = false;
+        bool dryRun = false, spa = false;
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--dry-run")
                 dryRun = true;
+            else if (args[i] == "--spa")
+                spa = true;
             else if (Options.Contains(args[i]) && i + 1 < args.Length)
                 values[args[i]] = args[++i];
             else
@@ -74,6 +76,7 @@ internal static class Program
             }
             var deployer = new Deployer(http, baseUrl, token, allowInsecureBaseUrl)
             {
+                SinglePage = spa,
                 RetryDelay = allowInsecureBaseUrl ? TimeSpan.Zero : TimeSpan.FromSeconds(1),
             };
             var result = await deployer.DeployAsync(values["--account"], script, values["--compatibility-date"], files);
