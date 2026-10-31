@@ -154,6 +154,17 @@ public sealed class DeployTests : IDisposable
     }
 
     [Fact]
+    public async Task An_upload_whose_connection_drops_is_sent_again_and_the_deploy_goes_on()
+    {
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (0, ""), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
+
+        Assert.True(await Run() == 0, _err.ToString());
+
+        Assert.Equal(["POST", "POST", "POST", "PUT"], _server.Requests.Select(r => r.Method));
+        Assert.Equal(Parts(_server.Requests[1]).Values, Parts(_server.Requests[2]).Values);
+    }
+
+    [Fact]
     public async Task An_upload_answered_503_or_429_is_sent_again_and_the_deploy_goes_on()
     {
         _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (503, "{}"), (429, "{}"), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
@@ -356,6 +367,14 @@ internal sealed class FakeCloudflare : IDisposable
             lock (_responses)
                 if (_responses.Count > 0)
                     (status, body) = _responses.Dequeue();
+            if (status == 0)
+            {
+                context.Response.ContentLength64 = 1000;
+                await context.Response.OutputStream.WriteAsync("{}"u8.ToArray());
+                await context.Response.OutputStream.FlushAsync();
+                context.Response.Abort();
+                continue;
+            }
             context.Response.StatusCode = status;
             context.Response.ContentType = "application/json";
             byte[] bytes = Encoding.UTF8.GetBytes(body);

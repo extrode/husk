@@ -114,7 +114,8 @@ internal sealed class Deployer
     }
 
     /// <summary>One request, sent again up to <paramref name="attempts"/> times in all while the answer is
-    /// 429 or 5xx. <paramref name="content"/> builds a fresh body per attempt: sending disposes it.</summary>
+    /// 429 or 5xx, the connection fails, or the client times out. <paramref name="content"/> builds a fresh
+    /// body per attempt: sending disposes it.</summary>
     private async Task<JsonElement> Send(string step, HttpMethod method, string path, string bearer, Func<HttpContent> content,
         CancellationToken cancellationToken, int attempts = 1)
     {
@@ -122,7 +123,18 @@ internal sealed class Deployer
         {
             using var request = new HttpRequestMessage(method, new Uri(_baseUrl, path)) { Content = content() };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
-            using var response = await _http.SendAsync(request, cancellationToken);
+            HttpResponseMessage sent;
+            try
+            {
+                sent = await _http.SendAsync(request, cancellationToken);
+            }
+            catch (Exception e) when (attempt < attempts && !cancellationToken.IsCancellationRequested
+                && e is HttpRequestException or TaskCanceledException)
+            {
+                await Task.Delay(RetryDelay * attempt, cancellationToken);
+                continue;
+            }
+            using var response = sent;
             int status = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode && attempt < attempts && (status == 429 || status >= 500))
             {
