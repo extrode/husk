@@ -287,9 +287,10 @@ public sealed class PackageTests(PackedFeed feed)
             </Project>
             """);
 
-        (exit, output) = project.Run("build", "both.proj", "--no-restore", "-nologo", "-m:1", "-nodeReuse:false", "--disable-build-servers", "-clp:NoSummary");
+        // Without HUSK004 the second V8 spins at full CPU and the build never ends (2026-10-31, macOS).
+        (exit, output) = project.Exec(TimeSpan.FromMinutes(3), "dotnet", "build", "both.proj", "--no-restore", "-nologo", "-m:1", "-nodeReuse:false", "--disable-build-servers", "-clp:NoSummary");
 
-        Assert.NotEqual(0, exit);
+        Assert.True(exit > 0, output);
         Assert.Contains("error HUSK004", output, StringComparison.Ordinal);
         Assert.Contains("dotnet build-server shutdown", output, StringComparison.Ordinal);
         Assert.Contains(Path.GetDirectoryName(other)!, output, StringComparison.Ordinal);

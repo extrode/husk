@@ -94,7 +94,10 @@ public sealed class TempProject : IDisposable
 
     public (int Exit, string Output) Run(params string[] args) => Exec("dotnet", args);
 
-    public (int Exit, string Output) Exec(string fileName, params string[] args)
+    public (int Exit, string Output) Exec(string fileName, params string[] args) => Exec(Timeout.InfiniteTimeSpan, fileName, args);
+
+    /// <summary>Kills the process tree after <paramref name="limit"/>, for a run whose failure mode is a hang.</summary>
+    public (int Exit, string Output) Exec(TimeSpan limit, string fileName, params string[] args)
     {
         var start = new ProcessStartInfo(fileName)
         {
@@ -111,9 +114,15 @@ public sealed class TempProject : IDisposable
             start.Environment["PATH"] = PathOverride;
         using var process = Process.Start(start)!;
         var stderr = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
-        string stdout = process.StandardOutput.ReadToEnd();
+        var stdout = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
+        if (!process.WaitForExit(limit))
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+            return (-1, $"killed after {limit}\n" + stdout.Result + stderr.Result);
+        }
         process.WaitForExit();
-        return (process.ExitCode, stdout + stderr.Result);
+        return (process.ExitCode, stdout.Result + stderr.Result);
     }
 
     private static string FindRepoRoot()
