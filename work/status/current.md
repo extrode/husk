@@ -1,1 +1,1 @@
-- T13 User-only items (DNS, nuget.org policy, Pare release, Cloudflare token, repo visibility). Then /plan 002 once the spec is reviewed.
+- Spec 002 build (saaaat router and $app/* shims): docs/specs/002-saaaat-router-and-app-shims/002-tasks.md, T1 spike first.
