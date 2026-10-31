@@ -196,7 +196,7 @@ public sealed class PackageTests(PackedFeed feed)
     public void A_fresh_project_restores_both_from_the_feed_and_builds_a_component()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" />
+            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);

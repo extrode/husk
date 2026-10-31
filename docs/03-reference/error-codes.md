@@ -32,7 +32,7 @@ build targets only into projects that reference it directly, and Husk's build ru
 so the project references both:
 
 ```xml
-<PackageReference Include="Extrode.Pare.Build" Version="0.6.1" PrivateAssets="all" />
+<PackageReference Include="Extrode.Pare.Build" Version="0.7.0" PrivateAssets="all" />
 ```
 
 ## HUSK003

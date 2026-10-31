@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <ClearScriptVersion>7.5.1.1</ClearScriptVersion>
-    <PareVersion>0.6.1</PareVersion>
+    <PareVersion>0.7.0</PareVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Extrode.Pare" Version="$(PareVersion)" />
@@ -19,7 +19,7 @@
     <PackageVersion Include="Microsoft.ClearScript.V8.Native.osx-x64" Version="$(ClearScriptVersion)" />
     <PackageVersion Include="Microsoft.ClearScript.V8.Native.win-arm64" Version="$(ClearScriptVersion)" />
     <PackageVersion Include="Microsoft.ClearScript.V8.Native.win-x64" Version="$(ClearScriptVersion)" />
-    <PackageVersion Include="Selenium.WebDriver" Version="4.51.0" />
+    <PackageVersion Include="Selenium.WebDriver" Version="4.52.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
   </ItemGroup>
 </Project>
