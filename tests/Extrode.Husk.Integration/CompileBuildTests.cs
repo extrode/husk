@@ -131,6 +131,33 @@ public sealed partial class CompileBuildTests
     }
 
     [Fact]
+    public void A_compiler_at_another_path_rebuilds_every_source_though_no_file_is_newer()
+    {
+        using var project = App();
+        Assert.Equal(0, project.Build().Exit);
+        string upgraded = project.P("upgraded-svelte");
+        CopyDirectory(TempProject.VendorDir, upgraded);
+        var past = DateTime.UtcNow.AddDays(-30);
+        foreach (var file in Directory.EnumerateFiles(upgraded, "*", SearchOption.AllDirectories))
+            File.SetLastWriteTimeUtc(file, past);
+
+        var (exit, output) = project.Build($"-p:HuskVendorDir={upgraded}/");
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(4, Compiled(output));
+    }
+
+    private static void CopyDirectory(string from, string to)
+    {
+        foreach (var file in Directory.EnumerateFiles(from, "*", SearchOption.AllDirectories))
+        {
+            string target = Path.Combine(to, Path.GetRelativePath(from, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+        }
+    }
+
+    [Fact]
     public void A_changed_HuskDev_rebuilds_every_source()
     {
         using var project = App();
