@@ -165,6 +165,19 @@ public sealed class DeployTests : IDisposable
     }
 
     [Fact]
+    public async Task An_upload_answered_429_waits_the_Retry_After_the_answer_names()
+    {
+        _server.RetryAfterSeconds = 2;
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (429, "{}"), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        Assert.True(await Run() == 0, _err.ToString());
+
+        Assert.InRange(clock.Elapsed, TimeSpan.FromSeconds(1.9), TimeSpan.FromSeconds(30));
+        Assert.Equal(["POST", "POST", "POST", "PUT"], _server.Requests.Select(r => r.Method));
+    }
+
+    [Fact]
     public async Task An_upload_answered_503_or_429_is_sent_again_and_the_deploy_goes_on()
     {
         _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (503, "{}"), (429, "{}"), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
@@ -303,6 +316,9 @@ internal sealed class FakeCloudflare : IDisposable
 
     public Uri BaseUrl { get; }
 
+    /// <summary>Sent as <c>Retry-After</c> with every 429 when set.</summary>
+    public int? RetryAfterSeconds { get; set; }
+
     public FakeCloudflare()
     {
         for (int attempt = 0; ; attempt++)
@@ -376,6 +392,8 @@ internal sealed class FakeCloudflare : IDisposable
                 continue;
             }
             context.Response.StatusCode = status;
+            if (status == 429 && RetryAfterSeconds is int seconds)
+                context.Response.Headers["Retry-After"] = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
             context.Response.ContentType = "application/json";
             byte[] bytes = Encoding.UTF8.GetBytes(body);
             await context.Response.OutputStream.WriteAsync(bytes);
