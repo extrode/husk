@@ -424,7 +424,7 @@ internal sealed class FakeCloudflare : IDisposable
             {
                 context = await _listener.GetContextAsync();
             }
-            catch (Exception e) when (e is HttpListenerException or ObjectDisposedException)
+            catch (Exception e) when (e is HttpListenerException or ObjectDisposedException or ArgumentException or InvalidOperationException)
             {
                 return;
             }
