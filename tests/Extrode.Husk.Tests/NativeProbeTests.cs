@@ -38,6 +38,12 @@ public sealed class NativeProbeTests
     public void Other_libraries_are_left_to_the_default_probe(string name) =>
         Assert.Null(NativeProbe.Candidate("base", name));
 
+    [Theory]
+    [InlineData("7.5.1.1", "7.5.1.1")]
+    [InlineData("7.5.2.0", "7.5.2")]
+    public void The_package_folder_drops_a_zero_fourth_part(string assembly, string folder) =>
+        Assert.Equal(folder, NativeProbe.PackageFolder(Version.Parse(assembly)));
+
     [Fact]
     public void The_development_app_looks_for_the_process_native_beside_the_compiler_then_in_the_cache()
     {

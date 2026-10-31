@@ -44,6 +44,9 @@ internal static class NativeProbe
 
     // <cache>/extrode.husk.build/<version>/tasks/net10.0 is the assembly's folder; the native package sits
     // in <cache> too. Null when the assembly is not in such a layout.
+    // NuGet drops a zero fourth part from a folder name: assembly 7.5.2.0 lives in 7.5.2.
+    internal static string PackageFolder(Version v) => v.Revision == 0 ? v.ToString(3) : v.ToString();
+
     internal static string? PackageCandidate(string assemblyDir, string libraryName, Version clearScriptVersion)
     {
         var parts = libraryName.Split('.');
@@ -52,7 +55,7 @@ internal static class NativeProbe
         var tasks = Path.GetDirectoryName(assemblyDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         if (tasks is null || Path.GetFileName(tasks) != "tasks" || Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(tasks))) is not { } cache)
             return null;
-        return Path.Combine(cache, "microsoft.clearscript.v8.native." + parts[1], clearScriptVersion.ToString(), "runtimes", parts[1], "native", libraryName);
+        return Path.Combine(cache, "microsoft.clearscript.v8.native." + parts[1], PackageFolder(clearScriptVersion), "runtimes", parts[1], "native", libraryName);
     }
 
     private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
