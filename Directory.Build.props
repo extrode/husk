@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>10.0</AnalysisLevel>
-    <Version>0.1.0-preview.2</Version>
+    <Version>0.1.0-preview.3</Version>
     <Authors>Extrode</Authors>
     <Company>Extrode</Company>
     <Copyright>Copyright (c) 2026 Extrode (extrode.com)</Copyright>
