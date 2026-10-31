@@ -146,7 +146,10 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
             foreach (var (extension, text) in CompiledFiles.Texts(path, result))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(outputs[extension])!);
-                File.WriteAllText(outputs[extension], text);
+                // Beside the output, then moved over it: an interrupted build leaves the old file, not half a new one.
+                string temp = outputs[extension] + ".husk-tmp";
+                File.WriteAllText(temp, text);
+                File.Move(temp, outputs[extension], overwrite: true);
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

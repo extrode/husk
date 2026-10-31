@@ -41,7 +41,7 @@ public static partial class PageWriter
                 return script.Value;
             }
             entries.Add(target);
-            return script.Value[..value.Index] + target + script.Value[(value.Index + value.Length)..];
+            return script.Value[..value.Index] + AttributeEscape(target) + script.Value[(value.Index + value.Length)..];
         });
 
         var preload = new List<string>();
@@ -52,7 +52,10 @@ public static partial class PageWriter
         int line = marker.Index == 0 ? 0 : html.LastIndexOf('\n', marker.Index - 1) + 1;
         string indent = html[line..marker.Index].Trim().Length == 0 ? html[line..marker.Index] : "";
         return Inline(html, importMap, string.Concat(preload.Select(url =>
-            "\n" + indent + "<link rel=\"modulepreload\" href=\"" + url.Replace("&", "&amp;", StringComparison.Ordinal).Replace("\"", "&quot;", StringComparison.Ordinal) + "\">")));
+            "\n" + indent + "<link rel=\"modulepreload\" href=\"" + AttributeEscape(url) + "\">")));
+
+        static string AttributeEscape(string url) =>
+            url.Replace("&", "&amp;", StringComparison.Ordinal).Replace("\"", "&quot;", StringComparison.Ordinal);
 
         void Visit(string url)
         {

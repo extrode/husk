@@ -50,6 +50,19 @@ public sealed class PageWriterTests
         """;
 
     [Fact]
+    public void A_quote_or_ampersand_in_the_hashed_urls_is_escaped_in_both_attributes()
+    {
+        const string Map = "{\"imports\": {\"/main.js\": \"/a\\\"b&c.js\"}}";
+        const string Graph = "{\"/a\\\"b&c.js\": [\"/d&e.js\"], \"/d&e.js\": []}";
+
+        string page = PageWriter.Inline("<script type=\"importmap\" data-husk></script><script type=\"module\" src=\"main.js\"></script>", Map, "/", Graph)!;
+
+        Assert.Contains("src=\"/a&quot;b&amp;c.js\"", page);
+        Assert.Contains("<link rel=\"modulepreload\" href=\"/d&amp;e.js\">", page);
+        Assert.DoesNotContain("src=\"/a\"b", page);
+    }
+
+    [Fact]
     public void With_a_graph_the_entry_points_at_its_hashed_url_and_what_it_reaches_is_preloaded()
     {
         const string Page = "<head>\n  <script type=\"importmap\" data-husk></script>\n  <script type=\"module\" src=\"main.js\"></script>\n</head>";
