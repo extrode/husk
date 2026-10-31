@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using Microsoft.Extensions.Logging;
 
@@ -31,6 +32,12 @@ internal sealed class CompilerBridge
                 "so saves are not compiled while the app runs. Build to compile.", mismatch.App, mismatch.Husk);
             return null;
         }
+        if (CompilerContext.AppClearScript() is null && MissingNative(compilerAssembly) is { } native)
+        {
+            logger.LogWarning("Husk's V8 library is not at {Path}; restore the project so Microsoft.ClearScript.V8.Native.* lands in the NuGet cache. " +
+                "Saves are not compiled while the app runs. Build to compile.", native);
+            return null;
+        }
         var context = new CompilerContext(compilerAssembly);
         var type = context.LoadFromAssemblyPath(compilerAssembly).GetType("Extrode.Husk.Compiler.Development", throwOnError: true)!;
         return new CompilerBridge
@@ -39,6 +46,30 @@ internal sealed class CompilerBridge
             Stylesheet = type.GetMethod("Stylesheet")!.CreateDelegate<Func<string[], string[], string>>(),
             Page = type.GetMethod("Page")!.CreateDelegate<Func<string, string, string?>>(),
         };
+    }
+
+    // The V8 library for this process, in the two places the compiler's NativeProbe looks (beside the
+    // compiler, then in the native package beside the Husk package in the NuGet cache). The path it
+    // is expected at when absent from both, else null; null too when the process has no V8 build to look for.
+    internal static string? MissingNative(string compilerAssembly)
+    {
+        string dir = Path.GetFullPath(Path.GetDirectoryName(compilerAssembly)!);
+        string v8 = Path.Combine(dir, "ClearScript.V8.dll");
+        string? os = OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : OperatingSystem.IsLinux() ? "linux" : null;
+        string? arch = RuntimeInformation.ProcessArchitecture switch { Architecture.X64 => "x64", Architecture.Arm64 => "arm64", _ => null };
+        if (os is null || arch is null || !File.Exists(v8))
+            return null;
+        string rid = $"{os}-{arch}";
+        string name = $"ClearScriptV8.{rid}.{(os == "win" ? "dll" : os == "osx" ? "dylib" : "so")}";
+        string beside = Path.Combine(dir, "runtimes", rid, "native", name);
+        if (File.Exists(beside))
+            return null;
+        string? tasks = Path.GetDirectoryName(dir);
+        string? cache = tasks is not null && Path.GetFileName(tasks) == "tasks" ? Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(tasks))) : null;
+        if (cache is null)
+            return beside;
+        string cached = Path.Combine(cache, "microsoft.clearscript.v8.native." + rid, AssemblyName.GetAssemblyName(v8).Version!.ToString(), "runtimes", rid, "native", name);
+        return File.Exists(cached) ? null : cached;
     }
 
     // V8 aborts the process when two ClearScript copies each load their native library, so an app

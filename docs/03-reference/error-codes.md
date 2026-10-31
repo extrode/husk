@@ -12,6 +12,7 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 |---|---|---|
 | [HUSK001](#husk001) | error (MSBuild) | Husk cannot build on this platform |
 | [HUSK002](#husk002) | error (MSBuild) | Husk needs Extrode.Pare.Build |
+| [HUSK003](#husk003) | error (MSBuild) | V8's native library for this machine was not restored |
 | [HUSK100](#husk100) | error | Svelte could not compile the source |
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
@@ -33,6 +34,15 @@ so the project references both:
 ```xml
 <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" PrivateAssets="all" />
 ```
+
+## HUSK003
+
+Extrode.Husk.Build carries no V8 library itself. It depends on Microsoft's
+`Microsoft.ClearScript.V8.Native.<rid>` packages at exactly 7.5.1.1, and the build looks for the one
+for this machine in the NuGet cache. The file is missing when the project was not restored, when a
+package source mapping does not allow `Microsoft.ClearScript.*`, or when the app pins another
+version of a `Microsoft.ClearScript.V8.Native.*` package (a lower pin is NU1605; a higher one means
+7.5.1.1 is never downloaded). Restore the project, allow the packages, or remove the pin.
 
 ## HUSK100
 

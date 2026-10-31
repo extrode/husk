@@ -45,7 +45,7 @@ Husk is built on [Pare](https://github.com/extrode/pare), a TypeScript stripper 
 
 **Is the output the same as Vite's?** The compiler output is the same as Node running Svelte 5.57.3, checked byte for byte. What differs is that there is no bundle: modules load one by one.
 
-**Why 85.2 MB?** It carries V8 for Windows, macOS and Linux on x64 and arm64. It is restored once per machine and is not part of your published app.
+**Why does the first restore download about 83 MB?** Husk depends on V8 for Windows, macOS and Linux on x64 and arm64 (Microsoft's packages, 77 MB, shared across Husk versions); Husk itself is 6 MB. It is restored once per machine and is not part of your published app.
 
 **Can I use it on Alpine?** You cannot build there (`HUSK001`). The published app runs anywhere, so build on Debian or in a glibc container.
 

@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- MSBuild task package. Loads in-process under the .NET SDK's MSBuild (`dotnet build`), and in
        MSBuild 18's .NET task host under Visual Studio's MSBuild (build/Extrode.Husk.Build.targets).
-       The compiler, ClearScript and its six natives ship beside the task, under tasks/, with the
-       compiler's deps.json: the Development app loads the compiler from there (docs/architecture/003). -->
+       The compiler and ClearScript ship beside the task, under tasks/, with the compiler's deps.json:
+       the Development app loads the compiler from there (docs/architecture/003). The six V8 natives
+       are dependencies, not files in the package (see NativeProbe). -->
   <PropertyGroup>
     <RootNamespace>Extrode.Husk.Build</RootNamespace>
     <PackageId>Extrode.Husk.Build</PackageId>
@@ -10,16 +11,25 @@
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageTags>svelte;msbuild;aspnetcore;v8</PackageTags>
     <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_HuskCompilerInPackage</TargetsForTfmSpecificContentInPackage>
-    <!-- NU5100: the dlls under tasks/ are meant to sit outside lib/. -->
-    <NoWarn>$(NoWarn);NU5100</NoWarn>
+    <!-- NU5100: the dlls under tasks/ are meant to sit outside lib/. NU5128: the dependency group has no lib/ to match. -->
+    <NoWarn>$(NoWarn);NU5100;NU5128</NoWarn>
     <!-- ClearScript's dependency, whose license ships too; the pack fails when the compiler resolves another. -->
     <_HuskNewtonsoftVersion>13.0.3</_HuskNewtonsoftVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Framework" PrivateAssets="all" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The natives are not packed: the package depends on Microsoft's six and takes no assets from them,
+         so they restore into the NuGet cache, where NativeProbe finds the build machine's. -->
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-arm64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-x64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-arm64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-x64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-arm64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" PrivateAssets="all" />
@@ -38,7 +48,7 @@
     <InternalsVisibleTo Include="Extrode.Husk.Tests" />
   </ItemGroup>
 
-  <!-- The compiler's whole output, natives under runtimes/ included, goes next to the task. -->
+  <!-- The compiler's output goes next to the task, without the natives under runtimes/: they come from the dependencies above. -->
   <Target Name="_HuskCompilerInPackage">
     <MSBuild Projects="..\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" Targets="GetTargetPath"
              Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)">
@@ -50,11 +60,14 @@
     </PropertyGroup>
     <Error Condition="!$(_HuskCompilerDeps.Contains('&quot;Newtonsoft.Json/$(_HuskNewtonsoftVersion)&quot;'))"
            Text="The compiler no longer resolves Newtonsoft.Json $(_HuskNewtonsoftVersion): update _HuskNewtonsoftVersion and NOTICE.md." />
+    <PropertyGroup>
+      <_HuskTargetsText>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/build/Extrode.Husk.Build.targets'))</_HuskTargetsText>
+    </PropertyGroup>
+    <Error Condition="!$(_HuskTargetsText.Contains('&lt;_HuskClearScriptVersion&gt;$(ClearScriptVersion)&lt;/_HuskClearScriptVersion&gt;'))"
+           Text="build/Extrode.Husk.Build.targets names another ClearScript version than ClearScriptVersion $(ClearScriptVersion)." />
     <ItemGroup>
-      <_HuskCompilerFile Include="$(_HuskCompilerOutput)**" Exclude="$(_HuskCompilerOutput)*.runtimeconfig.json" />
+      <_HuskCompilerFile Include="$(_HuskCompilerOutput)**" Exclude="$(_HuskCompilerOutput)*.runtimeconfig.json;$(_HuskCompilerOutput)runtimes/**" />
       <TfmSpecificPackageFile Include="@(_HuskCompilerFile)" PackagePath="tasks/$(TargetFramework)/%(RecursiveDir)%(Filename)%(Extension)" />
     </ItemGroup>
-    <Error Condition="!Exists('$(_HuskCompilerOutput)runtimes/osx-arm64/native/ClearScriptV8.osx-arm64.dylib')"
-           Text="The compiler's output at $(_HuskCompilerOutput) has no natives; build Extrode.Husk.Compiler first." />
   </Target>
 </Project>
