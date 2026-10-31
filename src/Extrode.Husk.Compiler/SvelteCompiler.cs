@@ -26,9 +26,9 @@ public sealed class SvelteCompiler : IDisposable
     /// <summary>One compiler per compiler file in this process.</summary>
     public static SvelteCompiler Shared(string compilerPath)
     {
-        var stamp = File.GetLastWriteTimeUtc(compilerPath);
         lock (SharedCompilers)
         {
+            var stamp = File.GetLastWriteTimeUtc(compilerPath);
             if (SharedCompilers.TryGetValue(compilerPath, out var cached) && cached.Stamp == stamp)
                 return cached.Compiler;
             cached.Compiler?.Dispose();

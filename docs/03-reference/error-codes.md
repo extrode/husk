@@ -43,8 +43,8 @@ that Pare cannot strip reports Pare's code instead (PARE100 and up, in Pare's er
 ## HUSK101
 
 The build gave a source outputs Husk does not write: a missing `.svelte.css` or `.js.map` item, or
-an output path that is the source itself (a `.svelte.js` outside `wwwroot` with no `PareOutDir`;
-give the item `PareOutDir`, or move it below `wwwroot`). In Development it means the app was built
+an output path that is the source itself (a `.svelte.js` outside `wwwroot` with no `PareOutDir`
+property; set the `PareOutDir` project property, or move it below `wwwroot`). In Development it means the app was built
 by an older Husk than the one compiling; rebuild.
 
 ## HUSK102

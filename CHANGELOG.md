@@ -13,6 +13,30 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 Merged into `dev`, not yet tagged.
 
+### Changed
+
+- Svelte pinned at 5.57.3 (was 5.57.2). In the test fixtures component output is unchanged; rune-module (`.svelte.js`, `.svelte.ts`) output changes with the compiler.
+
+### Fixed
+
+- A page URL containing `&` or `"` is escaped in the rewritten `src` and the modulepreload link.
+- Compiler outputs are written to a temp file and moved over the old one, and the temp file is removed when the write fails.
+- The build stamp covers the compiler's path, so a package upgrade rebuilds every source though no file is newer.
+- Deploy retries uploads on 429 and 5xx, refuses `_headers` and `_redirects`, skips `.DS_Store`, and reports malformed API answers as errors instead of crashing.
+- A dev map from a hashed build logs a warning that saves have no visible effect.
+
+---
+
+## [0.1.0-preview.2] — 2026-10-31
+
+### Fixed
+- Both packages carry the Husk icon. `0.1.0-preview.1` was built from a tag that predates it, so nuget.org shows the default icon for that version.
+- Both packages are also published to GitHub Packages (`release.yml`), so the repository's Packages tab lists them.
+
+---
+
+## [0.1.0-preview.1] — 2026-10-30
+
 ### Added
 - License: ISL-P 1.2 with the ISL-OE 1.2 output exception, as Pare. `LICENSE.md` and `NOTICE.md` at the root;
   both packages carry them and declare the license file.
@@ -31,10 +55,3 @@ Merged into `dev`, not yet tagged.
   app (`samples/svelte-app`), tested in Chrome, Firefox and Safari.
 - Laws L001 (identical to Node), L002 (no change, no compile), L003 (a failed compile keeps the
   last good output), each proven.
-
----
-
-## [0.1.0-preview.1] — <date>
-
-### Added
-- (nothing yet)

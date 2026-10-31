@@ -10,14 +10,20 @@ internal static class AssetManifest
     public static IReadOnlyList<AssetFile> Read(string directory)
     {
         string root = Path.GetFullPath(directory);
-        return Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
-            .Select(full =>
-            {
-                byte[] content = File.ReadAllBytes(full);
-                string path = "/" + Path.GetRelativePath(root, full).Replace('\\', '/');
-                return new AssetFile(path, full, CloudflareApi.Hash(content, full), content.LongLength);
-            })
-            .OrderBy(f => f.Path, StringComparer.Ordinal)
-            .ToList();
+        var files = new List<AssetFile>();
+        foreach (string full in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+        {
+            string name = Path.GetFileName(full);
+            if (name == ".DS_Store")
+                continue;
+            string relative = Path.GetRelativePath(root, full);
+            if (relative is "_headers" or "_redirects")
+                throw new InvalidOperationException($"{relative} is not supported: Cloudflare reads it as configuration, which this deploy does not send yet. Remove it from {directory}.");
+            byte[] content = File.ReadAllBytes(full);
+            string path = "/" + (Path.DirectorySeparatorChar == '\\' ? relative.Replace('\\', '/') : relative);
+            files.Add(new AssetFile(path, full, CloudflareApi.Hash(content, full), content.LongLength));
+        }
+        files.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
+        return files;
     }
 }

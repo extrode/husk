@@ -30,6 +30,9 @@ internal sealed class HuskSession(string mapPath)
                     // compiler that fails to load is not retried, which would leak a load context per save.
                     if (_map is not null)
                         _mapStamp = stamp;
+                    if (_map is { HashNames: true })
+                        logger.LogWarning("The app was built with HuskHashNames=true: the browser loads hashed copies that only a build writes, " +
+                            "so a save has no visible effect. Run with HuskHashNames=false (the Debug default) to compile on save");
                     if (_map is null)
                         logger.LogError("{Path} is missing; build the project again to compile on save", mapPath);
                     else if (_bridge is null)

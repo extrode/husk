@@ -54,5 +54,15 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Repo settings, updated: `main` exists (pushed 2026-10-30); Pages is on at husk.extrode.com and deploys from `main` after `main` was added to the github-pages environment's branch policy; HTTPS enforcement turned on by the user.
 - CI (2026-10-30, run 41040030030 on f495932): ubuntu and macOS pass; windows had 2 failures, fixed in 7ddb53d and confirmed on wp1 (Windows, ssh): Husk.Tests 174 of 174, Integration 54 passed and 3 skipped, and both Windows-only fixes fail when reverted. Open: SampleWatchTests fixed for macOS (see above); windows and ubuntu passed run 41052658431; the ubuntu L003 flake (HuskDevelopmentTests) did not reproduce in Docker, the baseline now waits for outputs to settle.
 - Husk Deploy: `Buckets` calls `GetString()!` on each hash, so a null or non-string entry from the API is an unhandled NullReference, not a DeployException; `AssetManifest.Read` uploads every file including dotfiles (.DS_Store) and follows file symlinks.
-- Husk Build: `HuskAssets` checks `StartsWith(served)` with no trailing separator, so `obj/pare2/` matches `obj/pare/`.
 - Husk tests: CorpusTests riwalqalb and saaaat fail when the sibling checkout's worktree path (`ikhbat.org/riwalqalb.com/.worktrees/fix/whisper-window-skip`) is gone; make the corpus tests skip a missing root.
+- Husk Build (audit 2026-10-31): HUSK200 warnings promoted to errors still write the outputs, so a retry goes green.
+- Husk Build: HUSK002 does not reject Pare.Build 0.4.0 (no `PareCompileSource`); needs a version property from Pare.
+- Husk Build: up-to-date check compares mtimes, so an equal-mtime or coarse-resolution race can skip a rebuild.
+- Husk Build: `$(_HuskCompilerOutput)**` packs stray files and the pdb is inconsistent.
+- Husk Compiler: the V8 engine has no heap or time limit.
+- Husk Compiler: ModuleGraph regex ignores comments and strings; PageWriter injects LF preloads into CRLF pages; `#` or `?` in `baseUrl` breaks Uri resolution; sourceMappingURL is not percent-encoded.
+- Husk AspNetCore: HuskSession does not retry after a missing compiler file is restored.
+- Husk Deploy: wrangler `_headers`/`_redirects` are refused, not implemented.
+- Husk tests: EnginePool `Discard`, `Return` after `Dispose`, racing threads; `CompileAll` when one worker throws.
+- Husk review 8ff3cbb..607bae0: Deployer 429 retry ignores `Retry-After` and totals ~3s; Program ties zero retry delay to `allowInsecureBaseUrl`; PageWriter `AttributeEscape` leaves `'` and whitespace unescaped for single-quoted/unquoted `src`; HuskSession still loads the compiler bridge and compiles on save when the map says `HashNames: true`.
+- Husk docs (audit 2026-10-31): error-codes.md lacks HUSK101 "listed twice" and the HUSK100 positionless/line-0 variants; first-app.md step 8 should give the real `obj/Debug/net10.0/pare/` and `…/husk/` paths and drop the redundant PrivateAssets step; `.svelte.ts` to `.svelte.js` import example; CONTRIBUTING.md test prerequisites (safaridriver, Git `sh` on Windows, corpus checkouts); regenerate `dist/docs-site` and bump install snippets to preview.2 once it is on nuget.org.

@@ -15,7 +15,7 @@ const [root, out, strippedRoot] = process.argv.length > 2
   ? process.argv.slice(2)
   : ["tests/fixtures", "tests/fixtures/expected.tsv", "tests/fixtures"];
 const skipped = new Set(["node_modules", ".git", ".svelte-kit", "build", "dist"]);
-const svelte = createRequire(import.meta.url)("../../third-party/svelte-5.57.2/svelte/compiler/index.js");
+const svelte = createRequire(import.meta.url)("../../third-party/svelte-5.57.3/svelte/compiler/index.js");
 vm.runInThisContext(readFileSync("src/Extrode.Husk.Compiler/js/husk-compile.js", "utf8"));
 
 const sha = (text) => createHash("sha256").update(text, "utf8").digest("hex");

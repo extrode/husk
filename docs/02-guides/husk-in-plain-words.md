@@ -7,7 +7,7 @@ Everything you need to use Husk, without the internals.
 1. MSBuild finds your `.svelte`, `.svelte.ts` and `.html` files under `wwwroot`.
 2. Husk starts a small JavaScript engine (V8) inside the build and loads the Svelte compiler into it.
 3. Each component is compiled to an ES module, a source map and some CSS. Plain `.ts` files are stripped of their types.
-4. The results are written under `obj/`, with a content hash in the name, and served as static web assets at the path of the source file.
+4. The results are written under `obj/`, with a content hash in the name (when `HuskHashNames` is on, the default outside Debug), and served as static web assets at the path of the source file.
 5. Your `index.html` gets an import map that tells the browser where `svelte` and your modules are.
 
 That is all. The browser runs the output as it is: no bundle, and no Husk code at run time.
@@ -18,7 +18,7 @@ That is all. The browser runs the output as it is: no bundle, and no Husk code a
 
 With `builder.AddHusk()` in Development, the running app watches your files. A saved component is compiled again in the same process, the engine is already warm, and `dotnet watch` reloads the page. If the save has an error, it is logged and the browser keeps the last good version.
 
-In Release, `AddHusk()` does nothing. The compiled files were already made by the build.
+Outside the Development environment, `AddHusk()` does nothing. The compiled files were already made by the build.
 
 ## Words you will meet
 
@@ -43,9 +43,9 @@ Husk is built on [Pare](https://github.com/extrode/pare), a TypeScript stripper 
 
 **Does it need Node anywhere?** No. Not to build, not to run, not in CI.
 
-**Is the output the same as Vite's?** The compiler output is the same as Node running Svelte 5.57.2, checked byte for byte. What differs is that there is no bundle: modules load one by one.
+**Is the output the same as Vite's?** The compiler output is the same as Node running Svelte 5.57.3, checked byte for byte. What differs is that there is no bundle: modules load one by one.
 
-**Why 82.6 MB?** It carries V8 for Windows, macOS and Linux on x64 and arm64. It is restored once per machine and is not part of your published app.
+**Why 85.2 MB?** It carries V8 for Windows, macOS and Linux on x64 and arm64. It is restored once per machine and is not part of your published app.
 
 **Can I use it on Alpine?** You cannot build there (`HUSK001`). The published app runs anywhere, so build on Debian or in a glibc container.
 

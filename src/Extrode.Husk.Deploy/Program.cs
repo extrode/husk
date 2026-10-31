@@ -14,7 +14,7 @@ internal static class Program
 
     private static async Task<int> Main(string[] args)
     {
-        using var http = new HttpClient();
+        using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
         return await Run(args, Environment.GetEnvironmentVariable(TokenVariable), Console.Out, Console.Error, http, CloudflareApi.BaseUrl);
     }
 
@@ -55,28 +55,31 @@ internal static class Program
             return 2;
         }
 
-        var files = AssetManifest.Read(dir);
-        if (dryRun)
-        {
-            foreach (var file in files)
-                stdout.WriteLine($"{file.Size,12}  {file.Path}");
-            stdout.WriteLine($"{files.Count} files, {files.Sum(f => f.Size)} bytes. Dry run: nothing sent.");
-            return 0;
-        }
-        if (string.IsNullOrEmpty(token))
-        {
-            stderr.WriteLine($"{TokenVariable} is not set.");
-            return 2;
-        }
-
         try
         {
-            var deployer = new Deployer(http, baseUrl, token, allowInsecureBaseUrl);
+            var files = AssetManifest.Read(dir);
+            if (dryRun)
+            {
+                foreach (var file in files)
+                    stdout.WriteLine($"{file.Size,12}  {file.Path}");
+                stdout.WriteLine($"{files.Count} files, {files.Sum(f => f.Size)} bytes. Dry run: nothing sent.");
+                return 0;
+            }
+            if (string.IsNullOrEmpty(token))
+            {
+                stderr.WriteLine($"{TokenVariable} is not set.");
+                return 2;
+            }
+            var deployer = new Deployer(http, baseUrl, token, allowInsecureBaseUrl)
+            {
+                RetryDelay = allowInsecureBaseUrl ? TimeSpan.Zero : TimeSpan.FromSeconds(1),
+            };
             var result = await deployer.DeployAsync(values["--account"], script, values["--compatibility-date"], files);
             stdout.WriteLine($"Deployed {script}: {files.Count} files, {result.Uploaded} uploaded, {result.Skipped} unchanged.");
             return 0;
         }
-        catch (Exception e) when (e is DeployException or HttpRequestException or InvalidOperationException)
+        catch (Exception e) when (e is DeployException or HttpRequestException or InvalidOperationException or OperationCanceledException
+            or System.Text.Json.JsonException or IOException or UnauthorizedAccessException)
         {
             stderr.WriteLine(e.Message);
             return 1;

@@ -39,7 +39,8 @@ public static class Development
     }
 
     /// <summary><see cref="StylesheetWriter.Join"/> over parallel arrays of component names and CSS.</summary>
-    public static string Stylesheet(string[] names, string[] css) => StylesheetWriter.Join(names.Zip(css));
+    public static string Stylesheet(string[] names, string[] css) =>
+        names.Length == css.Length ? StylesheetWriter.Join(names.Zip(css)) : throw new ArgumentException("names and css must have the same length.", nameof(css));
 
     /// <summary><see cref="PageWriter.Inline"/>: the page with the map inlined, or null without the marker.</summary>
     public static string? Page(string html, string importMap) => PageWriter.Inline(html, importMap);
