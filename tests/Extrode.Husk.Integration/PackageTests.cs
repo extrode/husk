@@ -226,7 +226,8 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.AspNetCore.dll")));
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.development.json")));
         Assert.Empty(Directory.GetFiles(project.P("bin"), "*ClearScript*", SearchOption.AllDirectories));
-        Assert.Single(Directory.GetFiles(project.P($"packages/microsoft.clearscript.v8.native.{HostRid}/7.5.1.1/runtimes/{HostRid}/native"), $"ClearScriptV8.{HostRid}.*"));
+        string ext = OperatingSystem.IsWindows() ? "dll" : OperatingSystem.IsMacOS() ? "dylib" : "so";
+        Assert.True(File.Exists(project.P($"packages/microsoft.clearscript.v8.native.{HostRid}/7.5.1.1/runtimes/{HostRid}/native/ClearScriptV8.{HostRid}.{ext}")));
     }
 
     [Fact]

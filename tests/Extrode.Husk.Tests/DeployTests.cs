@@ -424,27 +424,38 @@ internal sealed class FakeCloudflare : IDisposable
             lock (_responses)
                 if (_responses.Count > 0)
                     (status, body) = _responses.Dequeue();
-            if (status == -1)
+            try
             {
-                await Task.Delay(TimeSpan.FromSeconds(3));
-                status = 200;
+                await Answer(context, status, body);
             }
-            if (status == 0)
+            catch (Exception e) when (e is HttpListenerException or IOException or ObjectDisposedException)
             {
-                context.Response.ContentLength64 = 1000;
-                await context.Response.OutputStream.WriteAsync("{}"u8.ToArray());
-                await context.Response.OutputStream.FlushAsync();
-                context.Response.Abort();
-                continue;
             }
-            context.Response.StatusCode = status;
-            if (status == 429 && RetryAfterSeconds is int seconds)
-                context.Response.Headers["Retry-After"] = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            context.Response.ContentType = "application/json";
-            byte[] bytes = Encoding.UTF8.GetBytes(body);
-            await context.Response.OutputStream.WriteAsync(bytes);
-            context.Response.Close();
         }
+    }
+
+    private async Task Answer(HttpListenerContext context, int status, string body)
+    {
+        if (status == -1)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            status = 200;
+        }
+        if (status == 0)
+        {
+            context.Response.ContentLength64 = 1000;
+            await context.Response.OutputStream.WriteAsync("{}"u8.ToArray());
+            await context.Response.OutputStream.FlushAsync();
+            context.Response.Abort();
+            return;
+        }
+        context.Response.StatusCode = status;
+        if (status == 429 && RetryAfterSeconds is int seconds)
+            context.Response.Headers["Retry-After"] = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        context.Response.ContentType = "application/json";
+        byte[] bytes = Encoding.UTF8.GetBytes(body);
+        await context.Response.OutputStream.WriteAsync(bytes);
+        context.Response.Close();
     }
 
     private static int FreePort()
