@@ -14,15 +14,15 @@ V8, so it does exactly that. You save a component, `dotnet watch` reloads the pa
 ![How Husk builds](docs/assets/how-husk-builds.svg)
 
 > [!NOTE]
-> Husk is a preview. The latest release is `0.1.0-preview.5`, and the API can still change.
+> Husk is a preview. The latest release is `0.1.0-preview.6`, and the API can still change.
 
 ## Try it
 
 You need the .NET 10 SDK. In a web project:
 
 ```sh
-dotnet add package Extrode.Husk.Build --version 0.1.0-preview.5
-dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.5
+dotnet add package Extrode.Husk.Build --version 0.1.0-preview.6
+dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.6
 ```
 
 Put `PrivateAssets="all"` on the `Extrode.Husk.Build` reference (it is a build tool, not app
