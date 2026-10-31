@@ -226,6 +226,20 @@ public sealed class HuskDevelopmentTests : IDisposable
     }
 
     [Fact]
+    public async Task A_stylesheet_that_cannot_be_replaced_leaves_no_temp_file()
+    {
+        Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: red; }</style>\n");
+        WriteMaps("A");
+        Directory.CreateDirectory(P("obj/husk/husk.css"));
+        await using var app = (IAsyncDisposable)await Start();
+
+        Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: green; }</style>\n");
+        WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
+
+        Assert.False(File.Exists(P("obj/husk/husk.css.husk-tmp")));
+    }
+
+    [Fact]
     public async Task A_page_save_inlines_the_current_import_map()
     {
         Directory.CreateDirectory(P("obj/husk"));

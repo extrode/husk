@@ -72,6 +72,7 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
     {
         if (texts.Keys.FirstOrDefault(p => p.EndsWith(".svelte.css", StringComparison.Ordinal)) is not { } saved)
             return;
+        string temp = map.Stylesheet + ".husk-tmp";
         try
         {
             var css = map.Styles.Select(s => string.Equals(Path.GetFullPath(s.Css), Path.GetFullPath(saved), PathComparison) ? texts[saved] : File.Exists(s.Css) ? File.ReadAllText(s.Css) : "");
@@ -80,12 +81,13 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(map.Stylesheet)!);
                 // Beside it, then moved over it: the static-file server never reads half a stylesheet.
-                File.WriteAllText(map.Stylesheet + ".husk-tmp", text);
-                File.Move(map.Stylesheet + ".husk-tmp", map.Stylesheet, overwrite: true);
+                File.WriteAllText(temp, text);
+                File.Move(temp, map.Stylesheet, overwrite: true);
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
+            try { File.Delete(temp); } catch (Exception d) when (d is IOException or UnauthorizedAccessException) { }
             logger.LogError("{Path}: error HUSK102: cannot write the app's stylesheet: {Message}", map.Stylesheet, e.Message);
         }
     }
