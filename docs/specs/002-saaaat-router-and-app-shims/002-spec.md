@@ -84,7 +84,7 @@ Husk and still needs Deno. The need is narrow: saaaat uses a small part of Svelt
   browser (spec 001's R11 behaviour extends to the router's inputs).
 
 ## Acceptance criteria
-- Given `apps/web` as it is, when it is built with Husk alone, then every one of its 16 pages
+- Given `apps/web` as it is, when it is built with Husk alone, then every one of its pages (17 `+page.svelte` files on 2026-10-31)
   renders at its address in the three browsers with no console error.
 - Given the app is open on `/month`, when the user follows an in-app link, then the document is
   not reloaded (a value set on `window` before the click is still there after).
