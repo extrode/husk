@@ -159,7 +159,7 @@
 <span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.AspNetCore&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.3&quot;</span> <span class="tok-punc">/&gt;</span>
 </code></pre>
 </div>
-<p>The first restore downloads the 85.2 MB Husk package. After that it is cached.</p>
+<p>The first restore downloads about 83 MB: Husk itself (6 MB) and Microsoft's V8 packages for six platforms (77 MB, shared across Husk versions). After that it is cached.</p>
 <h2 id="3-write-a-component">3. Write a component</h2>
 <p>Create <code>wwwroot/App.svelte</code>:</p>
 <div class="code-block">
