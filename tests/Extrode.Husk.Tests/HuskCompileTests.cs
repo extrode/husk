@@ -106,6 +106,7 @@ public sealed class HuskCompileTests : IDisposable
         Assert.False(Run(false, items));
 
         Assert.Equal("HUSK102", Assert.Single(_engine.Errors).Code);
+        Assert.Empty(Directory.GetFiles(P("obj/pare"), "*.husk-tmp"));
     }
 
     [Fact]

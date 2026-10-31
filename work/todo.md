@@ -64,3 +64,4 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk AspNetCore: HuskSession does not retry after a missing compiler file is restored.
 - Husk Deploy: wrangler `_headers`/`_redirects` are refused, not implemented.
 - Husk tests: EnginePool `Discard`, `Return` after `Dispose`, racing threads; `CompileAll` when one worker throws.
+- Husk review 8ff3cbb..607bae0: Deployer 429 retry ignores `Retry-After` and totals ~3s; Program ties zero retry delay to `allowInsecureBaseUrl`; PageWriter `AttributeEscape` leaves `'` and whitespace unescaped for single-quoted/unquoted `src`; HuskSession still loads the compiler bridge and compiles on save when the map says `HashNames: true`.
