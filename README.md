@@ -50,14 +50,15 @@ and the build stops with `HUSK002`.
 | `dotnet publish` | the site ships compiled, hashed files and no sources |
 | write bad Svelte | the build fails: `App.svelte(4,3): error HUSK100: ...`, like a C# error |
 
-TypeScript works in components (`<script lang="ts">`) and in `.svelte.ts` rune modules. Pare
-strips the types. The compiler output is checked byte for byte against Node running the same
+TypeScript works in components (`<script lang="ts">`, handled by Svelte) and in `.svelte.ts` rune modules
+(Pare strips the types). The compiler output is checked byte for byte against Node running the same
 Svelte (5.57.3), so you get what Svelte gives you.
 
 ## What it costs
 
-- The build package is 85.2 MB (V8 for six platforms plus Svelte). It is restored once per machine
-  and none of it ships with your app.
+- The build package is about 6 MB (compiler plus Svelte). It depends on Microsoft's V8 native
+  packages for six platforms (77 MB, shared across Husk versions). Both are restored once per
+  machine and none of it ships with your app.
 - There is no bundler. The browser loads many small modules through an import map.
 - Husk compiles components. It is not SvelteKit: no router, no server rendering yet.
 - The build machine has to be Windows, macOS or glibc Linux, x64 or arm64. The app you publish

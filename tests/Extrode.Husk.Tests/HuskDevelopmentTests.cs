@@ -220,8 +220,23 @@ public sealed class HuskDevelopmentTests : IDisposable
         static string Block(string css, string name) => css[css.IndexOf($"/* {name} */", StringComparison.Ordinal)..];
         Assert.Equal(Block(before, "B.svelte"), Block(after, "B.svelte"));
         Assert.DoesNotContain("red", after);
+        Assert.False(File.Exists(stylesheet + ".husk-tmp"));
         WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
         Assert.Equal(Compiler.StylesheetWriter.Join([("A.svelte", File.ReadAllText(ComponentOutputs("A")[1])), ("B.svelte", File.ReadAllText(ComponentOutputs("B")[1]))]), after);
+    }
+
+    [Fact]
+    public async Task A_stylesheet_that_cannot_be_replaced_leaves_no_temp_file()
+    {
+        Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: red; }</style>\n");
+        WriteMaps("A");
+        Directory.CreateDirectory(P("obj/husk/husk.css"));
+        await using var app = (IAsyncDisposable)await Start();
+
+        Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: green; }</style>\n");
+        WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
+
+        Assert.False(File.Exists(P("obj/husk/husk.css.husk-tmp")));
     }
 
     [Fact]

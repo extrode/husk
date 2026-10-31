@@ -8,13 +8,13 @@ Husk runs the Svelte compiler inside the .NET build instead. It embeds Google's 
 
 - **One command.** `dotnet build`, `dotnet watch`, `dotnet publish`. That is the whole workflow.
 - **No bundler.** Components become ES modules and the browser loads them directly. An import map tells it where `svelte` and your files live, with content hashes in the names so caches stay right.
-- **TypeScript included.** `<script lang="ts">` works, and so do `.svelte.ts` rune modules. Pare strips the types.
+- **TypeScript included.** `<script lang="ts">` works, and so do `.svelte.ts` rune modules, whose types Pare strips.
 - **Fast saves.** In Development the engines stay warm, so a saved component is recompiled in the running app and the page reloads.
 - **Readable errors.** A bad component fails the build like a C# error: `App.svelte(4,3): error HUSK100: ...`.
 
 ## What it costs
 
-- **An 85.2 MB package, once per machine.** It holds V8 for six platforms and Svelte. Nothing from it ships with your app.
+- **A 6 MB package plus V8, once per machine.** The package holds the compiler and Svelte; Microsoft's V8 packages for six platforms come with it and are shared across Husk versions. Nothing from it ships with your app.
 - **No bundling.** Your app serves many small files. That is fine on HTTP/2 and HTTP/3, and Husk adds `modulepreload` links (with `HuskHashNames`, on by default outside Debug), but if you need one big file, Husk is not it.
 - **No SvelteKit.** Husk compiles components. Routing, server rendering and `$app/*` modules are not part of it yet.
 - **A build machine that V8 supports:** Windows, macOS or glibc Linux, x64 or arm64. Alpine and FreeBSD cannot build. The app you publish runs anywhere.

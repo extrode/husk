@@ -135,7 +135,7 @@ public sealed class PackageTests(PackedFeed feed)
     }
 
     [Fact]
-    public void The_build_package_carries_the_compiler_natives_vendored_Svelte_and_licenses()
+    public void The_build_package_carries_the_compiler_vendored_Svelte_and_licenses_and_depends_on_the_natives()
     {
         var entries = Entries("Extrode.Husk.Build");
 
@@ -146,11 +146,15 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.Contains("tasks/net10.0/Extrode.Husk.Compiler.deps.json", entries);
         Assert.Contains("third-party/svelte-5.57.3/svelte/compiler/index.js", entries);
         Assert.Contains("third-party/svelte-5.57.3/runtime-imports.json", entries);
-        Assert.Equal(
-            ["linux-arm64/native/ClearScriptV8.linux-arm64.so", "linux-x64/native/ClearScriptV8.linux-x64.so", "osx-arm64/native/ClearScriptV8.osx-arm64.dylib",
-             "osx-x64/native/ClearScriptV8.osx-x64.dylib", "win-arm64/native/ClearScriptV8.win-arm64.dll", "win-x64/native/ClearScriptV8.win-x64.dll"],
-            entries.Where(e => e.StartsWith("tasks/net10.0/runtimes/", StringComparison.Ordinal) && !e.EndsWith(".pem", StringComparison.Ordinal) && !e.EndsWith(".sig", StringComparison.Ordinal))
-                .Select(e => e["tasks/net10.0/runtimes/".Length..]).Order(StringComparer.Ordinal));
+        Assert.Contains("tasks/net10.0/ClearScript.V8.dll", entries);
+        Assert.DoesNotContain(entries, e => e.Contains("/runtimes/", StringComparison.Ordinal));
+        Assert.DoesNotContain(entries, e => Path.GetFileName(e).StartsWith("ClearScriptV8.", StringComparison.Ordinal));
+        using (var zip = ZipFile.OpenRead(feed.Package("Extrode.Husk.Build")))
+        {
+            string nuspec = new StreamReader(zip.GetEntry("Extrode.Husk.Build.nuspec")!.Open()).ReadToEnd();
+            foreach (var rid in new[] { "linux-arm64", "linux-x64", "osx-arm64", "osx-x64", "win-arm64", "win-x64" })
+                Assert.Contains($"<dependency id=\"Microsoft.ClearScript.V8.Native.{rid}\" version=\"[7.5.1.1]\" exclude=\"Runtime,Compile,Build,Native,Analyzers\" />", nuspec, StringComparison.Ordinal);
+        }
         Assert.Equal(
             ["third-party/clearscript-7.5.1.1/License.txt", "third-party/clearscript-7.5.1.1/V8/LICENSE",
              "third-party/clearscript-7.5.1.1/V8/LICENSE.fdlibm", "third-party/clearscript-7.5.1.1/V8/LICENSE.strongtalk", "third-party/clearscript-7.5.1.1/V8/LICENSE.v8",
@@ -204,6 +208,7 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.AspNetCore.dll")));
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.development.json")));
         Assert.Empty(Directory.GetFiles(project.P("bin"), "*ClearScript*", SearchOption.AllDirectories));
+        Assert.NotEmpty(Directory.GetFiles(project.P("packages"), "ClearScriptV8.*", SearchOption.AllDirectories));
     }
 
     [Fact]

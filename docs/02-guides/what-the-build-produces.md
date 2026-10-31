@@ -35,8 +35,11 @@ Set `EnableHuskDefaultItems` to `false` and list the items:
   <EnableHuskDefaultItems>false</EnableHuskDefaultItems>
 </PropertyGroup>
 <ItemGroup>
-  <HuskComponent Include="Components/**/*.svelte" />
+  <HuskComponent Include="Components/**/*.svelte" PareServeAt="/Components" />
+  <HuskPage Include="wwwroot/**/*.html" />
 </ItemGroup>
 ```
+
+Without `PareServeAt` Pare writes the outputs next to each source (PARE202) and serves none of them. Without the `HuskPage` item no page gets its import map.
 
 `HuskDev` is Svelte's `dev` option; it defaults to true in Debug.

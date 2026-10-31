@@ -31,8 +31,9 @@ public sealed class SvelteCompiler : IDisposable
             var stamp = File.GetLastWriteTimeUtc(compilerPath);
             if (SharedCompilers.TryGetValue(compilerPath, out var cached) && cached.Stamp == stamp)
                 return cached.Compiler;
-            cached.Compiler?.Dispose();
+            // Built before the old one is disposed: a file that cannot be read leaves the old one usable.
             var compiler = new SvelteCompiler(compilerPath);
+            cached.Compiler?.Dispose();
             SharedCompilers[compilerPath] = (stamp, compiler);
             return compiler;
         }

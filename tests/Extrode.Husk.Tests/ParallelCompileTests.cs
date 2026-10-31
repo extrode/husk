@@ -51,7 +51,7 @@ public sealed class ParallelCompileTests
             Assert.Equal((one[i].Js, one[i].Css, one[i].Map), (all[i].Js, all[i].Css, all[i].Map));
         }
         int workers = SvelteCompiler.Workers(Synthetic.Length, Environment.ProcessorCount);
-        Assert.InRange(parallel.Pool.Started, 2, workers);
+        Assert.InRange(parallel.Pool.Started, Math.Min(2, workers), workers);
         Assert.All(parallel.Pool.Engines, e => Assert.True(e.Compiles > 0));
         Assert.Equal(Synthetic.Length, parallel.Pool.Engines.Sum(e => e.Compiles));
         TestContext.Current.SendDiagnosticMessage(

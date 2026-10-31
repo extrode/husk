@@ -65,6 +65,8 @@ internal static class Program
                 stdout.WriteLine($"{files.Count} files, {files.Sum(f => f.Size)} bytes. Dry run: nothing sent.");
                 return 0;
             }
+            // A secret read from a file or a CI variable often ends in a newline, which a header value refuses.
+            token = token?.Trim();
             if (string.IsNullOrEmpty(token))
             {
                 stderr.WriteLine($"{TokenVariable} is not set.");
@@ -79,7 +81,7 @@ internal static class Program
             return 0;
         }
         catch (Exception e) when (e is DeployException or HttpRequestException or InvalidOperationException or OperationCanceledException
-            or System.Text.Json.JsonException or IOException or UnauthorizedAccessException)
+            or System.Text.Json.JsonException or FormatException or IOException or UnauthorizedAccessException)
         {
             stderr.WriteLine(e.Message);
             return 1;

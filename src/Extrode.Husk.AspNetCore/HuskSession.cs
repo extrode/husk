@@ -45,7 +45,7 @@ internal sealed class HuskSession(string mapPath)
                 catch (Exception e)
                 {
                     _map = null;
-                    logger.LogError(e, "Husk could not load its compiler from {Path}; build the project again to compile on save", mapPath);
+                    logger.LogError(e, "Husk could not read {Path} or load the compiler it names; build the project again to compile on save", mapPath);
                 }
             }
             else if (_map is null || _bridge is null)

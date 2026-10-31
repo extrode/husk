@@ -15,6 +15,7 @@ Merged into `dev`, not yet tagged.
 
 ### Changed
 
+- `Extrode.Husk.Build` no longer packs the six V8 natives (85.2 MB to about 6 MB). It depends on `Microsoft.ClearScript.V8.Native.<rid>` at exactly 7.5.1.1; the build and the Development app find the native in the NuGet cache. New error HUSK003 when it is missing. Package source mappings must allow `Microsoft.ClearScript.*`; an app pinning another native version conflicts, and lock-file consumers (`--locked-mode`) must regenerate `packages.lock.json` for the six new dependencies.
 - Svelte pinned at 5.57.3 (was 5.57.2). In the test fixtures component output is unchanged; rune-module (`.svelte.js`, `.svelte.ts`) output changes with the compiler.
 
 ### Fixed
@@ -24,6 +25,9 @@ Merged into `dev`, not yet tagged.
 - The build stamp covers the compiler's path, so a package upgrade rebuilds every source though no file is newer.
 - Deploy retries uploads on 429 and 5xx, refuses `_headers` and `_redirects`, skips `.DS_Store`, and reports malformed API answers as errors instead of crashing.
 - A dev map from a hashed build logs a warning that saves have no visible effect.
+- A compiler file that briefly goes missing no longer leaves a disposed compiler cached for the life of the process.
+- Hashed module copies are written atomically, and a truncated copy is written again, so an interrupted build no longer publishes an empty fingerprinted file.
+- Deploy trims the Cloudflare token and reports one with a newline inside as exit 1, not a crash; the Development stylesheet is written atomically.
 
 ---
 

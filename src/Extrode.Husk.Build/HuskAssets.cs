@@ -115,10 +115,14 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             byte[] bytes = File.ReadAllBytes(path);
             string name = ModuleGraph.Hashed(relative, ModuleGraph.Hash(bytes));
             string copy = Path.GetFullPath(Path.Combine(folder, name));
-            if (kept.Add(copy) && !File.Exists(copy))
+            // A copy of the wrong length is a build cut short before the move below existed; the name is a hash, so any other copy is right.
+            if (kept.Add(copy) && (!File.Exists(copy) || new FileInfo(copy).Length != bytes.Length))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(copy)!);
-                File.WriteAllBytes(copy, bytes);
+                // Beside the copy, then moved over it: a build cut short must not leave half a file under a hash that says it is whole.
+                string temp = copy + ".husk-tmp";
+                File.WriteAllBytes(temp, bytes);
+                File.Move(temp, copy, overwrite: true);
             }
             result.Add((root + relative, root + name, Encoding.UTF8.GetString(bytes)));
         }
