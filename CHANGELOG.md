@@ -13,6 +13,10 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 Merged into `dev`, not yet tagged.
 
+### Added
+
+- A SvelteKit-style client router (spec 002): `HuskRoutes`, `HuskShell`, `HuskAlias`, `HuskImport`, `HuskEnv` items and the `HuskHooks` property build `src/routes/` into a single-page app with `$app/navigation`, `$app/state`, `$app/environment` and `@sveltejs/kit` shims. Unsupported SvelteKit features fail with HUSK300 to HUSK306. `UseHuskSpa()` serves the single-page fallback in Development and `husk-deploy --spa` on Cloudflare. See `docs/02-guides/router.md`. Not covered: Content-Security-Policy, service worker and manifest.
+
 ---
 
 ## [0.1.0-preview.6] — 2026-10-31
