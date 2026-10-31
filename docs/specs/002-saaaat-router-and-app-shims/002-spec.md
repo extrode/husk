@@ -118,9 +118,9 @@ Husk and still needs Deno. The need is narrow: saaaat uses a small part of Svelt
   redirect to.
 - Given the app is open on `/month`, when the user follows an in-app link, then the document is
   not reloaded (a value set on `window` before the click is still there after).
-- Given `/settings/nonsense`, then the browser ends on `/settings/appearance`. (Whether back then
-  goes to the entry before `/settings/nonsense` is measured in the current SvelteKit app first
-  and the criterion set to that.)
+- Given `/settings/nonsense`, then the browser ends on `/settings/appearance`, and back goes to the
+  entry before `/settings/nonsense` (the redirect replaces its entry, R4). Measured on Husk in the
+  three browsers 2026-10-31; the SvelteKit original is not installed to compare.
 - Given `/no/such/page`, then `+error.svelte` shows status 404.
 - Given a page reading `page.url.searchParams.get('year')`, when `goto('?year=1447', { replaceState: true })`
   runs, then the page shows the new value and history length is unchanged.
