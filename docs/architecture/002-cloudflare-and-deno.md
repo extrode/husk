@@ -91,5 +91,25 @@ is in the loop.
   do that. Pages deploys use wrangler; Cloudflare's Pages build image v3 has Node, Bun, Go, Python
   and Ruby, not .NET, so builds run in GitHub Actions with `actions/setup-dotnet` (as saaaat's
   backend job already does) and upload the output.
-- Limits per account plan (file count, file size) are on Cloudflare's limits page; not checked
-  against these apps yet.
+- Limits (checked 2026-10-31 against [Cloudflare's Workers limits page](https://developers.cloudflare.com/workers/platform/limits)
+  and the [September 2025 changelog](https://developers.cloudflare.com/changelog/post/2025-09-02-increased-static-asset-limits/)):
+  static asset files per Worker version 20,000 on Free, 100,000 on Paid (the higher cap needs
+  Wrangler 4.34.0+ and does not apply to older clients); 25 MiB per file on both plans.
+  The numbers below are measured (sample) or counted from source (apps), so apps are estimates.
+
+  | Site | Files to upload | Largest file | Free (20,000) | 25 MiB |
+  |---|---|---|---|---|
+  | `samples/svelte-app` (`dotnet publish`, measured) | 277 (831 with `.br`/`.gz`) | 38 KB | 1.4% | fits |
+  | saaaat web (estimate) | about 800 | `intro.mp3`, 6.2 MB | about 4% | fits |
+  | riwalqalb frontend (estimate) | about 2,400 | 386 KB (`Amiri-Regular.woff2`) | about 12% | fits |
+
+  How the estimates were made: components and TypeScript modules counted in source (saaaat
+  82 `.svelte` + 85 `.ts` in `apps/web/src` + 82 in `packages/`; riwalqalb 123 + 155), plus the
+  sample's runtime (about 130 files), plus every file in `static/` or `public/` (saaaat 14,
+  riwalqalb 1,793), with the module part doubled because the publish output carries each module
+  under both its plain and its hashed name (sample: 134 hashed, 143 plain). Neither app can be
+  built by Husk yet (router and `$app/*` shims are T12), so these are not measurements.
+- Two things in the sample's publish output matter for a deploy: `.br` and `.gz` files sit beside
+  every compressed-able file (554 of the 831), and Cloudflare compresses at the edge, so the
+  deploy should upload a tree without them; and the plain-named duplicates of hashed files double
+  the module count for no benefit on a static host. Neither blocks any limit.
