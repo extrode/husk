@@ -132,14 +132,14 @@
 <li>MSBuild finds your <code>.svelte</code>, <code>.svelte.ts</code> and <code>.html</code> files under <code>wwwroot</code>.</li>
 <li>Husk starts a small JavaScript engine (V8) inside the build and loads the Svelte compiler into it.</li>
 <li>Each component is compiled to an ES module, a source map and some CSS. Plain <code>.ts</code> files are stripped of their types.</li>
-<li>The results are written under <code>obj/</code>, with a content hash in the name, and served as static web assets at the path of the source file.</li>
+<li>The results are written under <code>obj/</code>, with a content hash in the name (when <code>HuskHashNames</code> is on, the default outside Debug), and served as static web assets at the path of the source file.</li>
 <li>Your <code>index.html</code> gets an import map that tells the browser where <code>svelte</code> and your modules are.</li>
 </ol>
 <p>That is all. The browser runs the output as it is: no bundle, and no Husk code at run time.</p>
 <p><img src="assets-how-husk-builds.svg" alt="How Husk builds" /></p>
 <h2 id="what-happens-when-you-save">What happens when you save</h2>
 <p>With <code>builder.AddHusk()</code> in Development, the running app watches your files. A saved component is compiled again in the same process, the engine is already warm, and <code>dotnet watch</code> reloads the page. If the save has an error, it is logged and the browser keeps the last good version.</p>
-<p>In Release, <code>AddHusk()</code> does nothing. The compiled files were already made by the build.</p>
+<p>Outside the Development environment, <code>AddHusk()</code> does nothing. The compiled files were already made by the build.</p>
 <h2 id="words-you-will-meet">Words you will meet</h2>
 <table>
 <thead>
@@ -179,13 +179,13 @@
 <p>Husk is built on <a href="https://github.com/extrode/pare">Pare</a>, a TypeScript stripper and build for .NET. You never call it, but three things follow from it:</p>
 <ul>
 <li><strong>You reference <code>Extrode.Pare.Build</code> yourself</strong>, with <code>PrivateAssets=&quot;all&quot;</code>. NuGet imports build targets only for direct references. Without it the build stops with <code>HUSK002</code>.</li>
-<li><strong>TypeScript is stripped, not checked.</strong> Types are erased and nothing complains about a type error. Run <code>tsc --noEmit</code> in your editor or CI if you want checking. Some syntax cannot be erased (an <code>enum</code>); the build reports it as a <code>PARE1xx</code> error.</li>
+<li><strong>TypeScript is stripped, not checked.</strong> Types are erased and nothing complains about a type error. Run <code>tsc --noEmit</code> in your editor or CI if you want checking. Some syntax cannot be erased (an <code>enum</code>); in a <code>.svelte.ts</code> the build reports it as <code>HUSK100</code> with a <code>PARE1xx</code> message, and in a component Svelte reports it.</li>
 <li><strong>There is no bundling or minifying.</strong> Pare does neither, and Husk does not add them.</li>
 </ul>
 <h2 id="questions">Questions</h2>
 <p><strong>Does it need Node anywhere?</strong> No. Not to build, not to run, not in CI.</p>
-<p><strong>Is the output the same as Vite's?</strong> The compiler output is the same as Node running Svelte 5.57.2, checked byte for byte. What differs is that there is no bundle: modules load one by one.</p>
-<p><strong>Why 82.6 MB?</strong> It carries V8 for Windows, macOS and Linux on x64 and arm64. It is restored once per machine and is not part of your published app.</p>
+<p><strong>Is the output the same as Vite's?</strong> The compiler output is the same as Node running Svelte 5.57.3, checked byte for byte. What differs is that there is no bundle: modules load one by one.</p>
+<p><strong>Why does the first restore download about 83 MB?</strong> Husk depends on V8 for Windows, macOS and Linux on x64 and arm64 (Microsoft's packages, 77 MB, shared across Husk versions); Husk itself is 6 MB. It is restored once per machine and is not part of your published app.</p>
 <p><strong>Can I use it on Alpine?</strong> You cannot build there (<code>HUSK001</code>). The published app runs anywhere, so build on Debian or in a glibc container.</p>
 <p><strong>Which browsers?</strong> The output is tested in Chrome, Firefox and Safari.</p>
 <p><strong>Does it do SvelteKit?</strong> No. Routing and server rendering are not part of Husk yet.</p>

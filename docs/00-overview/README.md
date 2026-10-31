@@ -15,4 +15,4 @@ You write `.svelte` components in your ASP.NET Core project. `dotnet build` comp
 
 ## Status
 
-Preview. The first release is `0.1.0-preview.1`; the API can still change.
+Preview. The latest release is `0.1.0-preview.2`; the API can still change.
