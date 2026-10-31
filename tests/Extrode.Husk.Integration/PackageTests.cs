@@ -251,6 +251,12 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.NotEqual(0, exit);
         Assert.Contains("error HUSK003", output, StringComparison.Ordinal);
         Assert.Contains($"Microsoft.ClearScript.V8.Native.{rid} 7.5.1.1", output, StringComparison.Ordinal);
+
+        using var app = new RunningApp(project.Dir, project.P("bin/Debug/net10.0/app.dll"));
+        project.Put("wwwroot/Styled.svelte", project.Read("wwwroot/Styled.svelte") + "\n<p>saved</p>\n");
+        Thread.Sleep(3000);
+        Assert.Single(app.Output.Split('\n'), l => l.Contains("Husk's V8 library is not at", StringComparison.Ordinal));
+        Assert.DoesNotContain("HUSK100", app.Output, StringComparison.Ordinal);
     }
 
     private static void Copy(string from, string to)
