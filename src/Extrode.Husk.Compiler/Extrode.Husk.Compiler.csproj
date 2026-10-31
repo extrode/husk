@@ -23,5 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Extrode.Husk.Tests" />
+    <InternalsVisibleTo Include="Extrode.Husk.Build" />
   </ItemGroup>
 </Project>

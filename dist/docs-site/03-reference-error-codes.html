@@ -159,7 +159,7 @@ listed in <a href="https://svelte.dev/docs/svelte/compiler-errors">Svelte's docs
 <tr>
 <td><a href="#husk004">HUSK004</a></td>
 <td>error (MSBuild)</td>
-<td>another Husk version already started V8 in this build process</td>
+<td>this build process already loaded a different V8 library</td>
 </tr>
 <tr>
 <td><a href="#husk100">HUSK100</a></td>
@@ -208,12 +208,13 @@ package source mapping does not allow <code>Microsoft.ClearScript.*</code>, or w
 version of a <code>Microsoft.ClearScript.V8.Native.*</code> package (a lower pin is NU1605; a higher one means
 7.5.1.1 is never downloaded). Restore the project, allow the packages, or remove the pin.</p>
 <h2 id="husk004">HUSK004</h2>
-<p><code>dotnet build</code> keeps its build processes running for a few minutes and reuses them. One that has
-already compiled with one Extrode.Husk.Build version holds that version's V8; a second version
-cannot safely load its own copy beside it, so the build stops instead. It happens after upgrading
-Husk while those processes still run, or in a solution whose projects use different Husk versions.
-Run <code>dotnet build-server shutdown</code> and build again; in a solution, give every project the same
-version.</p>
+<p><code>dotnet build</code> keeps its build processes running for a few minutes and reuses them, for any
+project you build, in any folder. Each Husk loads V8's native library from the NuGet cache. Husk
+versions that use the same ClearScript version find the same file and share it. Two different files
+in one process break V8 (the build spins, then dies), so Husk stops instead. It happens when the
+process already compiled with a Husk on another ClearScript version, or with a Husk outside the
+NuGet cache (<code>HuskTaskAssembly</code>). Run <code>dotnet build-server shutdown</code> and build again; in a
+solution, give every project the same Extrode.Husk.Build version.</p>
 <h2 id="husk100">HUSK100</h2>
 <p>Svelte rejected the source; its code and message follow (<code>expected_token</code>, <code>js_parse_error</code>). In
 Development it is also logged when the compiler itself failed, with the exception. A <code>.svelte.ts</code>

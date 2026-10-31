@@ -263,7 +263,7 @@ public sealed class PackageTests(PackedFeed feed)
     }
 
     [Fact]
-    public void A_second_Husk_folder_in_one_build_process_is_HUSK004_and_the_first_still_builds()
+    public void A_Husk_that_would_load_a_second_V8_native_in_one_build_process_is_HUSK004_and_the_first_still_builds()
     {
         using var project = feed.Consumer("""
             <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
@@ -295,6 +295,36 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.Contains("dotnet build-server shutdown", output, StringComparison.Ordinal);
         Assert.Contains(Path.GetDirectoryName(other)!, output, StringComparison.Ordinal);
         Assert.True(File.Exists(project.P("obj/Release/net10.0/pare/Styled.svelte.js")));
+    }
+
+    [Fact]
+    public void Two_Husk_versions_sharing_one_V8_native_build_in_one_process()
+    {
+        using var project = feed.Consumer("""
+            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
+            <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
+            <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
+            """);
+        var (exit, output) = project.Build();
+        Assert.True(exit == 0, output);
+        string task = $"extrode.husk.build/{feed.Version.ToLowerInvariant()}/tasks/net10.0";
+        string upgraded = "extrode.husk.build/9.9.9/tasks/net10.0";
+        Copy(project.P("packages/" + task), project.P("packages/" + upgraded));
+        string other = Path.Combine(project.P("packages/" + upgraded), "Extrode.Husk.Build.dll");
+        project.Put("both.proj", $"""
+            <Project>
+              <Target Name="Build">
+                <MSBuild Projects="app.csproj" Properties="Configuration=Release" />
+                <MSBuild Projects="app.csproj" Properties="HuskTaskAssembly={other}" />
+                <MSBuild Projects="app.csproj" Properties="Configuration=Staging" />
+              </Target>
+            </Project>
+            """);
+
+        (exit, output) = project.Exec(TimeSpan.FromMinutes(3), "dotnet", "build", "both.proj", "--no-restore", "-nologo", "-m:1", "-nodeReuse:false", "--disable-build-servers", "-clp:NoSummary");
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(3, output.Split('\n').Count(l => l.Contains("husk: compiled 1 of", StringComparison.Ordinal)));
     }
 
     private static string HostRid =>

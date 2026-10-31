@@ -58,13 +58,47 @@ internal static class NativeProbe
         return Path.Combine(cache, "microsoft.clearscript.v8.native." + parts[1], PackageFolder(clearScriptVersion), "runtimes", parts[1], "native", libraryName);
     }
 
+    // AppDomain data is process-wide: MSBuild loads each task folder into its own load context, and
+    // every Husk version that finds the same native file shares one loaded copy, which works. A
+    // second file (another ClearScript version, a Husk outside the NuGet cache) is a second V8 in
+    // the process, which spins and dies on a V8 check (2026-10-31).
+    internal const string LoadedKey = "Extrode.Husk.V8Native";
+
+    /// <summary>The native file loaded in this process by any Husk, or null.</summary>
+    internal static string? Loaded => AppDomain.CurrentDomain.GetData(LoadedKey) as string;
+
+    /// <summary>The native file this copy of Husk would load, in the order <see cref="Resolve"/>
+    /// tries; null when none exists or the process has no V8 build.</summary>
+    internal static string? Wanted()
+    {
+        var assembly = typeof(V8ScriptEngine).Assembly;
+        string? os = OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : OperatingSystem.IsLinux() ? "linux" : null;
+        string? arch = RuntimeInformation.ProcessArchitecture switch { Architecture.X64 => "x64", Architecture.Arm64 => "arm64", _ => null };
+        if (os is null || arch is null || Path.GetDirectoryName(assembly.Location) is not { Length: > 0 } dir)
+            return null;
+        string name = $"ClearScriptV8.{os}-{arch}.{(os == "win" ? "dll" : os == "osx" ? "dylib" : "so")}";
+        return Candidates(dir, name, assembly.GetName().Version!).FirstOrDefault(File.Exists) is { } path ? Path.GetFullPath(path) : null;
+    }
+
+    /// <summary>True when loading <paramref name="wanted"/> would put a second native beside <paramref name="loaded"/>.</summary>
+    internal static bool Conflicts(string? loaded, string? wanted) =>
+        loaded is not null && wanted is not null
+        && !string.Equals(loaded, wanted, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+    private static IEnumerable<string> Candidates(string dir, string libraryName, Version version) =>
+        new[] { Candidate(dir, libraryName), PackageCandidate(dir, libraryName, version) }.OfType<string>();
+
     private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {
         if (Path.GetDirectoryName(assembly.Location) is not { Length: > 0 } dir)
             return IntPtr.Zero;
-        foreach (var path in new[] { Candidate(dir, libraryName), PackageCandidate(dir, libraryName, assembly.GetName().Version!) })
-            if (path is not null && File.Exists(path) && NativeLibrary.TryLoad(path, out var handle))
+        foreach (var path in Candidates(dir, libraryName, assembly.GetName().Version!))
+            if (File.Exists(path) && NativeLibrary.TryLoad(path, out var handle))
+            {
+                if (Loaded is null)
+                    AppDomain.CurrentDomain.SetData(LoadedKey, Path.GetFullPath(path));
                 return handle;
+            }
         return IntPtr.Zero;
     }
 }

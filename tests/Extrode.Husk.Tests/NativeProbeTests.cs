@@ -69,4 +69,25 @@ public sealed class NativeProbeTests
             Directory.Delete(cache, recursive: true);
         }
     }
+
+    [Theory]
+    [InlineData(null, "/c/a.dylib", false)]
+    [InlineData("/c/a.dylib", null, false)]
+    [InlineData("/c/a.dylib", "/c/a.dylib", false)]
+    [InlineData("/c/a.dylib", "/d/a.dylib", true)]
+    public void Only_a_second_native_file_conflicts(string? loaded, string? wanted, bool conflicts) =>
+        Assert.Equal(conflicts, NativeProbe.Conflicts(loaded, wanted));
+
+    [Fact]
+    public void The_native_a_started_engine_loaded_is_recorded_and_is_the_one_wanted()
+    {
+        NativeProbe.Register();
+        using (var engine = new Microsoft.ClearScript.V8.V8ScriptEngine())
+            engine.Evaluate("1");
+
+        string wanted = Assert.IsType<string>(NativeProbe.Wanted());
+        Assert.True(File.Exists(wanted), wanted);
+        Assert.Equal(wanted, NativeProbe.Loaded);
+        Assert.False(NativeProbe.Conflicts(NativeProbe.Loaded, wanted));
+    }
 }

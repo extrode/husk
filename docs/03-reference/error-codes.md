@@ -13,7 +13,7 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK001](#husk001) | error (MSBuild) | Husk cannot build on this platform |
 | [HUSK002](#husk002) | error (MSBuild) | Husk needs Extrode.Pare.Build |
 | [HUSK003](#husk003) | error (MSBuild) | V8's native library for this machine was not restored |
-| [HUSK004](#husk004) | error (MSBuild) | another Husk version already started V8 in this build process |
+| [HUSK004](#husk004) | error (MSBuild) | this build process already loaded a different V8 library |
 | [HUSK100](#husk100) | error | Svelte could not compile the source |
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
@@ -47,12 +47,13 @@ version of a `Microsoft.ClearScript.V8.Native.*` package (a lower pin is NU1605;
 
 ## HUSK004
 
-`dotnet build` keeps its build processes running for a few minutes and reuses them. One that has
-already compiled with one Extrode.Husk.Build version holds that version's V8; a second version
-cannot safely load its own copy beside it, so the build stops instead. It happens after upgrading
-Husk while those processes still run, or in a solution whose projects use different Husk versions.
-Run `dotnet build-server shutdown` and build again; in a solution, give every project the same
-version.
+`dotnet build` keeps its build processes running for a few minutes and reuses them, for any
+project you build, in any folder. Each Husk loads V8's native library from the NuGet cache. Husk
+versions that use the same ClearScript version find the same file and share it. Two different files
+in one process break V8 (the build spins, then dies), so Husk stops instead. It happens when the
+process already compiled with a Husk on another ClearScript version, or with a Husk outside the
+NuGet cache (`HuskTaskAssembly`). Run `dotnet build-server shutdown` and build again; in a
+solution, give every project the same Extrode.Husk.Build version.
 
 ## HUSK100
 
