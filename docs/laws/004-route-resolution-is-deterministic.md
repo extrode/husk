@@ -1,7 +1,8 @@
 ---
 id: L004
 title: Route resolution returns the same route and parameters on every run
-status: proposed
+status: enacted
+enacted: 2026-11-01
 kind: property
 scope: src/Extrode.Husk.Build/runtime/router-core.js
 ---

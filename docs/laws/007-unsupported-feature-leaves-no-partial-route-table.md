@@ -1,7 +1,8 @@
 ---
 id: L007
 title: An unsupported SvelteKit feature fails the build and writes no route table
-status: proposed
+status: enacted
+enacted: 2026-11-01
 kind: guard
 scope: src/Extrode.Husk.Build/HuskRoutes.cs, src/Extrode.Husk.Compiler/RouteTable.cs
 ---

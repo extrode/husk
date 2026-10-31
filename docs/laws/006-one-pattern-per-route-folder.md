@@ -1,7 +1,8 @@
 ---
 id: L006
 title: Each route folder gives exactly one address pattern, and no two share one
-status: proposed
+status: enacted
+enacted: 2026-11-01
 kind: property
 scope: src/Extrode.Husk.Compiler/RouteTable.cs
 ---

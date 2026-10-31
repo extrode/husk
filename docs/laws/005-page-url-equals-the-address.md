@@ -1,7 +1,8 @@
 ---
 id: L005
 title: After any navigation, page.url equals the browser address
-status: proposed
+status: enacted
+enacted: 2026-11-01
 kind: invariant
 scope: src/Extrode.Husk.Build/runtime/router.js, src/Extrode.Husk.Build/runtime/app/state.svelte.js
 ---
