@@ -17,3 +17,9 @@ prototypes/*/msbuild-task/app/wwwroot/js/
 prototypes/*/*.tsv
 prototypes/*/*.txt
 .DS_Store
+
+# Theme copied in by ~/.claude/tools/html/build.js (review reports); not part of husk.
+/docs/assets/artifact.css
+/docs/assets/artifact.js
+/docs/assets/LICENSE-fonts.txt
+/docs/assets/fonts/
