@@ -77,17 +77,22 @@
            Text="Husk cannot build on $(_HuskRid): its compiler runs on V8, which ships for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64 and linux-arm64 (glibc) only. Build on one of those; the output runs anywhere." />
 
     <!-- The package carries no V8 native: it depends on Microsoft.ClearScript.V8.Native.<rid>, which restores
-         into the NuGet cache (NativeProbe looks there). Not checked when the task is a local build output
-         with its own runtimes/ folder (the tests). -->
+         into the NuGet cache. The folder checked is the one NativeProbe loads from, the cache that holds
+         this package (<cache>/extrode.husk.build/<version>/tasks/net10.0), so the two cannot disagree
+         when a fallback package folder holds one package and not the other. The rid is the SDK's, which
+         is the process the task runs in (MSBuild on dotnet, or the .NET task host). Not checked when the
+         task is a local build output with its own runtimes/ folder (the tests). -->
     <PropertyGroup Condition="'$(NuGetPackageRoot)' != ''">
-      <_HuskTaskDir>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))</_HuskTaskDir>
+      <_HuskTaskDir>$([System.IO.Path]::GetFullPath('$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))'))</_HuskTaskDir>
+      <_HuskNativeCache>$(NuGetPackageRoot)</_HuskNativeCache>
+      <_HuskNativeCache Condition="'$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($(_HuskTaskDir)))))' == 'tasks'">$([System.IO.Path]::GetFullPath('$(_HuskTaskDir)/../../../..'))</_HuskNativeCache>
     </PropertyGroup>
     <PropertyGroup Condition="'$(_HuskTaskDir)' != '' and !Exists('$(_HuskTaskDir)/runtimes')">
       <_HuskNativeRid>$(NETCoreSdkPortableRuntimeIdentifier)</_HuskNativeRid>
       <_HuskNativeExt Condition="$(_HuskNativeRid.StartsWith('win-'))">dll</_HuskNativeExt>
       <_HuskNativeExt Condition="$(_HuskNativeRid.StartsWith('osx-'))">dylib</_HuskNativeExt>
       <_HuskNativeExt Condition="'$(_HuskNativeExt)' == ''">so</_HuskNativeExt>
-      <_HuskNativeFile>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))microsoft.clearscript.v8.native.$(_HuskNativeRid)/$(_HuskClearScriptVersion)/runtimes/$(_HuskNativeRid)/native/ClearScriptV8.$(_HuskNativeRid).$(_HuskNativeExt)</_HuskNativeFile>
+      <_HuskNativeFile>$([MSBuild]::EnsureTrailingSlash('$(_HuskNativeCache)'))microsoft.clearscript.v8.native.$(_HuskNativeRid)/$(_HuskClearScriptVersion)/runtimes/$(_HuskNativeRid)/native/ClearScriptV8.$(_HuskNativeRid).$(_HuskNativeExt)</_HuskNativeFile>
     </PropertyGroup>
     <Error Code="HUSK003" Condition="'$(_HuskNativeFile)' != '' and !Exists('$(_HuskNativeFile)')"
            Text="Husk's V8 library is missing: $(_HuskNativeFile). Restore the project so Microsoft.ClearScript.V8.Native.$(_HuskNativeRid) $(_HuskClearScriptVersion) lands in the NuGet cache. If the project pins another version of that package, remove the pin: Husk needs exactly $(_HuskClearScriptVersion)." />

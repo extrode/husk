@@ -42,6 +42,22 @@ public sealed class SamplePublishTests(PackedFeed feed)
     }
 
     [Fact]
+    public void Publishing_for_another_platform_compiles_on_this_one_and_carries_no_V8()
+    {
+        using var sample = feed.Consumer("""
+            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
+            <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
+            <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
+            """);
+        string rid = OperatingSystem.IsLinux() ? "osx-arm64" : "linux-x64";
+
+        var (exit, output) = sample.Run("publish", "-nologo", "-c", "Release", "-r", rid, "--self-contained", "false", "-o", "out", "-nodeReuse:false", "--disable-build-servers");
+        Assert.True(exit == 0, output);
+        Assert.True(File.Exists(sample.P("out/wwwroot/Styled.svelte.js")));
+        Assert.Empty(Directory.GetFiles(sample.P("out"), "*ClearScript*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
     public void Published_modules_are_Node_s_production_output()
     {
         using var project = feed.Consumer("""
