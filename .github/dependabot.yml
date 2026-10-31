@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Pinned together on purpose: V8, its natives and the Svelte compiler move by hand.
+      - dependency-name: Microsoft.ClearScript.*
