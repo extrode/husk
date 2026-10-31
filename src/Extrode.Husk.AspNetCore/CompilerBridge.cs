@@ -53,7 +53,7 @@ internal sealed class CompilerBridge
     // is expected at when absent from both, else null; null too when the process has no V8 build to look for.
     internal static string? MissingNative(string compilerAssembly)
     {
-        string dir = Path.GetDirectoryName(compilerAssembly)!;
+        string dir = Path.GetFullPath(Path.GetDirectoryName(compilerAssembly)!);
         string v8 = Path.Combine(dir, "ClearScript.V8.dll");
         string? os = OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : OperatingSystem.IsLinux() ? "linux" : null;
         string? arch = RuntimeInformation.ProcessArchitecture switch { Architecture.X64 => "x64", Architecture.Arm64 => "arm64", _ => null };

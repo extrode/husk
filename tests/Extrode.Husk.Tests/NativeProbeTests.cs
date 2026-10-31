@@ -48,7 +48,7 @@ public sealed class NativeProbeTests
         try
         {
             File.Copy(v8, Path.Combine(dir, "ClearScript.V8.dll"));
-            string compiler = Path.Combine(dir, "Extrode.Husk.Compiler.dll");
+            string compiler = Path.Combine(cache, "extrode.husk.build", "1.0.0", "build", "..", "tasks", "net10.0", "Extrode.Husk.Compiler.dll");
 
             string expected = Assert.IsType<string>(Extrode.Husk.AspNetCore.CompilerBridge.MissingNative(compiler));
             Assert.StartsWith(Path.Combine(cache, "microsoft.clearscript.v8.native."), expected, StringComparison.Ordinal);
