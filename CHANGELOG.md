@@ -15,7 +15,9 @@ Merged into `dev`, not yet tagged.
 
 ---
 
-## [0.1.0-preview.3] — 2026-10-31
+## [0.1.0-preview.4] — 2026-10-31
+
+`v0.1.0-preview.3` was tagged but never published: its release build failed on two Linux/Windows-only test bugs, and release tags cannot be moved.
 
 ### Changed
 
