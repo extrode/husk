@@ -1,5 +1,5 @@
 # 002 — saaaat client router and `$app/*` shims
-Status: accepted (reviewed by Fable 2026-10-31, findings applied; the user said to go ahead)
+Status: built, not done: the last acceptance criterion (a saved route file reloads a Development app) is only partly met, see T13 and work/todo.md
 Created: 2026-10-31
 
 ## Problem
