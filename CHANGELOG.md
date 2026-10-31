@@ -22,6 +22,7 @@ Merged into `dev`, not yet tagged.
 
 - The package README on nuget.org: its links and images were relative to the repo and pointed nowhere. Packing rewrites them to absolute URLs at the release tag.
 - HUSK003 checks the NuGet folder that holds Extrode.Husk.Build, the folder the compiler loads V8 from, instead of the global packages folder; with a fallback package folder the two could disagree.
+- A HUSK200 the build treats as an error (`TreatWarningsAsErrors`, `WarningsAsErrors`) left the source's outputs written, so the next build found them up to date and passed. They are now left as they were, as with HUSK100.
 - Deploy: an upload whose connection drops or times out is sent again, like a 429 or 5xx; a 429 waits the `Retry-After` it names, up to a minute; a directory link is not entered, so a link back up the tree no longer fails with "Too many levels of symbolic links".
 
 ---
