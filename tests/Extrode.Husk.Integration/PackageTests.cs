@@ -67,12 +67,12 @@ public sealed class PackedFeed : IDisposable
             """);
     }
 
-    /// <summary>A web project restoring from this feed, with <paramref name="references"/>
-    /// (<c>$(HuskVersion)</c> is this feed's version, <c>$(PareVersion)</c> the Pare it depends on)
-    /// and the Styled fixture.</summary>
     public static readonly string PareVersion = typeof(PackedFeed).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
         .Single(a => a.Key == "PareVersion").Value!;
 
+    /// <summary>A web project restoring from this feed, with <paramref name="references"/>
+    /// (<c>$(HuskVersion)</c> is this feed's version, <c>$(PareVersion)</c> the Pare it depends on)
+    /// and the Styled fixture.</summary>
     public TempProject Consumer(string references)
     {
         var project = new TempProject();

@@ -15,7 +15,7 @@ public sealed class DocsSiteTests
         string site = Path.Combine(RepoPaths.Root, "dist", "docs-site");
         string firstApp = File.ReadAllText(Path.Combine(site, "01-getting-started-first-app.html"));
         Assert.Contains("Extrode.Husk.Build", firstApp, StringComparison.Ordinal);
-        Assert.DoesNotMatch(@"Extrode\.Pare\.Build[^V<]*?Version", firstApp);
+        Assert.DoesNotContain("&quot;Extrode.Pare.Build&quot;", firstApp, StringComparison.Ordinal);
         Assert.DoesNotContain("add package Extrode.Pare.Build", firstApp, StringComparison.Ordinal);
 
         string start = File.ReadAllText(Path.Combine(site, "01-getting-started-readme.html"));
