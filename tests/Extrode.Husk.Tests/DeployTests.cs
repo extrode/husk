@@ -52,6 +52,16 @@ public sealed class DeployTests : IDisposable
     private static string JwtBody(string? jwt) => JsonSerializer.Serialize(new { success = true, result = new { jwt } });
 
     [Fact]
+    public void A_directory_link_back_to_its_parent_is_not_followed()
+    {
+        Directory.CreateSymbolicLink(Path.Combine(_dir.FullName, "app", "loop"), _dir.FullName);
+
+        var paths = AssetManifest.Read(_dir.FullName).Select(f => f.Path);
+
+        Assert.Equal(["/app/main.js", "/app/site.css", "/index.html"], paths);
+    }
+
+    [Fact]
     public async Task The_three_requests_carry_the_documented_paths_methods_auth_and_bodies()
     {
         string html = Hash("index.html"), js = Hash("app/main.js"), css = Hash("app/site.css");
