@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.IO.Compression;
 
 namespace Extrode.Husk.Integration;
@@ -224,6 +225,42 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.development.json")));
         Assert.Empty(Directory.GetFiles(project.P("bin"), "*ClearScript*", SearchOption.AllDirectories));
         Assert.NotEmpty(Directory.GetFiles(project.P("packages"), "ClearScriptV8.*", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public void A_missing_native_fails_the_build_with_HUSK003_naming_the_cache_that_holds_the_task()
+    {
+        using var project = feed.Consumer("""
+            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
+            <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
+            <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
+            """);
+        var (exit, output) = project.Build();
+        Assert.True(exit == 0, output);
+        string rid = (OperatingSystem.IsWindows() ? "win-" : OperatingSystem.IsMacOS() ? "osx-" : "linux-") + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        string task = Path.Combine("extrode.husk.build", feed.Version.ToLowerInvariant(), "tasks", "net10.0");
+
+        Copy(project.P("packages/" + task.Replace('\\', '/')), project.P("elsewhere/" + task.Replace('\\', '/')));
+        (exit, output) = project.Build("-p:HuskTaskAssembly=" + Path.Combine(project.P("elsewhere"), task, "Extrode.Husk.Build.dll"));
+        Assert.NotEqual(0, exit);
+        Assert.Contains("error HUSK003", output, StringComparison.Ordinal);
+        Assert.Contains(Path.Combine(project.P("elsewhere"), "microsoft.clearscript.v8.native." + rid), output, StringComparison.Ordinal);
+
+        Directory.Move(project.P($"packages/microsoft.clearscript.v8.native.{rid}/7.5.1.1/runtimes"), project.P("runtimes-moved"));
+        (exit, output) = project.Build();
+        Assert.NotEqual(0, exit);
+        Assert.Contains("error HUSK003", output, StringComparison.Ordinal);
+        Assert.Contains($"Microsoft.ClearScript.V8.Native.{rid} 7.5.1.1", output, StringComparison.Ordinal);
+    }
+
+    private static void Copy(string from, string to)
+    {
+        foreach (string file in Directory.GetFiles(from, "*", SearchOption.AllDirectories))
+        {
+            string target = Path.Combine(to, Path.GetRelativePath(from, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+        }
     }
 
     [Fact]
