@@ -12,7 +12,7 @@ namespace Extrode.Husk.Build;
 /// are left as they were; every compiler warning is HUSK200, and a source whose HUSK200 the build
 /// treats as an error is left as they were too. HUSK101 is an output item missing or
 /// naming the source itself; HUSK102 a source that cannot be read or an output that cannot be
-/// written.</summary>
+/// written. HUSK004 is a second Husk version in a build process where another already started V8.</summary>
 public sealed class HuskCompile : Microsoft.Build.Utilities.Task
 {
     [Required] public ITaskItem[] Sources { get; set; } = [];
@@ -29,6 +29,22 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
     /// HuskDev stamp). Decided per source over all its outputs, not by MSBuild per item, which would
     /// hand the task some of a source's outputs and not the others.</summary>
     public ITaskItem[] Inputs { get; set; } = [];
+
+    // AppDomain data is process-wide: MSBuild loads each task folder into its own load context, so a
+    // static field would not see another Husk version's V8 in the same reused node.
+    internal const string V8LoadedFrom = "Extrode.Husk.Build.V8LoadedFrom";
+
+    private static string TaskFolder => Path.GetDirectoryName(typeof(HuskCompile).Assembly.Location)!;
+
+    // Null when this folder may start V8 in this process (first, or the same folder again), else the
+    // folder that already did.
+    internal static string? OtherTaskFolder(string key, string folder)
+    {
+        if (AppDomain.CurrentDomain.GetData(key) is string first && !string.Equals(first, folder, StringComparison.Ordinal))
+            return first;
+        AppDomain.CurrentDomain.SetData(key, folder);
+        return null;
+    }
 
     // Not under TaskHostFactory (Visual Studio's MSBuild), whose host exits after the task.
     internal static SvelteCompiler CompilerFor(string compilerPath) => SvelteCompiler.Shared(compilerPath);
@@ -91,6 +107,12 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
             {
                 Log.LogError(null, "HUSK102", null, source.Path, 0, 0, 0, 0, "cannot read the source: " + e.Message);
             }
+        }
+        if (inputs.Count > 0 && OtherTaskFolder(V8LoadedFrom, TaskFolder) is { } other)
+        {
+            Log.LogError(null, "HUSK004", null, null, 0, 0, 0, 0,
+                $"this build process already started V8 from {other}, so the Husk at {TaskFolder} cannot load its own beside it. Run `dotnet build-server shutdown` and build again; if the solution mixes Extrode.Husk.Build versions, give every project the same one.");
+            return false;
         }
         var results = inputs.Count == 0 ? [] : Compile(inputs);
 
