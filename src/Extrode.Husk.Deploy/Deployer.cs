@@ -28,10 +28,10 @@ internal sealed class Deployer
     private readonly Uri _baseUrl;
     private readonly string _token;
 
-    /// <summary>Pause before the n-th retry of an upload answered 429 or 5xx; tests set it to zero.</summary>
     /// <summary>Serve the root index.html for a navigation to an address with no file (a client-routed app).</summary>
     public bool SinglePage { get; init; }
 
+    /// <summary>Pause before the n-th retry of an upload answered 429 or 5xx; tests set it to zero.</summary>
     public TimeSpan RetryDelay { get; init; } = TimeSpan.FromSeconds(1);
 
     /// <summary>The longest <c>Retry-After</c> honoured; a longer one waits this long.</summary>

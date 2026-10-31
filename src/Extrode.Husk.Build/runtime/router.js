@@ -3,7 +3,7 @@ import { mount, tick } from 'svelte';
 import Root from './Root.svelte';
 import ErrorFallback from './ErrorFallback.svelte';
 import { matchRoute, runLoads, cumulative, routeId } from './router-core.js';
-import { _attach, _before, _after } from './app/navigation.js';
+import { _attach, _before, _after, _committing } from './app/navigation.js';
 import { page, view } from './app/state.svelte.js';
 import { _setDev } from './app/environment.js';
 
@@ -26,11 +26,14 @@ export async function start({ routes, errorPage, rootLayout, dev, target }) {
   addEventListener('popstate', onPop);
   addEventListener('hashchange', onHash);
   document.addEventListener('click', onClick);
-  history.replaceState({ idx: 0 }, '', location.href);
+  index = history.state?.idx ?? 0;
+  history.replaceState({ idx: index }, '', location.href);
   await navigate(location.href, { initial: true, replace: true, type: 'enter' });
 }
 
 export function goto(href, options = {}) {
+  if (!internal(new URL(String(href), currentUrl ?? location.href)))
+    return Promise.reject(new Error('Cannot use `goto` with an external URL. Use `window.location = url` instead'));
   return navigate(String(href), {
     replace: !!options.replaceState,
     keepFocus: !!options.keepFocus,
@@ -55,13 +58,22 @@ export async function preload(...pathnames) {
 const describe = (url, matched) =>
   url && { url, params: matched ? matched.params : page.params, route: { id: matched ? routeId(matched.route) : page.route.id } };
 
-async function errorView(status, message) {
-  const component = config.errorPage ? (await config.errorPage()).default : ErrorFallback;
+async function errorView(status, message, url) {
+  let component = ErrorFallback;
+  try {
+    if (config.errorPage) component = (await config.errorPage()).default;
+  } catch (e) {
+    console.error(e);
+  }
   const chain = [];
   const root = config.rootLayout;
   if (root) {
-    const loaded = await runLoads({ pattern: [], layouts: [], load: root.load }, {}, currentUrl);
-    if (loaded.kind === 'data') chain.push({ component: (await root.component()).default, props: { data: loaded.data[0] ?? {}, params: {} } });
+    try {
+      const loaded = await runLoads({ pattern: [], layouts: [], load: root.load }, {}, url, { fetch: window.fetch.bind(window) });
+      if (loaded.kind === 'data') chain.push({ component: (await root.component()).default, props: { data: loaded.data[0] ?? {}, params: {} } });
+    } catch (e) {
+      console.error(e);
+    }
   }
   chain.push({ component, props: {} });
   return { chain, params: {}, status, error: { message }, route: { id: null }, data: {} };
@@ -104,20 +116,20 @@ async function navigate(href, options, redirects = 0) {
 
   const mine = ++token;
   let next;
-  if (!matched) next = await errorView(404, 'Not Found');
+  if (!matched) next = await errorView(404, 'Not Found', url);
   else {
     const [loaded, imported] = await Promise.all([
       runLoads(matched.route, matched.params, url, { fetch: window.fetch.bind(window) }),
       importRoute(matched.route).catch((e) => e),
     ]);
-    if (mine !== token) return false;
+    if (mine !== token) return superseded(options);
     if (loaded.kind === 'redirect') {
-      if (redirects >= MAX_REDIRECTS) next = await errorView(500, 'Redirect loop');
+      if (redirects >= MAX_REDIRECTS) next = await errorView(500, 'Redirect loop', url);
       else return navigate(new URL(loaded.location, url).href, { ...options, redirected: true }, redirects + 1);
     } else if (imported instanceof Error) {
       console.error(imported);
-      next = await errorView(500, imported.message);
-    } else if (loaded.kind === 'error') next = await errorView(loaded.status, loaded.message);
+      next = await errorView(500, imported.message, url);
+    } else if (loaded.kind === 'error') next = await errorView(loaded.status, loaded.message, url);
     else {
       const merged = cumulative(loaded.data);
       const chain = [...imported.layouts, imported.page].map((component, i) => ({
@@ -127,7 +139,7 @@ async function navigate(href, options, redirects = 0) {
       next = { chain, params: matched.params, status: 200, error: null, route: { id: routeId(matched.route) }, data: merged[merged.length - 1] };
     }
   }
-  if (mine !== token) return false;
+  if (mine !== token) return superseded(options);
 
   if (options.popped) {
     index = history.state?.idx ?? index;
@@ -137,6 +149,7 @@ async function navigate(href, options, redirects = 0) {
 
   const from = describe(currentUrl, null);
   currentUrl = url;
+  _committing();
   page.url = url;
   page.params = next.params;
   page.route = next.route;
@@ -147,7 +160,7 @@ async function navigate(href, options, redirects = 0) {
   await tick();
 
   if (!options.popped && !options.noScroll) {
-    const target = url.hash && document.getElementById(decodeURIComponent(url.hash.slice(1)));
+    const target = url.hash && document.getElementById(hashId(url));
     if (target) target.scrollIntoView();
     else scrollTo(0, 0);
   }
@@ -155,6 +168,20 @@ async function navigate(href, options, redirects = 0) {
 
   _after({ type: options.type, from, to: describe(url, matched), willUnload: false, delta: options.delta });
   return true;
+}
+
+// A popstate the browser already applied still moves our position, whatever navigation won.
+function superseded(options) {
+  if (options.popped) index = history.state?.idx ?? index;
+  return false;
+}
+
+function hashId(url) {
+  try {
+    return decodeURIComponent(url.hash.slice(1));
+  } catch {
+    return url.hash.slice(1);
+  }
 }
 
 function onPop(event) {

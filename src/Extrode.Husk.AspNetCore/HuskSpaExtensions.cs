@@ -20,7 +20,8 @@ public static class HuskSpaExtensions
     /// For an app that routes in the browser: a GET or HEAD for an address nothing answers, that accepts
     /// HTML and is not under <see cref="HuskSpaOptions.NoFallbackPrefixes"/>, gets the app's page with
     /// status 200 and the address unchanged. Put it before the static files and endpoints it falls back
-    /// from. Production hosting does the same (Cloudflare's single-page-application mode, <c>--spa</c>).
+    /// from, and before <c>UseRouting()</c> (call that yourself after it when the app maps endpoints, as
+    /// <c>WebApplication</c> otherwise adds it first). Production hosting does the same (Cloudflare's single-page-application mode, <c>--spa</c>).
     /// </summary>
     public static IApplicationBuilder UseHuskSpa(this IApplicationBuilder app, Action<HuskSpaOptions>? configure = null)
     {
@@ -37,6 +38,9 @@ public static class HuskSpaExtensions
                 || options.NoFallbackPrefixes.Any(p => request.Path.StartsWithSegments(p.TrimEnd('/'), StringComparison.Ordinal)))
                 return;
             string original = request.Path;
+            // Endpoint routing already ran for the original address and found nothing; run it again for the page.
+            context.SetEndpoint(null);
+            context.Request.RouteValues.Clear();
             request.Path = options.Page;
             context.Response.StatusCode = StatusCodes.Status200OK;
             try

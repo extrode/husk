@@ -37,9 +37,11 @@ public static partial class AppShell
         string head = $"<script>{script}</script>\n  <script type=\"importmap\" data-husk></script>\n  <link rel=\"stylesheet\" href=\"{root}_husk/husk.css\">\n  <script type=\"module\" src=\"{root}_husk/start.js\"></script>";
         string body = $"<div id=\"{MountId}\" style=\"display: contents\"></div>";
 
-        string html = template.Replace("%sveltekit.head%", head, StringComparison.Ordinal).Replace("%sveltekit.body%", body, StringComparison.Ordinal);
-        html = html.Replace("%sveltekit.assets%", root.TrimEnd('/'), StringComparison.Ordinal).Replace("%sveltekit.nonce%", "", StringComparison.Ordinal);
-        return EnvPlaceholder().Replace(html, m => env.TryGetValue(m.Groups[1].Value, out var v) ? v : "");
+        // Placeholders in the template are filled before the generated head and body go in, so a build value
+        // that looks like a placeholder is left as text.
+        string html = template.Replace("%sveltekit.assets%", root.TrimEnd('/'), StringComparison.Ordinal).Replace("%sveltekit.nonce%", "", StringComparison.Ordinal);
+        html = EnvPlaceholder().Replace(html, m => env.TryGetValue(m.Groups[1].Value, out var v) ? System.Net.WebUtility.HtmlEncode(v) : "");
+        return html.Replace("%sveltekit.head%", head, StringComparison.Ordinal).Replace("%sveltekit.body%", body, StringComparison.Ordinal);
     }
 
     // The script sits in HTML: '<' stays escaped so a value cannot close the tag.

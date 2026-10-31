@@ -82,3 +82,25 @@ public sealed class HuskSpaTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
+
+public sealed class HuskSpaWithEndpointsTests
+{
+    [Fact]
+    public async Task The_fallback_reaches_a_page_served_by_an_endpoint()
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseSetting("urls", "http://127.0.0.1:0");
+        await using var app = builder.Build();
+        app.UseHuskSpa();
+        app.UseRouting();
+        app.MapGet("/index.html", () => "shell");
+        await app.StartAsync(TestContext.Current.CancellationToken);
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/settings/appearance");
+        request.Headers.TryAddWithoutValidation("Accept", "text/html");
+
+        using var response = await http.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal((HttpStatusCode.OK, "shell"), (response.StatusCode, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)));
+    }
+}

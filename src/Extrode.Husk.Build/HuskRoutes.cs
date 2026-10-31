@@ -142,8 +142,7 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
     {
         string runtime = Path.GetFullPath(RuntimeDirectory);
         foreach (string source in Outputs.Select(o => o.GetMetadata("PareSource")).Where(f => f.Length > 0).Select(Path.GetFullPath)
-                     .Where(f => !f.StartsWith(runtime, StringComparison.Ordinal) && f.EndsWith(".svelte", StringComparison.Ordinal)
-                         || f.EndsWith(".ts", StringComparison.Ordinal) || f.EndsWith(".js", StringComparison.Ordinal))
+                     .Where(f => f.EndsWith(".svelte", StringComparison.Ordinal) || f.EndsWith(".ts", StringComparison.Ordinal) || f.EndsWith(".js", StringComparison.Ordinal))
                      .Where(f => !f.StartsWith(runtime, StringComparison.Ordinal)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
         {
             if (!File.Exists(source))
