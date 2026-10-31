@@ -38,9 +38,6 @@ public static class HuskSpaExtensions
                 || options.NoFallbackPrefixes.Any(p => request.Path.StartsWithSegments(p.TrimEnd('/'), StringComparison.Ordinal)))
                 return;
             string original = request.Path;
-            // Endpoint routing already ran for the original address and found nothing; run it again for the page.
-            context.SetEndpoint(null);
-            context.Request.RouteValues.Clear();
             request.Path = options.Page;
             context.Response.StatusCode = StatusCodes.Status200OK;
             try

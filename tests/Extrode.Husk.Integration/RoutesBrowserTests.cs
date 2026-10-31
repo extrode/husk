@@ -77,6 +77,24 @@ public sealed class RoutesBrowserTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_cancelled_back_after_a_reload_returns_to_the_page_on_screen(string browser)
+    {
+        using var driver = Open(browser, "/");
+        driver.FindElement(By.Id("to-month")).Click();
+        Settled(driver, "month");
+        driver.Navigate().Refresh();
+        Settled(driver, "month");
+        Script(driver, "window.__cancel = true;");
+
+        driver.Navigate().Back();
+        Thread.Sleep(1500);
+
+        Assert.EndsWith("/month", driver.Url);
+        Assert.Equal("month", Text(driver, "#title"));
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void A_refreshed_address_and_a_trailing_slash_reach_their_page(string browser)
     {
         using var driver = Open(browser, "/month/");
