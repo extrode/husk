@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Husk builds on Pare's targets, which NuGet imports only for a direct reference. -->
-    <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" PrivateAssets="all" />
+    <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" PrivateAssets="all" />
     <!-- 0.1.0-*: the newest build that scripts/pack-local.sh put in tmp/feed. A consumer pins a
          release version instead. -->
     <PackageReference Include="Extrode.Husk.Build" Version="0.1.0-*" PrivateAssets="all" />
