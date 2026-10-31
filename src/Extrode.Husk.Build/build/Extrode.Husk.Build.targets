@@ -189,7 +189,7 @@
     <HuskRoutes RoutesRoot="$(_HuskRoutesRoot)" Outputs="@(PareOutput)" BasePath="$(StaticWebAssetBasePath)"
                 ServedRoot="$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'pare'))"
                 RuntimeDirectory="$(_HuskPackageRuntime)" OutputDirectory="$(_HuskObjRoot)" AppHtml="$(_HuskAppHtml)"
-                Hooks="$(_HuskHooks)" Dev="$(HuskDev)" Env="@(HuskEnv)">
+                Hooks="$(_HuskHooks)" Dev="$(HuskDev)" Env="@(HuskEnv)" SvelteConfig="$(MSBuildProjectDirectory)/svelte.config.js">
       <Output TaskParameter="AppFiles" ItemName="_HuskAppFile" />
       <Output TaskParameter="ShellTemplate" PropertyName="_HuskShellTemplate" />
     </HuskRoutes>

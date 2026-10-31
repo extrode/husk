@@ -53,4 +53,47 @@ public sealed class RoutesBuildTests
         Assert.Contains("HUSK300", output);
         Assert.False(File.Exists(project.P(TempProject.HuskOut + "app/routes.js")));
     }
+
+    [Fact]
+    public void An_unsupported_import_fails_the_build_with_its_file_and_line_and_writes_nothing()
+    {
+        using var project = App();
+        project.Put("src/routes/month/+page.svelte", "<script>\n  import { page } from '$app/stores';\n</script>\n");
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("month/+page.svelte(2,1): error HUSK302: $app/stores is not provided", output.Replace("\\", "/"));
+        Assert.False(File.Exists(project.P(TempProject.HuskOut + "app/routes.js")));
+    }
+
+    [Fact]
+    public void An_unsupported_kit_option_fails_the_build()
+    {
+        using var project = App();
+        project.Put("svelte.config.js", "export default {\n  kit: {\n    adapter: null,\n    prerender: { entries: [] }\n  }\n};\n");
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("svelte.config.js(4,1): error HUSK303: the kit option prerender is not supported", output);
+    }
+
+    [Fact]
+    public void Env_reads_in_the_apps_outputs_use_the_page_global_and_a_second_build_changes_nothing()
+    {
+        using var project = App();
+        project.Put("src/lib/util.ts", "export const sections = ['appearance'];\nexport const backend = import.meta.env.PUBLIC_BACKEND_URL ?? '';\n");
+
+        Assert.Equal(0, project.Build().Exit);
+        string output = project.Read(TempProject.PareOut + "app/lib/util.js");
+        Assert.Contains("globalThis.__huskEnv.PUBLIC_BACKEND_URL", output);
+        Assert.DoesNotContain("import.meta.env", output);
+        Assert.Contains("\"PUBLIC_BACKEND_URL\": \"https://api.test\"", project.Read(TempProject.HuskOut + "app/index.html"));
+        var stamp = project.Stamp(TempProject.PareOut + "app/lib/util.js");
+
+        Assert.Equal(0, project.Build().Exit);
+
+        Assert.Equal(stamp, project.Stamp(TempProject.PareOut + "app/lib/util.js"));
+    }
 }

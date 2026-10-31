@@ -37,6 +37,9 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
 
     public bool Dev { get; set; }
 
+    /// <summary>The project's <c>svelte.config.js</c>, scanned for <c>kit</c> options Husk lacks; empty or missing for none.</summary>
+    public string SvelteConfig { get; set; } = "";
+
     /// <summary><c>@(HuskEnv)</c>: Include is the name, Value its value.</summary>
     public ITaskItem[] Env { get; set; } = [];
 
@@ -67,6 +70,8 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
                 Log.LogError(null, "HUSK301", null, file, 1, 1, 0, 0, d.Message);
         }
         if (!table.Ok)
+            return false;
+        if (!CheckFeatures())
             return false;
 
         bool missing = false;
@@ -111,6 +116,7 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
 
         try
         {
+            RewriteEnv();
             string app = Path.Combine(OutputDirectory, AppFolder);
             var written = new List<ITaskItem>();
             Directory.CreateDirectory(app);
@@ -129,6 +135,39 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
             Log.LogError(null, "HUSK102", null, OutputDirectory, 0, 0, 0, 0, "cannot write the router files: " + e.Message);
         }
         return !Log.HasLoggedErrors;
+    }
+
+    // HUSK302 and HUSK303: the whole app is read before anything is written, so a failure leaves no partial table.
+    private bool CheckFeatures()
+    {
+        string runtime = Path.GetFullPath(RuntimeDirectory);
+        foreach (string source in Outputs.Select(o => o.GetMetadata("PareSource")).Where(f => f.Length > 0).Select(Path.GetFullPath)
+                     .Where(f => !f.StartsWith(runtime, StringComparison.Ordinal) && f.EndsWith(".svelte", StringComparison.Ordinal)
+                         || f.EndsWith(".ts", StringComparison.Ordinal) || f.EndsWith(".js", StringComparison.Ordinal))
+                     .Where(f => !f.StartsWith(runtime, StringComparison.Ordinal)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
+        {
+            if (!File.Exists(source))
+                continue;
+            foreach (var finding in KitFeatures.Scan(File.ReadAllText(source)))
+                Log.LogError(null, "HUSK302", null, source, finding.Line, 1, 0, 0, finding.Message + ": Husk's router covers goto, beforeNavigate, afterNavigate, preloadCode, page, browser, dev, building, version, redirect, error, isRedirect and isHttpError");
+        }
+        if (SvelteConfig.Length > 0 && File.Exists(SvelteConfig))
+            foreach (var finding in KitFeatures.ScanConfig(File.ReadAllText(SvelteConfig)))
+                Log.LogError(null, "HUSK303", null, SvelteConfig, finding.Line, 1, 0, 0, finding.Message);
+        return !Log.HasLoggedErrors;
+    }
+
+    // import.meta.env has no browser meaning; the page defines globalThis.__huskEnv in its place. In place, and
+    // only when the text changes, so an unchanged build touches nothing.
+    private void RewriteEnv()
+    {
+        string runtime = Path.GetFullPath(RuntimeDirectory);
+        foreach (var output in Outputs.Where(o => o.ItemSpec.EndsWith(".js", StringComparison.Ordinal) && !o.GetMetadata("PareSource").StartsWith(runtime, StringComparison.Ordinal)))
+        {
+            string path = output.GetMetadata("FullPath");
+            if (File.Exists(path))
+                HuskAssets.WriteIfChanged(path, KitFeatures.RewriteEnv(File.ReadAllText(path)));
+        }
     }
 
     private static void Place(List<ITaskItem> written, string app, string relative, string text)

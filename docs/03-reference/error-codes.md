@@ -20,6 +20,8 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK200](#husk200) | warning | a Svelte compiler warning |
 | [HUSK300](#husk300) | error | two routes for one address |
 | [HUSK301](#husk301) | error | a SvelteKit feature Husk does not provide |
+| [HUSK302](#husk302) | error | an import of a SvelteKit name Husk's router does not provide |
+| [HUSK303](#husk303) | error | a `kit` option in `svelte.config.js` Husk does not support |
 | [HUSK304](#husk304) | error | a route file the build does not compile or serve |
 | [HUSK305](#husk305) | error | the app shell lacks a placeholder |
 | [HUSK306](#husk306) | error | the routes folder does not exist |
@@ -99,6 +101,23 @@ A route file or folder uses something Husk's router does not provide: a rest (`[
 `+layout.server.ts`, a layout reset (`+page@.svelte`), an error page below the routes folder, or an
 unknown `+` file. Husk builds client-only apps; a server feature has no place in them. The message
 names the feature. No `routes.js` is written.
+
+## HUSK302
+
+A source file imports a name the router does not provide: a `$app/*` module other than `navigation`,
+`state` and `environment` (`$app/stores`, `$app/forms`, `$app/paths`), a `$env/*` module,
+`$service-worker`, a name beyond `goto`, `beforeNavigate`, `afterNavigate` and `preloadCode` from
+`$app/navigation`, beyond `page` from `$app/state`, beyond `browser`, `dev`, `building` and `version`
+from `$app/environment`, or beyond `redirect`, `error`, `isRedirect` and `isHttpError` from
+`@sveltejs/kit`. The error carries the file and line. Type-only imports (`import type`) are erased and
+are not reported. No `routes.js` is written.
+
+## HUSK303
+
+`svelte.config.js` sets a `kit` option other than `adapter`, `alias`, `paths` and `csp`. Husk does not
+read the file to run it; it reads it to refuse an option whose absence would change the app.
+`alias`, `paths` and `adapter` are not honoured but not needed (`$lib` is set with `HuskAlias`); `csp` is
+not delivered yet.
 
 ## HUSK304
 

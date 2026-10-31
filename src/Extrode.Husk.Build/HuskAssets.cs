@@ -228,6 +228,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             json.WriteString("projectDirectory", ProjectDirectory);
             json.WriteBoolean("dev", Dev);
             json.WriteBoolean("hashNames", HashNames);
+            json.WriteBoolean("routing", Routing);
             json.WriteString("stylesheet", stylesheet);
             json.WriteString("importMap", importMap);
             json.WriteStartArray("styles");
