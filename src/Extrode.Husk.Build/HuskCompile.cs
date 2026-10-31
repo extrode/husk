@@ -141,19 +141,23 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
             return false;
         }
         // A failed write leaves that output older than the source, so the next build compiles it again.
+        string? temp = null;
         try
         {
             foreach (var (extension, text) in CompiledFiles.Texts(path, result))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(outputs[extension])!);
                 // Beside the output, then moved over it: an interrupted build leaves the old file, not half a new one.
-                string temp = outputs[extension] + ".husk-tmp";
+                temp = outputs[extension] + ".husk-tmp";
                 File.WriteAllText(temp, text);
                 File.Move(temp, outputs[extension], overwrite: true);
+                temp = null;
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
+            if (temp is not null)
+                try { File.Delete(temp); } catch (Exception d) when (d is IOException or UnauthorizedAccessException) { }
             Log.LogError(null, "HUSK102", null, path, 0, 0, 0, 0, "cannot write an output: " + e.Message);
             return false;
         }
