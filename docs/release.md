@@ -13,7 +13,7 @@ Husk publishes to nuget.org by trusted publishing (decision 008): no API key exi
 1. Pare: the `Extrode.Pare*` version in `Directory.Packages.props` must already be on nuget.org. The release job checks and refuses otherwise.
 2. Set `<Version>` in `Directory.Build.props`. While Husk is `0.x` it carries a prerelease suffix (`0.1.0-preview.2`); a test enforces it.
 3. Move `CHANGELOG.md` `[Unreleased]` under the new version.
-4. Merge to `main` and push. `pages.yml` deploys the site on every push to `main`, so the docs in that merge go live at once. Install snippets that name the new version should wait until step 7.
+4. Merge to `main` and push. `pages.yml` deploys the site when a push to `main` changes `dist/docs-site/**`, so docs that reach the site go live at once. Install snippets that name the new version should wait until step 7.
 5. Tag and push:
 
    ```sh

@@ -160,6 +160,23 @@ public sealed class HuskCompileTests : IDisposable
     }
 
     [Fact]
+    public void A_compiler_file_that_goes_missing_does_not_poison_the_cached_compiler()
+    {
+        string compiler = P("compiler/index.js");
+        Directory.CreateDirectory(P("compiler"));
+        File.Copy(ExpectedRow.CompilerPath, compiler);
+        var stamp = File.GetLastWriteTimeUtc(compiler);
+        HuskCompile.CompilerFor(compiler);
+
+        File.Delete(compiler);
+        Assert.ThrowsAny<IOException>(() => HuskCompile.CompilerFor(compiler));
+        File.Copy(ExpectedRow.CompilerPath, compiler);
+        File.SetLastWriteTimeUtc(compiler, stamp);
+
+        Assert.True(HuskCompile.CompilerFor(compiler).Compile(new CompileInput("a.svelte", "<p>x</p>"), false).Succeeded);
+    }
+
+    [Fact]
     public void A_warning_is_husk200_at_the_position_node_reports()
     {
         Assert.True(Run(false, Source("wwwroot/Image.svelte")));

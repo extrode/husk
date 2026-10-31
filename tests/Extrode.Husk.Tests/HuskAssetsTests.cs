@@ -156,6 +156,19 @@ public sealed class HuskAssetsTests : IDisposable
     }
 
     [Fact]
+    public void A_truncated_copy_is_written_again_and_no_temp_file_is_left()
+    {
+        Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "export default 1;\n")));
+        string a = Directory.GetFiles(P("obj/husk/hashed"), "A.svelte.*.js").Single();
+        File.WriteAllText(a, "");
+
+        Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "export default 1;\n")));
+
+        Assert.Equal("export default 1;\n", File.ReadAllText(a));
+        Assert.Empty(Directory.GetFiles(P("obj/husk/hashed"), "*.husk-tmp", SearchOption.AllDirectories));
+    }
+
+    [Fact]
     public void A_changed_module_replaces_its_copy_and_leaves_the_others_untouched()
     {
         Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "a"), Output("B.svelte.js", "B.svelte", text: "b")));

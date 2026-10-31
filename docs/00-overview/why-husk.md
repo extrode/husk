@@ -8,7 +8,7 @@ Husk runs the Svelte compiler inside the .NET build instead. It embeds Google's 
 
 - **One command.** `dotnet build`, `dotnet watch`, `dotnet publish`. That is the whole workflow.
 - **No bundler.** Components become ES modules and the browser loads them directly. An import map tells it where `svelte` and your files live, with content hashes in the names so caches stay right.
-- **TypeScript included.** `<script lang="ts">` works, and so do `.svelte.ts` rune modules. Pare strips the types.
+- **TypeScript included.** `<script lang="ts">` works, and so do `.svelte.ts` rune modules, whose types Pare strips.
 - **Fast saves.** In Development the engines stay warm, so a saved component is recompiled in the running app and the page reloads.
 - **Readable errors.** A bad component fails the build like a C# error: `App.svelte(4,3): error HUSK100: ...`.
 

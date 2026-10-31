@@ -24,6 +24,9 @@ Merged into `dev`, not yet tagged.
 - The build stamp covers the compiler's path, so a package upgrade rebuilds every source though no file is newer.
 - Deploy retries uploads on 429 and 5xx, refuses `_headers` and `_redirects`, skips `.DS_Store`, and reports malformed API answers as errors instead of crashing.
 - A dev map from a hashed build logs a warning that saves have no visible effect.
+- A compiler file that briefly goes missing no longer leaves a disposed compiler cached for the life of the process.
+- Hashed module copies are written atomically, and a truncated copy is written again, so an interrupted build no longer publishes an empty fingerprinted file.
+- Deploy trims the Cloudflare token and reports one with a newline inside as exit 1, not a crash; the Development stylesheet is written atomically.
 
 ---
 
