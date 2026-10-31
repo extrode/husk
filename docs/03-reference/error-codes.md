@@ -18,6 +18,11 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
 | [HUSK200](#husk200) | warning | a Svelte compiler warning |
+| [HUSK300](#husk300) | error | two routes for one address |
+| [HUSK301](#husk301) | error | a SvelteKit feature Husk does not provide |
+| [HUSK304](#husk304) | error | a route file the build does not compile or serve |
+| [HUSK305](#husk305) | error | the app shell lacks a placeholder |
+| [HUSK306](#husk306) | error | the routes folder does not exist |
 
 ## HUSK001
 
@@ -80,3 +85,33 @@ A Svelte compiler warning, such as `a11y_missing_attribute` for an `<img>` witho
 not fail the build; `<TreatWarningsAsErrors>` or `<WarningsAsErrors>HUSK200</WarningsAsErrors>`
 makes it. Then, as with HUSK100, that source's outputs are left as they were, so the next build
 fails on it again instead of finding it up to date.
+
+## HUSK300
+
+Two folders below the routes folder make one address (`a/[x]` and `(group)/a/[y]`: the parameter's
+name does not tell them apart), or one page has two load files (`+page.ts` and `+page.js`). The
+message names the first file. Rename or remove one. No `routes.js` is written.
+
+## HUSK301
+
+A route file or folder uses something Husk's router does not provide: a rest (`[...rest]`), optional
+(`[[opt]]`) or matcher (`[id=int]`) parameter, `+server.ts`, a `+page.server.ts` or
+`+layout.server.ts`, a layout reset (`+page@.svelte`), an error page below the routes folder, or an
+unknown `+` file. Husk builds client-only apps; a server feature has no place in them. The message
+names the feature. No `routes.js` is written.
+
+## HUSK304
+
+A file in the routes folder, or the client hooks file, is not among the build's compiled or served
+outputs, so `routes.js` has nothing to import. Include it: `.svelte` files as `HuskComponent`, `.svelte.ts`
+as `HuskModule`, `.ts` as `TypeScriptSource` (with `PareServeAt` for files outside `wwwroot`).
+
+## HUSK305
+
+The shell (`app.html`) must contain `%sveltekit.head%` and `%sveltekit.body%`, as SvelteKit's does:
+Husk fills the first with the import map, stylesheet and entry script, the second with the element the
+app mounts in.
+
+## HUSK306
+
+The `HuskRoutes` item names a folder that is not there. Its default is `src/routes`.

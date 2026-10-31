@@ -194,6 +194,40 @@ public sealed class HuskAssetsTests : IDisposable
     }
 
     [Fact]
+    public void Aliases_imports_and_the_router_shims_get_import_map_keys()
+    {
+        string lib = P("src/lib/util.ts");
+        var util = new TaskItem(P("obj/pare/app/lib/util.js"), new Dictionary<string, string>
+        {
+            ["PareSource"] = lib, ["PareRelativePath"] = "app/lib/util.js", ["PareCompiler"] = "",
+        });
+        Directory.CreateDirectory(P("obj/pare/app/lib"));
+        File.WriteAllText(util.ItemSpec, "");
+
+        Assert.True(new HuskAssets
+        {
+            BuildEngine = _engine,
+            Outputs = [util],
+            OutputDirectory = P("obj/husk"),
+            ServedRoot = P("obj/pare"),
+            RuntimeImports = Path.Combine(RepoPaths.Vendored, "runtime-imports.json"),
+            CompilerAssembly = "/c/Extrode.Husk.Compiler.dll",
+            CompilerPath = "/c/index.js",
+            ProjectDirectory = _dir.FullName,
+            Aliases = [new TaskItem("$lib", new Dictionary<string, string> { ["Path"] = "src/lib", ["Entry"] = "util.ts" })],
+            Imports = [new TaskItem("@capacitor/core", new Dictionary<string, string> { ["Url"] = "https://cdn.example/core.js" })],
+            Routing = true,
+        }.Execute());
+
+        var imports = JsonDocument.Parse(File.ReadAllText(P("obj/husk/importmap.json"))).RootElement.GetProperty("imports");
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util.ts").GetString());
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib").GetString());
+        Assert.Equal("https://cdn.example/core.js", imports.GetProperty("@capacitor/core").GetString());
+        Assert.Equal("/_husk/app/navigation.js", imports.GetProperty("$app/navigation").GetString());
+        Assert.Equal("/_husk/kit.js", imports.GetProperty("@sveltejs/kit").GetString());
+    }
+
+    [Fact]
     public void Without_hashed_names_no_copy_is_left()
     {
         Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "a")));
