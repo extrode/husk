@@ -13,6 +13,10 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 Merged into `dev`, not yet tagged.
 
+### Fixed
+
+- A reused build process (`dotnet build` keeps them for a few minutes) that had compiled with one Extrode.Husk.Build version could load a second version's V8 beside the first, risking a crash. It now stops with HUSK004, which says to run `dotnet build-server shutdown`.
+
 ---
 
 ## [0.1.0-preview.4] — 2026-10-31

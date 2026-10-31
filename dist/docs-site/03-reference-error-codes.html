@@ -121,7 +121,7 @@
 
     <!-- content -->
     <main class="jt-content has-toc" id="jt-content">
-      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#husk001">HUSK001</a><a class="toc-l2" href="#husk002">HUSK002</a><a class="toc-l2" href="#husk003">HUSK003</a><a class="toc-l2" href="#husk100">HUSK100</a><a class="toc-l2" href="#husk101">HUSK101</a><a class="toc-l2" href="#husk102">HUSK102</a><a class="toc-l2" href="#husk200">HUSK200</a></nav>
+      <nav class="toc" aria-label="On this page"><button class="toc-tab" type="button" onclick="toggleToc()" title="Show on this page (o)">On this page</button><div class="toc-title"><span>On this page</span><button class="toc-toggle" type="button" onclick="toggleToc()" title="Hide or show (o)"></button></div><a class="toc-l2" href="#husk001">HUSK001</a><a class="toc-l2" href="#husk002">HUSK002</a><a class="toc-l2" href="#husk003">HUSK003</a><a class="toc-l2" href="#husk004">HUSK004</a><a class="toc-l2" href="#husk100">HUSK100</a><a class="toc-l2" href="#husk101">HUSK101</a><a class="toc-l2" href="#husk102">HUSK102</a><a class="toc-l2" href="#husk200">HUSK200</a></nav>
       <div class="content-inner">
         <nav class="breadcrumb" aria-label="Breadcrumb">Reference &#8250; Error codes</nav>
         <article>
@@ -155,6 +155,11 @@ listed in <a href="https://svelte.dev/docs/svelte/compiler-errors">Svelte's docs
 <td><a href="#husk003">HUSK003</a></td>
 <td>error (MSBuild)</td>
 <td>V8's native library for this machine was not restored</td>
+</tr>
+<tr>
+<td><a href="#husk004">HUSK004</a></td>
+<td>error (MSBuild)</td>
+<td>another Husk version already started V8 in this build process</td>
 </tr>
 <tr>
 <td><a href="#husk100">HUSK100</a></td>
@@ -202,6 +207,13 @@ for this machine in the NuGet cache. The file is missing when the project was no
 package source mapping does not allow <code>Microsoft.ClearScript.*</code>, or when the app pins another
 version of a <code>Microsoft.ClearScript.V8.Native.*</code> package (a lower pin is NU1605; a higher one means
 7.5.1.1 is never downloaded). Restore the project, allow the packages, or remove the pin.</p>
+<h2 id="husk004">HUSK004</h2>
+<p><code>dotnet build</code> keeps its build processes running for a few minutes and reuses them. One that has
+already compiled with one Extrode.Husk.Build version holds that version's V8; a second version
+cannot safely load its own copy beside it, so the build stops instead. It happens after upgrading
+Husk while those processes still run, or in a solution whose projects use different Husk versions.
+Run <code>dotnet build-server shutdown</code> and build again; in a solution, give every project the same
+version.</p>
 <h2 id="husk100">HUSK100</h2>
 <p>Svelte rejected the source; its code and message follow (<code>expected_token</code>, <code>js_parse_error</code>). In
 Development it is also logged when the compiler itself failed, with the exception. A <code>.svelte.ts</code>
