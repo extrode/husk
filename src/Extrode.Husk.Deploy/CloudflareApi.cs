@@ -72,6 +72,18 @@ internal static class CloudflareApi
         [".ico"] = "image/x-icon",
         [".woff2"] = "font/woff2",
         [".txt"] = "text/plain",
+        [".xml"] = "application/xml",
+        [".csv"] = "text/csv",
+        [".wasm"] = "application/wasm",
+        [".gif"] = "image/gif",
+        [".avif"] = "image/avif",
+        [".woff"] = "font/woff",
+        [".ttf"] = "font/ttf",
+        [".otf"] = "font/otf",
+        [".pdf"] = "application/pdf",
+        [".mp4"] = "video/mp4",
+        [".webm"] = "video/webm",
+        [".mp3"] = "audio/mpeg",
     };
 
     /// <summary>The content type of an upload part, by extension.</summary>

@@ -143,14 +143,87 @@ public sealed class DeployTests : IDisposable
     [Fact]
     public async Task A_failing_step_is_named_with_its_status_and_the_token_is_not_printed()
     {
-        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (500,"{\"errors\":[\"" + Token + "\"]}"));
+        string failure = "{\"errors\":[\"" + Token + "\"]}";
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (500, failure), (500, failure), (500, failure));
+
+        Assert.Equal(1, await Run());
+
+        Assert.Equal(4, _server.Requests.Count);
+        Assert.Contains("assets upload failed: HTTP 500", _err.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(Token, _out.ToString() + _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_upload_answered_503_or_429_is_sent_again_and_the_deploy_goes_on()
+    {
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (503, "{}"), (429, "{}"), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
+
+        Assert.Equal(0, await Run());
+
+        Assert.Equal(["POST", "POST", "POST", "POST", "PUT"], _server.Requests.Select(r => r.Method));
+        Assert.Equal(Parts(_server.Requests[1]).Values, Parts(_server.Requests[3]).Values);
+    }
+
+    [Fact]
+    public async Task A_client_error_on_upload_is_not_sent_again()
+    {
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (403, "{}"));
 
         Assert.Equal(1, await Run());
 
         Assert.Equal(2, _server.Requests.Count);
-        Assert.Contains("assets upload failed: HTTP 500", _err.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain(Token, _out.ToString() + _err.ToString(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_2xx_answer_that_is_not_JSON_exits_1_with_no_stack_trace()
+    {
+        _server.Respond((200, "<html>proxy</html>"));
+
+        Assert.Equal(1, await Run());
+
+        Assert.DoesNotContain("   at ", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_bucket_entry_that_is_not_a_string_exits_1()
+    {
+        _server.Respond((200, "{\"result\":{\"jwt\":\"j\",\"buckets\":[[null]]}}"));
+
+        Assert.Equal(1, await Run());
+
+        Assert.Contains("not a string", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("_headers")]
+    [InlineData("_redirects")]
+    public async Task A_headers_or_redirects_file_is_refused_not_uploaded_as_an_asset(string name)
+    {
+        Write(name, "/*\n  X-Frame-Options: DENY\n");
+
+        Assert.Equal(1, await Run());
+
+        Assert.Empty(_server.Requests);
+        Assert.Contains(name + " is not supported", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_DS_Store_file_is_not_deployed()
+    {
+        Write(".DS_Store", "x");
+
+        Assert.Equal(0, await Run("--dry-run"));
+
+        Assert.DoesNotContain(".DS_Store", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("a.wasm", "application/wasm")]
+    [InlineData("a.woff", "font/woff")]
+    [InlineData("a.gif", "image/gif")]
+    [InlineData("a.unknown", "application/octet-stream")]
+    public void Content_types_cover_wasm_fonts_and_images(string path, string expected) =>
+        Assert.Equal(expected, CloudflareApi.ContentType(path));
 
     [Fact]
     public async Task The_token_never_appears_in_the_output()
