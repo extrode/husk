@@ -109,11 +109,13 @@
       <_HuskCompileSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk'" />
       <_HuskPageSource Include="@(PareCompileSource)" Condition="'%(PareCompileSource.PareCompiler)' == 'husk-page'" />
     </ItemGroup>
-    <!-- A changed HuskDev rebuilds everything: the stamp is an input, rewritten only when it differs. -->
-    <MakeDir Directories="$(_HuskObjRoot)" Condition="'@(_HuskCompileSource)' != ''" />
-    <WriteLinesToFile File="$(_HuskDevStamp)" Lines="$(HuskDev)" Overwrite="true" WriteOnlyWhenDifferent="true"
-                      Condition="'@(_HuskCompileSource)' != ''" />
-    <ItemGroup Condition="'@(_HuskCompileSource)' != ''">
+    <!-- A changed HuskDev, or a package upgrade, rebuilds everything: the stamp is an input, holding
+         HuskDev and the task, compiler and Svelte paths (they carry the package version), and rewritten
+         only when it differs. File times alone miss an upgrade: NuGet keeps the times stored in the package. -->
+    <MakeDir Directories="$(_HuskObjRoot)" Condition="'@(_HuskCompileSource)' != '' or '@(_HuskPageSource)' != ''" />
+    <WriteLinesToFile File="$(_HuskDevStamp)" Lines="$(HuskDev);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskCompilerPath)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Condition="'@(_HuskCompileSource)' != '' or '@(_HuskPageSource)' != ''" />
+    <ItemGroup Condition="'@(_HuskCompileSource)' != '' or '@(_HuskPageSource)' != ''">
       <FileWrites Include="$(_HuskDevStamp)" />
     </ItemGroup>
   </Target>
@@ -155,7 +157,7 @@
   <!-- After HuskAssets, which writes the map only when it changed: a new component rewrites every
        page, an edit to one page rewrites that page. -->
   <Target Name="HuskPages" AfterTargets="HuskAssets" BeforeTargets="BeforeBuild" DependsOnTargets="HuskAssets" Condition="'$(_HuskServed)' == 'true'"
-          Inputs="@(_HuskPageSource);$(_HuskObjRoot)importmap.json;$(_HuskGraph);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(MSBuildThisFileFullPath)"
+          Inputs="@(_HuskPageSource);$(_HuskObjRoot)importmap.json;$(_HuskGraph);$(HuskTaskAssembly);$(_HuskCompilerAssembly);$(_HuskDevStamp);$(MSBuildThisFileFullPath)"
           Outputs="@(_HuskPageSource->'%(PareOutputPath)')">
     <HuskPages Condition="'@(_HuskPageSource)' != ''" Pages="@(_HuskPageSource)" ImportMap="$(_HuskObjRoot)importmap.json"
                Graph="$(_HuskGraph)" BasePath="$(StaticWebAssetBasePath)" />
