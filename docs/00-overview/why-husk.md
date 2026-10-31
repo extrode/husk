@@ -14,7 +14,7 @@ Husk runs the Svelte compiler inside the .NET build instead. It embeds Google's 
 
 ## What it costs
 
-- **An 85.2 MB package, once per machine.** It holds V8 for six platforms and Svelte. Nothing from it ships with your app.
+- **A 6 MB package plus V8, once per machine.** The package holds the compiler and Svelte; Microsoft's V8 packages for six platforms come with it and are shared across Husk versions. Nothing from it ships with your app.
 - **No bundling.** Your app serves many small files. That is fine on HTTP/2 and HTTP/3, and Husk adds `modulepreload` links (with `HuskHashNames`, on by default outside Debug), but if you need one big file, Husk is not it.
 - **No SvelteKit.** Husk compiles components. Routing, server rendering and `$app/*` modules are not part of it yet.
 - **A build machine that V8 supports:** Windows, macOS or glibc Linux, x64 or arm64. Alpine and FreeBSD cannot build. The app you publish runs anywhere.
