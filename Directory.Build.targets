@@ -1,0 +1,19 @@
+<Project>
+  <!-- nuget.org renders the package README on its own page, where the repo's relative links and
+       images point nowhere. Packing copies the README with each one made absolute: images to
+       raw.githubusercontent.com, links to github.com, both at this version's tag. -->
+  <Target Name="_HuskPackageReadme" BeforeTargets="_GetPackageFiles" Condition="'$(IsPackable)' != 'false'">
+    <PropertyGroup>
+      <_HuskReadmeRef>v$(PackageVersion)</_HuskReadmeRef>
+      <_HuskReadmeOut>$(IntermediateOutputPath)package-readme/README.md</_HuskReadmeOut>
+      <_HuskReadmeText>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)README.md'))</_HuskReadmeText>
+      <_HuskReadmeText>$([System.Text.RegularExpressions.Regex]::Replace('$(_HuskReadmeText)', '(!\[[^\]]*\]\()(?!https?:|#)([^)\s]+)\)', '$1https://raw.githubusercontent.com/extrode/husk/$(_HuskReadmeRef)/$2)'))</_HuskReadmeText>
+      <_HuskReadmeText>$([System.Text.RegularExpressions.Regex]::Replace('$(_HuskReadmeText)', '(src=")(?!https?:)([^"]+)"', '$1https://raw.githubusercontent.com/extrode/husk/$(_HuskReadmeRef)/$2"'))</_HuskReadmeText>
+      <_HuskReadmeText>$([System.Text.RegularExpressions.Regex]::Replace('$(_HuskReadmeText)', '(\]\()(?!https?:|#|mailto:)([^)\s]+)\)', '$1https://github.com/extrode/husk/blob/$(_HuskReadmeRef)/$2)'))</_HuskReadmeText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_HuskReadmeOut)" Lines="$([MSBuild]::Escape('$(_HuskReadmeText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <None Include="$(_HuskReadmeOut)" Pack="true" PackagePath="" Visible="false" />
+    </ItemGroup>
+  </Target>
+</Project>

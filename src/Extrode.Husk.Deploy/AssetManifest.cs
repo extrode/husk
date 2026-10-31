@@ -6,12 +6,13 @@ internal sealed record AssetFile(string Path, string FullPath, string Hash, long
 
 internal static class AssetManifest
 {
-    /// <summary>Every file under <paramref name="directory"/>, ordered by path.</summary>
+    /// <summary>Every file under <paramref name="directory"/>, ordered by path. Linked files and
+    /// folders are followed, except a folder link back up the tree, which would loop.</summary>
     public static IReadOnlyList<AssetFile> Read(string directory)
     {
         string root = Path.GetFullPath(directory);
         var files = new List<AssetFile>();
-        foreach (string full in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+        foreach (string full in Files(root))
         {
             string name = Path.GetFileName(full);
             if (name == ".DS_Store")
@@ -25,5 +26,28 @@ internal static class AssetManifest
         }
         files.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
         return files;
+    }
+
+    // Each pending folder carries the folders above it, as reached and as their links resolve; a
+    // link that resolves to one of them would loop and is not entered.
+    private static IEnumerable<string> Files(string root)
+    {
+        var pending = new Stack<(string Directory, HashSet<string> Above)>([(root, new HashSet<string>(StringComparer.Ordinal) { root })]);
+        while (pending.Count > 0)
+        {
+            var (directory, above) = pending.Pop();
+            foreach (string file in Directory.EnumerateFiles(directory))
+                yield return file;
+            foreach (string child in Directory.EnumerateDirectories(directory))
+            {
+                string? target = Directory.ResolveLinkTarget(child, returnFinalTarget: true)?.FullName;
+                if (target is not null && above.Contains(Path.TrimEndingDirectorySeparator(target)))
+                    continue;
+                var next = new HashSet<string>(above, StringComparer.Ordinal) { child };
+                if (target is not null)
+                    next.Add(Path.TrimEndingDirectorySeparator(target));
+                pending.Push((child, next));
+            }
+        }
     }
 }

@@ -15,6 +15,22 @@ Merged into `dev`, not yet tagged.
 
 ### Changed
 
+- Pare 0.7.0 (was 0.6.1); the install snippets and HUSK002's message name it.
+- Release workflow: tests and packing run in a job with a read-only token; the publishing job takes the packed artifact and waits for the `packages` environment's reviewer. Every workflow job has a timeout.
+
+### Fixed
+
+- The package README on nuget.org: its links and images were relative to the repo and pointed nowhere. Packing rewrites them to absolute URLs at the release tag.
+- HUSK003 checks the NuGet folder that holds Extrode.Husk.Build, the folder the compiler loads V8 from, instead of the global packages folder; with a fallback package folder the two could disagree.
+- A HUSK200 the build treats as an error (`TreatWarningsAsErrors`, `WarningsAsErrors`) left the source's outputs written, so the next build found them up to date and passed. They are now left as they were, as with HUSK100.
+- Deploy: an upload whose connection drops or times out is sent again, like a 429 or 5xx; a 429 waits the `Retry-After` it names, up to a minute; a directory link is not entered, so a link back up the tree no longer fails with "Too many levels of symbolic links".
+
+---
+
+## [0.1.0-preview.2] — 2026-10-31
+
+### Changed
+
 - `Extrode.Husk.Build` no longer packs the six V8 natives (85.2 MB to about 6 MB). It depends on `Microsoft.ClearScript.V8.Native.<rid>` at exactly 7.5.1.1; the build and the Development app find the native in the NuGet cache. New error HUSK003 when it is missing. Package source mappings must allow `Microsoft.ClearScript.*`; an app pinning another native version conflicts, and lock-file consumers (`--locked-mode`) must regenerate `packages.lock.json` for the six new dependencies.
 - Svelte pinned at 5.57.3 (was 5.57.2). In the test fixtures component output is unchanged; rune-module (`.svelte.js`, `.svelte.ts`) output changes with the compiler.
 
@@ -28,12 +44,6 @@ Merged into `dev`, not yet tagged.
 - A compiler file that briefly goes missing no longer leaves a disposed compiler cached for the life of the process.
 - Hashed module copies are written atomically, and a truncated copy is written again, so an interrupted build no longer publishes an empty fingerprinted file.
 - Deploy trims the Cloudflare token and reports one with a newline inside as exit 1, not a crash; the Development stylesheet is written atomically.
-
----
-
-## [0.1.0-preview.2] — 2026-10-31
-
-### Fixed
 - Both packages carry the Husk icon. `0.1.0-preview.1` was built from a tag that predates it, so nuget.org shows the default icon for that version.
 - Both packages are also published to GitHub Packages (`release.yml`), so the repository's Packages tab lists them.
 

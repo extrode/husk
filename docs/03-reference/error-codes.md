@@ -69,4 +69,5 @@ reason. Outputs that failed are written again by the next build.
 
 A Svelte compiler warning, such as `a11y_missing_attribute` for an `<img>` without `alt`. It does
 not fail the build; `<TreatWarningsAsErrors>` or `<WarningsAsErrors>HUSK200</WarningsAsErrors>`
-makes it.
+makes it. Then, as with HUSK100, that source's outputs are left as they were, so the next build
+fails on it again instead of finding it up to date.
