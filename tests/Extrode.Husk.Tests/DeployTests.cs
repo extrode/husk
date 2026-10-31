@@ -192,6 +192,20 @@ public sealed class DeployTests : IDisposable
     }
 
     [Fact]
+    public async Task An_upload_that_times_out_is_not_sent_again()
+    {
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (-1, JwtBody(CompletionJwt)), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+
+        int exit = await Program.Run(["--dir", _dir.FullName, "--script", "site", "--account", "acc1", "--compatibility-date", "2026-10-30"],
+            Token, _out, _err, http, _server.BaseUrl, allowInsecureBaseUrl: true);
+
+        Assert.Equal(1, exit);
+        await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+        Assert.Equal(2, _server.Requests.Count);
+    }
+
+    [Fact]
     public async Task An_upload_answered_429_waits_the_Retry_After_the_answer_names()
     {
         _server.RetryAfterSeconds = 2;
@@ -410,6 +424,11 @@ internal sealed class FakeCloudflare : IDisposable
             lock (_responses)
                 if (_responses.Count > 0)
                     (status, body) = _responses.Dequeue();
+            if (status == -1)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                status = 200;
+            }
             if (status == 0)
             {
                 context.Response.ContentLength64 = 1000;

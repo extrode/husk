@@ -117,7 +117,8 @@ internal sealed class Deployer
     }
 
     /// <summary>One request, sent again up to <paramref name="attempts"/> times in all while the answer is
-    /// 429 or 5xx, the connection fails, or the client times out. <paramref name="content"/> builds a fresh
+    /// 429 or 5xx or the connection fails. A timeout is not retried: the client's timeout is the
+    /// whole budget for a step. <paramref name="content"/> builds a fresh
     /// body per attempt: sending disposes it.</summary>
     private async Task<JsonElement> Send(string step, HttpMethod method, string path, string bearer, Func<HttpContent> content,
         CancellationToken cancellationToken, int attempts = 1)
@@ -132,7 +133,7 @@ internal sealed class Deployer
                 sent = await _http.SendAsync(request, cancellationToken);
             }
             catch (Exception e) when (attempt < attempts && !cancellationToken.IsCancellationRequested
-                && e is HttpRequestException or TaskCanceledException)
+                && e is HttpRequestException)
             {
                 await Task.Delay(RetryDelay * attempt, cancellationToken);
                 continue;
