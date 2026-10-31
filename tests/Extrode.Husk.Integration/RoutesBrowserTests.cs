@@ -4,6 +4,7 @@ namespace Extrode.Husk.Integration;
 
 /// <summary>The router app in each browser: a fixture mirroring saaaat's route shapes, published and served
 /// with a single-page fallback.</summary>
+[Collection(nameof(PackedFeed))]
 public sealed class RoutesBrowserTests : IDisposable
 {
     private readonly TempProject _project = new();

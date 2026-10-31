@@ -3,6 +3,7 @@ namespace Extrode.Husk.Integration;
 /// <summary>The saaaat web app built by Husk alone (spec 002 T16). Not gating: skipped when the sibling checkout
 /// is missing.</summary>
 [Trait("Category", "Corpus")]
+[Collection(nameof(PackedFeed))]
 public sealed class SaaaatCorpusTests
 {
     private static readonly string Saaaat = Path.GetFullPath(Path.Combine(TempProject.RepoRoot, "..", "..", "ikhbat.org", "saaaat.com"));
