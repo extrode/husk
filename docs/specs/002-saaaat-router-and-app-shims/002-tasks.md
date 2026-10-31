@@ -1,7 +1,7 @@
 # 002 — Tasks
 Plan: ./002-plan.md
 
-- [ ] T1 Spike: Pare with sources outside `wwwroot` (`PareRelativePath`, `Link`) — files: `prototypes/002-outside-sources/`, `docs/architecture/005-router.md` — covers: R18 — done when: a fixture with sources in `../x/` builds and the finding is written up; if Pare cannot map them, stop with a Needs-decision (extension point in Pare's repo)
+- [x] T1 Spike: Pare with sources outside `wwwroot` (`PareRelativePath`, `Link`) — files: `prototypes/002-outside-sources/`, `docs/architecture/005-router.md` — covers: R18 — done when: a fixture with sources in `../x/` builds and the finding is written up; if Pare cannot map them, stop with a Needs-decision (extension point in Pare's repo)
 - [ ] T2 `RouteTable` model: folder scan, groups, params, trailing slash, layout chains, clash error HUSK300 — files: `src/Extrode.Husk.Compiler/RouteTable.cs`, tests — covers: R1, R2 — done when: unit tests pass on a fixture tree, incl. clash and non-`+` files ignored
 - [ ] T3 `RouteTable` emits `routes.js` (dynamic `import()` per route, hooks, error page); unsupported route features HUSK301, page options ignored; no partial output on failure — files: `RouteTable.cs`, `docs/error-codes.md` — covers: R3, R5, R15, R17 — done when: tests pin the emitted text and that a failure writes nothing
 - [ ] T4 Router core in plain JS: `matchRoute`, `runLoads` (redirect/error results), pure and loadable in V8 — files: `src/Extrode.Husk.Build/runtime/router.js`, V8 tests — covers: R1, R3, R4, R5 — done when: V8 tests pass with no Node
