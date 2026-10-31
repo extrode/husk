@@ -101,7 +101,7 @@ is in the loop.
   |---|---|---|---|---|
   | `samples/svelte-app` (`dotnet publish`, measured) | 277 (831 with `.br`/`.gz`) | 38 KB | 1.4% | fits |
   | saaaat web (estimate) | about 800 | `intro.mp3`, 6.2 MB | about 4% | fits |
-  | riwalqalb frontend (estimate) | about 2,400 | 386 KB (`Amiri-Regular.woff2`) | about 12% | fits |
+  | riwalqalb frontend (estimate) | about 2,600 | 386 KB (`Amiri-Regular.woff2`) | about 13% | fits |
 
   How the estimates were made: components and TypeScript modules counted in source (saaaat
   82 `.svelte` + 85 `.ts` in `apps/web/src` + 82 in `packages/`; riwalqalb 123 + 155), plus the
