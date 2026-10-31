@@ -50,6 +50,17 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
     /// <summary>The served runtime files, each with its URL below the base path as RelativePath.</summary>
     public ITaskItem[] Runtime { get; set; } = [];
 
+    private static readonly StringComparison PathComparison =
+        OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+    /// <summary>True when <paramref name="path"/> is inside the <paramref name="servedRoot"/> folder.
+    /// The folder boundary counts: <c>pare-old/x.js</c> is not inside <c>pare</c>.</summary>
+    internal static bool IsServed(string path, string servedRoot, StringComparison comparison)
+    {
+        string folder = servedRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return path.StartsWith(folder, comparison);
+    }
+
     public override bool Execute()
     {
         string root = Url(BasePath);
@@ -59,7 +70,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
         string served = Path.GetFullPath(ServedRoot);
         foreach (var output in Outputs)
         {
-            if (!output.GetMetadata("FullPath").StartsWith(served, StringComparison.OrdinalIgnoreCase))
+            if (!IsServed(output.GetMetadata("FullPath"), served, PathComparison))
                 continue;
             string relative = output.GetMetadata("PareRelativePath").Replace('\\', '/');
             if (output.GetMetadata("PareCompiler") == "husk" && relative.EndsWith(".svelte.css", StringComparison.Ordinal))
