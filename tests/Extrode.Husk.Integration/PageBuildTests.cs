@@ -72,6 +72,22 @@ public sealed partial class PageBuildTests
     }
 
     [Theory]
+    [InlineData("Microsoft.NET.Sdk.Web", "")]
+    [InlineData("Microsoft.NET.Sdk.Razor", "")]
+    [InlineData("Microsoft.NET.Sdk.Web", "<EnableDefaultContentItems>false</EnableDefaultContentItems>")]
+    public void Pages_are_built_where_Content_does_not_list_them(string sdk, string properties)
+    {
+        using var project = new TempProject();
+        project.Project(properties, sdk: sdk);
+        project.Put("wwwroot/index.html", Marked);
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.True(File.Exists(project.P(TempProject.PareOut + "index.html")), output);
+    }
+
+    [Theory]
     [InlineData("<PareEmbed>true</PareEmbed>")]
     [InlineData("<PareOutDir>gen</PareOutDir>")]
     public void An_app_not_served_from_obj_keeps_its_pages_as_they_are(string properties)
