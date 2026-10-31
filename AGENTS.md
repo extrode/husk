@@ -91,7 +91,7 @@ When the whole tasklist is done: summarise it into `CHANGELOG.md` under `## [Unr
   `prototypes/001-engine-spike` only (2026-10-17). For the product (spec 001, 2026-10-17):
   ClearScript V8 7.5.1.1 with its six native packages, Microsoft.Build.Framework and
   Microsoft.Build.Utilities.Core 18.9.6, Extrode.Pare, .Build and .AspNetCore 0.6.0 (0.6.1 from
-  2026-10-30, 0.7.0 from 2026-10-31); tests: xunit.v3 4.0.2, Selenium.WebDriver 4.51.0 (4.52.0
+  2026-10-30, 0.7.0 from 2026-10-31, 0.7.2 from 2026-10-31, a dependency of Extrode.Husk.Build); tests: xunit.v3 4.0.2, Selenium.WebDriver 4.51.0 (4.52.0
   from 2026-10-31). Not
   Playwright: its .NET package bundles Node.
 - The Svelte compiler is pinned to one version; outputs are checked byte for byte against Node

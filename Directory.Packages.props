@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <ClearScriptVersion>7.5.1.1</ClearScriptVersion>
-    <PareVersion>0.7.0</PareVersion>
+    <PareVersion>0.7.2</PareVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Extrode.Pare" Version="$(PareVersion)" />

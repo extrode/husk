@@ -98,11 +98,12 @@
            Text="Husk's V8 library is missing: $(_HuskNativeFile). Restore the project so Microsoft.ClearScript.V8.Native.$(_HuskNativeRid) $(_HuskClearScriptVersion) lands in the NuGet cache. If the project pins another version of that package, remove the pin: Husk needs exactly $(_HuskClearScriptVersion)." />
   </Target>
 
-  <!-- Pare's targets do the placing, serving and publishing, and NuGet imports a package's build/
-       folder only into projects that reference it directly, so the project references both. -->
+  <!-- Pare's targets do the placing, serving and publishing. Extrode.Husk.Build depends on
+       Extrode.Pare.Build, whose buildTransitive/ imports them into the project; they are missing
+       when a direct Extrode.Pare.Build reference excludes its build assets. -->
   <Target Name="_HuskCheckPare" BeforeTargets="BeforeBuild" Condition="'$(PareTaskAssembly)' == ''">
     <Error Code="HUSK002"
-           Text="Husk needs Extrode.Pare.Build: add &lt;PackageReference Include=&quot;Extrode.Pare.Build&quot; Version=&quot;0.7.0&quot; /&gt; (0.6.0 or later) to $(MSBuildProjectFile) beside Extrode.Husk.Build." />
+           Text="Husk needs Extrode.Pare.Build's build targets, and $(MSBuildProjectFile) did not import them: a direct Extrode.Pare.Build reference excludes its build assets. Remove its ExcludeAssets (or IncludeAssets), or the reference itself: Extrode.Husk.Build brings Extrode.Pare.Build in." />
   </Target>
 
   <Target Name="_HuskComputePaths">
