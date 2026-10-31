@@ -11,3 +11,6 @@ updates:
     ignore:
       # Pinned together on purpose: V8, its natives and the Svelte compiler move by hand.
       - dependency-name: Microsoft.ClearScript.*
+      # Pare moves by hand with a Husk release (0.7.0 fails every CI job); the MSBuild assemblies match the SDK host.
+      - dependency-name: Extrode.Pare*
+      - dependency-name: Microsoft.Build.*
