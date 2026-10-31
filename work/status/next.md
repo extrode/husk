@@ -1,1 +1,0 @@
-- T13 User-only items (DNS, nuget.org policy, Pare release, Cloudflare token, repo visibility): nothing for an agent to start; T12 needs a spec first.

@@ -64,8 +64,8 @@ Husk and still needs Deno. The need is narrow: saaaat uses a small part of Svelt
   target, as the app's update handling needs.
 - R8 `$app/state` provides `page` with `url`, `params`, `status` and `error`, reactive: a
   component reading `page.url.searchParams` updates when the address changes.
-- R9 `$app/environment` provides `browser` (true in the browser), `dev` (true in a Development
-  build) and `setDev` for tests.
+- R9 `$app/environment` provides `browser` (true in the browser) and `dev` (true in a Development
+  build). (`setDev` is only in saaaat's test mock, so it is not needed.)
 - R10 `<a href>` clicks to an address inside the app navigate in the app; clicks with a modifier
   key, `target`, `download`, `rel=external`, or to another origin are left to the browser.
 - R11 The browser's back and forward buttons restore the previous page, scroll position and
@@ -73,7 +73,9 @@ Husk and still needs Deno. The need is narrow: saaaat uses a small part of Svelt
 - R12 The app is served so that every address inside it returns the app's HTML (a single-page
   fallback) in Development and in the published output and on Cloudflare's static assets.
 - R13 The `$lib` alias, `$types` imports and `import.meta.env` uses in `apps/web` resolve with no
-  source edits (types are erased; `import.meta.env` gets the values the app reads).
+  source edits (types are erased). The one `import.meta.env` value the app reads at run time,
+  `PUBLIC_BACKEND_URL`, is set per build from the project, and an unset value is the empty string
+  the app already handles.
 - R14 Routes and their modules load on demand: a route's code is fetched when first needed
   (or on `preloadCode`), not with the first page.
 - R15 A feature outside the supported set (see Non-goals), found in the routes or imports, fails
@@ -108,8 +110,7 @@ Husk and still needs Deno. The need is narrow: saaaat uses a small part of Svelt
   table.
 
 ## Open questions
-- Does `apps/web` use `import.meta.env` for values the app needs at run time, or only for
-  `DEV`/`PROD`? (7 uses; read before `/plan`.)
-- Is `setDev` used outside tests? (1 use; if only tests, R9 can drop it.)
 - Where the routes' `load` functions and the `$app/*` shims ship (inside the build package or a
   separate runtime package) is a `/plan` decision, not asked here.
+- How a project sets `PUBLIC_BACKEND_URL` (MSBuild property, environment, file) is a `/plan`
+  decision; the requirement is only that it can be set per build.
