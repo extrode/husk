@@ -1,1 +1,1 @@
-- T12 saaaat client router and $app/* shims - done when: a spec exists in docs/specs/ (milestone 2); T13 is user-only
+- T13 User-only items (DNS, nuget.org policy, Pare release, Cloudflare token, repo visibility): nothing for an agent to start; T12 needs a spec first.
