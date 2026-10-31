@@ -300,4 +300,19 @@ public sealed class SampleBuildTests(PackedFeed feed)
             Assert.True(File.Exists(sample.P(TempProject.PareOut + name)), name);
         Assert.Contains("\"/counter.svelte\": \"/counter.svelte.js\"", sample.Read(TempProject.PareOut + "index.html"), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_HUSK200_treated_as_an_error_writes_no_output_so_the_next_build_fails_too()
+    {
+        using var sample = feed.Sample();
+
+        for (int build = 1; build <= 2; build++)
+        {
+            var (exit, output) = sample.Build("-p:WarningsAsErrors=HUSK200");
+            Assert.True(exit != 0, $"build {build}: {output}");
+            Assert.Contains("error HUSK200: a11y_missing_attribute", output, StringComparison.Ordinal);
+            Assert.False(File.Exists(sample.P(TempProject.PareOut + "App.svelte.js")), $"build {build}");
+            Assert.True(File.Exists(sample.P(TempProject.PareOut + "Child.svelte.js")), $"build {build}");
+        }
+    }
 }
