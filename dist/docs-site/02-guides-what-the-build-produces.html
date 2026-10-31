@@ -166,7 +166,7 @@
 <span class="tok-punc">&lt;</span><span class="tok-tag">script</span> <span class="tok-attr">type</span>=<span class="tok-str">&quot;module&quot;</span> <span class="tok-attr">src</span>=<span class="tok-str">&quot;/main.js&quot;</span><span class="tok-punc">&gt;</span><span class="tok-punc">&lt;/</span><span class="tok-tag">script</span><span class="tok-punc">&gt;</span>
 </code></pre>
 </div>
-<p>Output names carry a content hash and the import map points at them, so a changed file gets a new URL and an unchanged one stays cached.</p>
+<p>With <code>HuskHashNames</code> (the default outside Debug), output names carry a content hash and the import map points at them, so a changed file gets a new URL and an unchanged one stays cached.</p>
 <h2 id="incremental-builds">Incremental builds</h2>
 <p>Each source is compiled again only when it or the compiler changed. An unchanged tree compiles nothing (law L002), and a source that fails to compile keeps its last good output (law L003).</p>
 <h2 id="choosing-the-files-yourself">Choosing the files yourself</h2>
@@ -180,10 +180,12 @@
   <span class="tok-punc">&lt;</span><span class="tok-tag">EnableHuskDefaultItems</span><span class="tok-punc">&gt;</span>false<span class="tok-punc">&lt;/</span><span class="tok-tag">EnableHuskDefaultItems</span><span class="tok-punc">&gt;</span>
 <span class="tok-punc">&lt;/</span><span class="tok-tag">PropertyGroup</span><span class="tok-punc">&gt;</span>
 <span class="tok-punc">&lt;</span><span class="tok-tag">ItemGroup</span><span class="tok-punc">&gt;</span>
-  <span class="tok-punc">&lt;</span><span class="tok-tag">HuskComponent</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Components/**/*.svelte&quot;</span> <span class="tok-punc">/&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">HuskComponent</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Components/**/*.svelte&quot;</span> <span class="tok-attr">PareServeAt</span>=<span class="tok-str">&quot;/Components&quot;</span> <span class="tok-punc">/&gt;</span>
+  <span class="tok-punc">&lt;</span><span class="tok-tag">HuskPage</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;wwwroot/**/*.html&quot;</span> <span class="tok-punc">/&gt;</span>
 <span class="tok-punc">&lt;/</span><span class="tok-tag">ItemGroup</span><span class="tok-punc">&gt;</span>
 </code></pre>
 </div>
+<p>Without <code>PareServeAt</code> Pare writes the outputs next to each source (PARE202) and serves none of them. Without the <code>HuskPage</code> item no page gets its import map.</p>
 <p><code>HuskDev</code> is Svelte's <code>dev</code> option; it defaults to true in Debug.</p>
 
         </article>

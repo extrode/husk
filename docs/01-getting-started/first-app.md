@@ -13,16 +13,16 @@ cd hello-husk
 
 ```sh
 dotnet add package Extrode.Pare.Build --version 0.6.1
-dotnet add package Extrode.Husk.Build --version 0.1.0-preview.1
-dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.1
+dotnet add package Extrode.Husk.Build --version 0.1.0-preview.2
+dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.2
 ```
 
 Open `hello-husk.csproj` and add `PrivateAssets="all"` to the two `.Build` references. They are build tools, not code your app needs at run time:
 
 ```xml
 <PackageReference Include="Extrode.Pare.Build" Version="0.6.1" PrivateAssets="all" />
-<PackageReference Include="Extrode.Husk.Build" Version="0.1.0-preview.1" PrivateAssets="all" />
-<PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-preview.1" />
+<PackageReference Include="Extrode.Husk.Build" Version="0.1.0-preview.2" PrivateAssets="all" />
+<PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-preview.2" />
 ```
 
 The first restore downloads the 85.2 MB Husk package. After that it is cached.

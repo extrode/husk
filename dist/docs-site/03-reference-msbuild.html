@@ -139,7 +139,7 @@
 <tr>
 <td><code>HuskComponent</code></td>
 <td><code>wwwroot/**/*.svelte</code></td>
-<td>the Pare placement metadata (<code>PareServeAt</code>, <code>PareOutDir</code>, <code>PareEmbed</code>)</td>
+<td><code>PareServeAt</code> per item. <code>PareOutDir</code> and <code>PareEmbed</code> are Pare project properties, not item metadata; setting either means Husk serves no <code>husk.css</code>, import map, runtime or pages</td>
 </tr>
 <tr>
 <td><code>HuskModule</code></td>
@@ -149,7 +149,7 @@
 <tr>
 <td><code>HuskPage</code></td>
 <td><code>wwwroot/**/*.html</code></td>
-<td>none</td>
+<td><code>PareServeAt</code> is optional below <code>wwwroot</code></td>
 </tr>
 </tbody>
 </table>
@@ -166,12 +166,17 @@
 <tr>
 <td><code>EnableHuskDefaultItems</code></td>
 <td><code>true</code></td>
-<td><code>false</code> removes the default globs; list the items yourself</td>
+<td><code>false</code> removes the default globs for components, modules and pages; list the items yourself; a source outside <code>wwwroot</code> needs <code>PareServeAt</code></td>
 </tr>
 <tr>
 <td><code>HuskDev</code></td>
 <td><code>true</code> in Debug</td>
 <td>Svelte's <code>dev</code> option</td>
+</tr>
+<tr>
+<td><code>HuskHashNames</code></td>
+<td><code>false</code> in Debug, <code>true</code> otherwise</td>
+<td>serve every module and runtime file as <code>name.&lt;hash&gt;.js</code>, point the import map at them and add <code>modulepreload</code> links to pages. In Development leave it <code>false</code>: the browser loads hashed copies that only a build writes, so a save would have no visible effect (the app logs a warning)</td>
 </tr>
 </tbody>
 </table>
@@ -186,7 +191,7 @@
 <tbody>
 <tr>
 <td><code>Extrode.Husk.Build</code></td>
-<td>build-time: compiler, V8 natives, vendored Svelte. Reference with <code>PrivateAssets=&quot;all&quot;</code></td>
+<td>build-time: compiler, vendored Svelte; depends on Microsoft's <code>Microsoft.ClearScript.V8.Native.*</code> at 7.5.1.1 (source mapping must allow <code>Microsoft.ClearScript.*</code>). Reference with <code>PrivateAssets=&quot;all&quot;</code></td>
 </tr>
 <tr>
 <td><code>Extrode.Husk.AspNetCore</code></td>
