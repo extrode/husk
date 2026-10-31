@@ -195,7 +195,9 @@ public sealed class PackageTests(PackedFeed feed)
 
         Assert.DoesNotMatch(@"\]\((?!https://|#)", packed);
         Assert.DoesNotMatch(@"src=""(?!https://)", packed);
-        string repo = File.ReadAllText(Path.Combine(TempProject.RepoRoot, "README.md"));
+        // WriteLinesToFile ends the file with Environment.NewLine, CRLF on Windows.
+        string repo = File.ReadAllText(Path.Combine(TempProject.RepoRoot, "README.md")).ReplaceLineEndings("\n");
+        packed = packed.ReplaceLineEndings("\n");
         Assert.Equal(repo, packed.Replace("https://raw.githubusercontent.com/extrode/husk/" + tag, "").Replace("https://github.com/extrode/husk/blob/" + tag, ""));
     }
 
