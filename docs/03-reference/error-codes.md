@@ -129,7 +129,7 @@ as `HuskModule`, `.ts` as `TypeScriptSource` (with `PareServeAt` for files outsi
 
 The shell (`app.html`) must contain `%sveltekit.head%` and `%sveltekit.body%`, as SvelteKit's does:
 Husk fills the first with the import map, stylesheet and entry script, the second with the element the
-app mounts in.
+app mounts in. The same code reports an `app.html` that cannot be read.
 
 ## HUSK306
 

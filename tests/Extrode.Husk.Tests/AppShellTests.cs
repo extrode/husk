@@ -42,4 +42,14 @@ public sealed class AppShellTests
     [InlineData("<html>%sveltekit.head%</html>")]
     public void A_shell_missing_a_placeholder_is_refused(string template) =>
         Assert.Throws<FormatException>(() => AppShell.Build(template, "/", false, NoEnv));
+
+    [Fact]
+    public void An_env_placeholder_is_filled_raw_and_a_value_that_looks_like_a_placeholder_stays_text()
+    {
+        string html = AppShell.Build("%sveltekit.head%<script>const a = \"%sveltekit.env.PUBLIC_A%\"</script>%sveltekit.body%", "/", false,
+            new Dictionary<string, string> { ["PUBLIC_A"] = "a?x=1&y=2", ["PUBLIC_B"] = "%sveltekit.env.PUBLIC_A%" });
+
+        Assert.Contains("const a = \"a?x=1&y=2\"", html);
+        Assert.Contains("\"PUBLIC_B\": \"%sveltekit.env.PUBLIC_A%\"", html);
+    }
 }

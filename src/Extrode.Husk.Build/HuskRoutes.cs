@@ -106,7 +106,7 @@ public sealed class HuskRoutes : Microsoft.Build.Utilities.Task
         {
             template = AppHtml.Length > 0 ? File.ReadAllText(AppHtml) : AppShell.Default;
         }
-        catch (IOException e)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.LogError(null, "HUSK305", null, AppHtml, 0, 0, 0, 0, "cannot read the app shell: " + e.Message);
             return false;

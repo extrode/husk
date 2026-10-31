@@ -38,6 +38,9 @@ public static class HuskSpaExtensions
                 || options.NoFallbackPrefixes.Any(p => request.Path.StartsWithSegments(p.TrimEnd('/'), StringComparison.Ordinal)))
                 return;
             string original = request.Path;
+            // A matched endpoint that answered 404 must not run again for the page: match the page afresh.
+            context.SetEndpoint(null);
+            request.RouteValues.Clear();
             request.Path = options.Page;
             context.Response.StatusCode = StatusCodes.Status200OK;
             try
