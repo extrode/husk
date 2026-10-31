@@ -62,6 +62,23 @@ public sealed class DeployTests : IDisposable
     }
 
     [Fact]
+    public void A_directory_link_elsewhere_is_followed()
+    {
+        var vendor = Directory.CreateTempSubdirectory("husk-vendor-");
+        try
+        {
+            File.WriteAllText(Path.Combine(vendor.FullName, "lib.js"), "export {};\n");
+            Directory.CreateSymbolicLink(Path.Combine(_dir.FullName, "app", "vendor"), vendor.FullName);
+
+            Assert.Contains("/app/vendor/lib.js", AssetManifest.Read(_dir.FullName).Select(f => f.Path));
+        }
+        finally
+        {
+            vendor.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task The_three_requests_carry_the_documented_paths_methods_auth_and_bodies()
     {
         string html = Hash("index.html"), js = Hash("app/main.js"), css = Hash("app/site.css");
@@ -172,6 +189,20 @@ public sealed class DeployTests : IDisposable
 
         Assert.Equal(["POST", "POST", "POST", "PUT"], _server.Requests.Select(r => r.Method));
         Assert.Equal(Parts(_server.Requests[1]).Values, Parts(_server.Requests[2]).Values);
+    }
+
+    [Fact]
+    public async Task An_upload_that_times_out_is_not_sent_again()
+    {
+        _server.Respond((200, SessionBody(UploadJwt, [Hash("index.html")])), (-1, JwtBody(CompletionJwt)), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+
+        int exit = await Program.Run(["--dir", _dir.FullName, "--script", "site", "--account", "acc1", "--compatibility-date", "2026-10-30"],
+            Token, _out, _err, http, _server.BaseUrl, allowInsecureBaseUrl: true);
+
+        Assert.Equal(1, exit);
+        await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+        Assert.Equal(2, _server.Requests.Count);
     }
 
     [Fact]
@@ -393,6 +424,11 @@ internal sealed class FakeCloudflare : IDisposable
             lock (_responses)
                 if (_responses.Count > 0)
                     (status, body) = _responses.Dequeue();
+            if (status == -1)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                status = 200;
+            }
             if (status == 0)
             {
                 context.Response.ContentLength64 = 1000;
