@@ -6,8 +6,8 @@ internal sealed record AssetFile(string Path, string FullPath, string Hash, long
 
 internal static class AssetManifest
 {
-    /// <summary>Every file under <paramref name="directory"/>, ordered by path. A linked directory
-    /// is not entered, so a link back up the tree cannot loop; a linked file is read.</summary>
+    /// <summary>Every file under <paramref name="directory"/>, ordered by path. Linked files and
+    /// folders are followed, except a folder link back up the tree, which would loop.</summary>
     public static IReadOnlyList<AssetFile> Read(string directory)
     {
         string root = Path.GetFullPath(directory);
@@ -28,17 +28,26 @@ internal static class AssetManifest
         return files;
     }
 
+    // Each pending folder carries the folders above it, as reached and as their links resolve; a
+    // link that resolves to one of them would loop and is not entered.
     private static IEnumerable<string> Files(string root)
     {
-        var pending = new Stack<string>([root]);
+        var pending = new Stack<(string Directory, HashSet<string> Above)>([(root, new HashSet<string>(StringComparer.Ordinal) { root })]);
         while (pending.Count > 0)
         {
-            string directory = pending.Pop();
+            var (directory, above) = pending.Pop();
             foreach (string file in Directory.EnumerateFiles(directory))
                 yield return file;
             foreach (string child in Directory.EnumerateDirectories(directory))
-                if (new DirectoryInfo(child).LinkTarget is null)
-                    pending.Push(child);
+            {
+                string? target = Directory.ResolveLinkTarget(child, returnFinalTarget: true)?.FullName;
+                if (target is not null && above.Contains(Path.TrimEndingDirectorySeparator(target)))
+                    continue;
+                var next = new HashSet<string>(above, StringComparer.Ordinal) { child };
+                if (target is not null)
+                    next.Add(Path.TrimEndingDirectorySeparator(target));
+                pending.Push((child, next));
+            }
         }
     }
 }

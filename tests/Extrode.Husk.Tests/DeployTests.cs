@@ -62,6 +62,23 @@ public sealed class DeployTests : IDisposable
     }
 
     [Fact]
+    public void A_directory_link_elsewhere_is_followed()
+    {
+        var vendor = Directory.CreateTempSubdirectory("husk-vendor-");
+        try
+        {
+            File.WriteAllText(Path.Combine(vendor.FullName, "lib.js"), "export {};\n");
+            Directory.CreateSymbolicLink(Path.Combine(_dir.FullName, "app", "vendor"), vendor.FullName);
+
+            Assert.Contains("/app/vendor/lib.js", AssetManifest.Read(_dir.FullName).Select(f => f.Path));
+        }
+        finally
+        {
+            vendor.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task The_three_requests_carry_the_documented_paths_methods_auth_and_bodies()
     {
         string html = Hash("index.html"), js = Hash("app/main.js"), css = Hash("app/site.css");
