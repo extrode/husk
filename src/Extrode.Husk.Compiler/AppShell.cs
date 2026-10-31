@@ -40,7 +40,7 @@ public static partial class AppShell
         // Placeholders in the template are filled before the generated head and body go in, so a build value
         // that looks like a placeholder is left as text.
         string html = template.Replace("%sveltekit.assets%", root.TrimEnd('/'), StringComparison.Ordinal).Replace("%sveltekit.nonce%", "", StringComparison.Ordinal);
-        html = EnvPlaceholder().Replace(html, m => env.TryGetValue(m.Groups[1].Value, out var v) ? System.Net.WebUtility.HtmlEncode(v) : "");
+        html = EnvPlaceholder().Replace(html, m => env.TryGetValue(m.Groups[1].Value, out var v) ? v : "");
         return html.Replace("%sveltekit.head%", head, StringComparison.Ordinal).Replace("%sveltekit.body%", body, StringComparison.Ordinal);
     }
 

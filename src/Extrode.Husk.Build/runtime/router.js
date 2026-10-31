@@ -31,9 +31,9 @@ export async function start({ routes, errorPage, rootLayout, dev, target }) {
   await navigate(location.href, { initial: true, replace: true, type: 'enter' });
 }
 
-export function goto(href, options = {}) {
+export async function goto(href, options = {}) {
   if (!internal(new URL(String(href), currentUrl ?? location.href)))
-    return Promise.reject(new Error('Cannot use `goto` with an external URL. Use `window.location = url` instead'));
+    throw new Error('Cannot use `goto` with an external URL. Use `window.location = url` instead');
   return navigate(String(href), {
     replace: !!options.replaceState,
     keepFocus: !!options.keepFocus,
@@ -157,7 +157,12 @@ async function navigate(href, options, redirects = 0) {
   page.error = next.error;
   page.data = next.data;
   view.chain = next.chain;
-  await tick();
+  try {
+    await tick();
+  } catch (e) {
+    _committing(false);
+    throw e;
+  }
 
   if (!options.popped && !options.noScroll) {
     const target = url.hash && document.getElementById(hashId(url));

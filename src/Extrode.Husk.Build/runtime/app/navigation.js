@@ -15,8 +15,8 @@ export function _before() {
   return [...before];
 }
 
-export function _committing() {
-  committing = true;
+export function _committing(flag = true) {
+  committing = flag;
 }
 
 export function _after(navigation) {

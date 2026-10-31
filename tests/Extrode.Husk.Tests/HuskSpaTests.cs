@@ -103,4 +103,24 @@ public sealed class HuskSpaWithEndpointsTests
 
         Assert.Equal((HttpStatusCode.OK, "shell"), (response.StatusCode, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)));
     }
+
+    [Fact]
+    public async Task A_matched_endpoint_that_answers_404_gives_way_to_the_page()
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseSetting("urls", "http://127.0.0.1:0");
+        await using var app = builder.Build();
+        app.UseHuskSpa();
+        app.UseRouting();
+        app.MapGet("/index.html", () => "shell");
+        app.MapGet("/items/{id}", () => Results.NotFound());
+        await app.StartAsync(TestContext.Current.CancellationToken);
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/items/9");
+        request.Headers.TryAddWithoutValidation("Accept", "text/html");
+
+        using var response = await http.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal("shell", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+    }
 }
