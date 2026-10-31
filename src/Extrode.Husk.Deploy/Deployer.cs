@@ -28,6 +28,11 @@ internal sealed class Deployer
     private readonly Uri _baseUrl;
     private readonly string _token;
 
+    /// <summary>Pause before the n-th retry of an upload answered 429 or 5xx; tests set it to zero.</summary>
+    public TimeSpan RetryDelay { get; init; } = TimeSpan.FromSeconds(1);
+
+    private const int UploadAttempts = 3;
+
     /// <param name="allowInsecureBaseUrl">For tests against a local http server only; the CLI
     /// never sets it.</param>
     public Deployer(HttpClient http, Uri baseUrl, string token, bool allowInsecureBaseUrl = false)
@@ -46,7 +51,7 @@ internal sealed class Deployer
         foreach (var file in files)
             manifest[file.Path] = new JsonObject { [CloudflareApi.HashField] = file.Hash, [CloudflareApi.SizeField] = file.Size };
         var session = await Send(SessionStep, HttpMethod.Post, CloudflareApi.SessionPath(account, script), _token,
-            Json(new JsonObject { [CloudflareApi.ManifestField] = manifest }), cancellationToken);
+            () => Json(new JsonObject { [CloudflareApi.ManifestField] = manifest }), cancellationToken);
 
         string? jwt = Jwt(session);
         List<List<string>> buckets = Buckets(session);
@@ -60,18 +65,15 @@ internal sealed class Deployer
         {
             if (jwt is null)
                 throw new InvalidOperationException($"{SessionStep} returned buckets and no upload token.");
-            using var form = new MultipartFormDataContent();
+            var parts = new List<(string Hash, string Path, byte[] Base64)>();
             foreach (string hash in bucket)
             {
                 if (!byHash.TryGetValue(hash, out var file))
                     throw new InvalidOperationException($"{SessionStep} asked for {hash}, which is not in the manifest.");
                 needed.Add(hash);
-                var part = new ByteArrayContent(Encoding.ASCII.GetBytes(Convert.ToBase64String(await File.ReadAllBytesAsync(file.FullPath, cancellationToken))));
-                part.Headers.ContentType = new MediaTypeHeaderValue(CloudflareApi.ContentType(file.Path));
-                part.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") { Name = $"\"{hash}\"", FileName = $"\"{hash}\"" };
-                form.Add(part);
+                parts.Add((hash, file.Path, Encoding.ASCII.GetBytes(Convert.ToBase64String(await File.ReadAllBytesAsync(file.FullPath, cancellationToken)))));
             }
-            completion = Jwt(await Send(UploadStep, HttpMethod.Post, CloudflareApi.UploadPath(account), jwt, form, cancellationToken)) ?? completion;
+            completion = Jwt(await Send(UploadStep, HttpMethod.Post, CloudflareApi.UploadPath(account), jwt, () => Form(parts), cancellationToken, UploadAttempts)) ?? completion;
         }
         if (completion is null)
             throw new InvalidOperationException($"{UploadStep} returned no completion token.");
@@ -85,22 +87,54 @@ internal sealed class Deployer
                 [CloudflareApi.ConfigField] = CloudflareApi.AssetsConfig(),
             },
         };
-        using var scriptForm = new MultipartFormDataContent();
-        var metadataPart = Json(metadata);
-        metadataPart.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") { Name = $"\"{CloudflareApi.MetadataPart}\"" };
-        scriptForm.Add(metadataPart);
-        await Send(ScriptStep, HttpMethod.Put, CloudflareApi.ScriptPath(account, script), _token, scriptForm, cancellationToken);
+        await Send(ScriptStep, HttpMethod.Put, CloudflareApi.ScriptPath(account, script), _token, () =>
+        {
+            var scriptForm = new MultipartFormDataContent();
+            var metadataPart = Json(metadata);
+            metadataPart.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") { Name = $"\"{CloudflareApi.MetadataPart}\"" };
+            scriptForm.Add(metadataPart);
+            return scriptForm;
+        }, cancellationToken);
 
         int skipped = files.Count(f => !needed.Contains(f.Hash));
         return new DeployResult(files.Count - skipped, skipped);
     }
 
-    private async Task<JsonElement> Send(string step, HttpMethod method, string path, string bearer, HttpContent content,
-        CancellationToken cancellationToken)
+    private static MultipartFormDataContent Form(List<(string Hash, string Path, byte[] Base64)> parts)
     {
-        using var request = new HttpRequestMessage(method, new Uri(_baseUrl, path)) { Content = content };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
-        using var response = await _http.SendAsync(request, cancellationToken);
+        var form = new MultipartFormDataContent();
+        foreach (var (hash, path, base64) in parts)
+        {
+            var part = new ByteArrayContent(base64);
+            part.Headers.ContentType = new MediaTypeHeaderValue(CloudflareApi.ContentType(path));
+            part.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") { Name = $"\"{hash}\"", FileName = $"\"{hash}\"" };
+            form.Add(part);
+        }
+        return form;
+    }
+
+    /// <summary>One request, sent again up to <paramref name="attempts"/> times in all while the answer is
+    /// 429 or 5xx. <paramref name="content"/> builds a fresh body per attempt: sending disposes it.</summary>
+    private async Task<JsonElement> Send(string step, HttpMethod method, string path, string bearer, Func<HttpContent> content,
+        CancellationToken cancellationToken, int attempts = 1)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            using var request = new HttpRequestMessage(method, new Uri(_baseUrl, path)) { Content = content() };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+            using var response = await _http.SendAsync(request, cancellationToken);
+            int status = (int)response.StatusCode;
+            if (!response.IsSuccessStatusCode && attempt < attempts && (status == 429 || status >= 500))
+            {
+                await Task.Delay(RetryDelay * attempt, cancellationToken);
+                continue;
+            }
+            return await Read(step, response, cancellationToken);
+        }
+    }
+
+    private static async Task<JsonElement> Read(string step, HttpResponseMessage response, CancellationToken cancellationToken)
+    {
         if (!response.IsSuccessStatusCode)
             throw new DeployException(step, (int)response.StatusCode);
         string text = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -137,7 +171,9 @@ internal sealed class Deployer
             return buckets;
         foreach (var bucket in array.EnumerateArray())
         {
-            var hashes = bucket.EnumerateArray().Select(h => h.GetString()!).ToList();
+            var hashes = bucket.EnumerateArray()
+                .Select(h => h.GetString() ?? throw new InvalidOperationException($"{SessionStep} returned a bucket entry that is not a string."))
+                .ToList();
             if (hashes.Count > 0)
                 buckets.Add(hashes);
         }
