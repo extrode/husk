@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.IO.Compression;
+using System.Reflection;
 
 namespace Extrode.Husk.Integration;
 
@@ -66,8 +67,12 @@ public sealed class PackedFeed : IDisposable
             """);
     }
 
+    public static readonly string PareVersion = typeof(PackedFeed).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+        .Single(a => a.Key == "PareVersion").Value!;
+
     /// <summary>A web project restoring from this feed, with <paramref name="references"/>
-    /// (<c>$(HuskVersion)</c> is this feed's version) and the Styled fixture.</summary>
+    /// (<c>$(HuskVersion)</c> is this feed's version, <c>$(PareVersion)</c> the Pare it depends on)
+    /// and the Styled fixture.</summary>
     public TempProject Consumer(string references)
     {
         var project = new TempProject();
@@ -79,7 +84,7 @@ public sealed class PackedFeed : IDisposable
                 <ImplicitUsings>enable</ImplicitUsings>
               </PropertyGroup>
               <ItemGroup>
-                {references.Replace("$(HuskVersion)", Version, StringComparison.Ordinal)}
+                {references.Replace("$(HuskVersion)", Version, StringComparison.Ordinal).Replace("$(PareVersion)", PareVersion, StringComparison.Ordinal)}
               </ItemGroup>
             </Project>
             """);
@@ -155,6 +160,8 @@ public sealed class PackageTests(PackedFeed feed)
             string nuspec = new StreamReader(zip.GetEntry("Extrode.Husk.Build.nuspec")!.Open()).ReadToEnd();
             foreach (var rid in new[] { "linux-arm64", "linux-x64", "osx-arm64", "osx-x64", "win-arm64", "win-x64" })
                 Assert.Contains($"<dependency id=\"Microsoft.ClearScript.V8.Native.{rid}\" version=\"[7.5.1.1]\" exclude=\"Runtime,Compile,Build,Native,Analyzers\" />", nuspec, StringComparison.Ordinal);
+            Assert.Single(System.Text.RegularExpressions.Regex.Matches(nuspec, "id=\"Extrode.Pare.Build\""));
+            Assert.Contains($"<dependency id=\"Extrode.Pare.Build\" version=\"{PackedFeed.PareVersion}\" exclude=\"Build,Analyzers\" />", nuspec, StringComparison.Ordinal);
         }
         Assert.Equal(
             ["third-party/clearscript-7.5.1.1/License.txt", "third-party/clearscript-7.5.1.1/V8/LICENSE",
@@ -214,7 +221,6 @@ public sealed class PackageTests(PackedFeed feed)
     public void A_fresh_project_restores_both_from_the_feed_and_builds_a_component()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);
@@ -234,7 +240,6 @@ public sealed class PackageTests(PackedFeed feed)
     public void A_missing_native_fails_the_build_with_HUSK003_naming_the_cache_that_holds_the_task()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);
@@ -266,7 +271,6 @@ public sealed class PackageTests(PackedFeed feed)
     public void A_Husk_that_would_load_a_second_V8_native_in_one_build_process_is_HUSK004_and_the_first_still_builds()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);
@@ -301,7 +305,6 @@ public sealed class PackageTests(PackedFeed feed)
     public void Two_Husk_versions_sharing_one_V8_native_build_in_one_process()
     {
         using var project = feed.Consumer("""
-            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" />
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
             """);
@@ -341,9 +344,41 @@ public sealed class PackageTests(PackedFeed feed)
     }
 
     [Fact]
-    public void Without_Pare_the_build_fails_with_HUSK002()
+    public void A_direct_Pare_Build_reference_at_Husk_s_version_still_builds()
     {
-        using var project = feed.Consumer("""<PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />""");
+        using var project = feed.Consumer("""
+            <PackageReference Include="Extrode.Pare.Build" Version="$(PareVersion)" PrivateAssets="all" />
+            <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" PrivateAssets="all" />
+            <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
+            """);
+
+        var (exit, output) = project.Build();
+        Assert.True(exit == 0, output);
+        Assert.DoesNotContain("MSB4011", output, StringComparison.Ordinal);
+        Assert.Contains("from 'svelte/internal/client'", project.Read(TempProject.PareOut + "Styled.svelte.js"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_direct_Pare_Build_older_than_Husk_s_is_NU1605()
+    {
+        using var project = feed.Consumer("""
+            <PackageReference Include="Extrode.Pare.Build" Version="0.7.0" PrivateAssets="all" />
+            <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" PrivateAssets="all" />
+            """);
+        project.Put("Program.cs", "var app = WebApplication.CreateBuilder(args).Build();\napp.Run();\n");
+
+        var (exit, output) = project.Build();
+        Assert.NotEqual(0, exit);
+        Assert.Contains("error NU1605", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Leaving_out_Pare_s_build_fails_with_HUSK002()
+    {
+        using var project = feed.Consumer("""
+            <PackageReference Include="Extrode.Pare.Build" Version="$(PareVersion)" ExcludeAssets="build;buildtransitive" />
+            <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
+            """);
         project.Put("Program.cs", "var app = WebApplication.CreateBuilder(args).Build();\napp.Run();\n");
 
         var (exit, output) = project.Build();

@@ -21,5 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <AssemblyMetadata Include="PareBuildDir" Value="$(PkgExtrode_Pare_Build)/build" />
+    <AssemblyMetadata Include="PareVersion" Value="$(PareVersion)" />
   </ItemGroup>
 </Project>

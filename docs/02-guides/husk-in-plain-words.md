@@ -35,7 +35,7 @@ Outside the Development environment, `AddHusk()` does nothing. The compiled file
 
 Husk is built on [Pare](https://github.com/extrode/pare), a TypeScript stripper and build for .NET. You never call it, but three things follow from it:
 
-- **You reference `Extrode.Pare.Build` yourself**, with `PrivateAssets="all"`. NuGet imports build targets only for direct references. Without it the build stops with `HUSK002`.
+- **`Extrode.Husk.Build` brings `Extrode.Pare.Build` in.** You do not reference it. An app that already does keeps working, at 0.7.2 or later.
 - **TypeScript is stripped, not checked.** Types are erased and nothing complains about a type error. Run `tsc --noEmit` in your editor or CI if you want checking. Some syntax cannot be erased (an `enum`); in a `.svelte.ts` the build reports it as `HUSK100` with a `PARE1xx` message, and in a component Svelte reports it.
 - **There is no bundling or minifying.** Pare does neither, and Husk does not add them.
 

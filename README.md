@@ -21,13 +21,12 @@ V8, so it does exactly that. You save a component, `dotnet watch` reloads the pa
 You need the .NET 10 SDK. In a web project:
 
 ```sh
-dotnet add package Extrode.Pare.Build --version 0.7.0
 dotnet add package Extrode.Husk.Build --version 0.1.0-preview.5
 dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.5
 ```
 
-Put `PrivateAssets="all"` on the two `.Build` references (they are build tools, not app code),
-then add one line to `Program.cs`:
+Put `PrivateAssets="all"` on the `Extrode.Husk.Build` reference (it is a build tool, not app
+code), then add one line to `Program.cs`:
 
 ```csharp
 builder.AddHusk();   // recompiles on save; does nothing outside Development
@@ -37,9 +36,8 @@ Write `wwwroot/App.svelte`, a `main.ts` that mounts it and an `index.html` with
 `<script type="importmap" data-husk></script>`, and run `dotnet watch`. The
 [step-by-step guide](docs/01-getting-started/first-app.md) has every file.
 
-All three packages are referenced directly because NuGet only imports build targets for a direct
-reference, and Husk's build runs inside [Pare](https://github.com/extrode/pare)'s. Forget Pare
-and the build stops with `HUSK002`.
+Husk's build runs inside [Pare](https://github.com/extrode/pare)'s; `Extrode.Husk.Build` brings
+`Extrode.Pare.Build` in, so there is nothing to add for it.
 
 ## What you get
 
