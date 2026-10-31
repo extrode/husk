@@ -8,6 +8,9 @@ namespace Extrode.Husk.Integration;
 public sealed class PackedFeed : IDisposable
 {
     public readonly TempProject Feed = new();
+    /// <summary>One package folder for every project restored from this feed: the ClearScript natives
+    /// download once per run, not once per project.</summary>
+    public readonly TempProject Packages = new();
     public readonly string Version = $"0.1.0-test.{DateTime.UtcNow.Ticks}";
     public readonly (int Exit, string Output) Pack;
 
@@ -46,14 +49,14 @@ public sealed class PackedFeed : IDisposable
     public string Package(string id) => Path.Combine(Feed.Dir, $"{id}.{Version}.nupkg");
 
     /// <summary>A nuget.config for <paramref name="project"/>: Husk from this feed, the rest
-    /// from nuget.org, into a package folder of the project's own.</summary>
+    /// from nuget.org, into the feed's shared package folder.</summary>
     public void NuGetConfig(TempProject project)
     {
         Assert.True(Pack.Exit == 0, Pack.Output);
         project.Put("nuget.config", $"""
             <?xml version="1.0" encoding="utf-8"?>
             <configuration>
-              <config><add key="globalPackagesFolder" value="{project.P("packages")}" /></config>
+              <config><add key="globalPackagesFolder" value="{Packages.Dir}" /></config>
               <packageSources>
                 <clear />
                 <add key="husk" value="{Feed.Dir}" />
@@ -124,6 +127,7 @@ public sealed class PackedFeed : IDisposable
             _development.Value.Project.Dispose();
         }
         Feed.Dispose();
+        Packages.Dispose();
     }
 }
 
@@ -170,6 +174,20 @@ public sealed class PackageTests(PackedFeed feed)
              "third-party/svelte-5.57.3/clsx/license", "third-party/svelte-5.57.3/esm-env/LICENSE", "third-party/svelte-5.57.3/svelte/LICENSE.md"],
             entries.Where(e => e.StartsWith("third-party/", StringComparison.Ordinal) && Path.GetFileName(e).StartsWith("license", StringComparison.OrdinalIgnoreCase))
                 .Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Projects_restored_from_the_feed_share_one_package_folder()
+    {
+        using var first = new TempProject();
+        using var second = new TempProject();
+        feed.NuGetConfig(first);
+        feed.NuGetConfig(second);
+
+        string Folder(TempProject p) => System.Text.RegularExpressions.Regex.Match(p.Read("nuget.config"), "globalPackagesFolder\" value=\"([^\"]+)\"").Groups[1].Value;
+
+        Assert.Equal(Folder(first), Folder(second));
+        Assert.DoesNotContain(first.Dir, Folder(first), StringComparison.Ordinal);
     }
 
     [Theory]
