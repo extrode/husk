@@ -7,8 +7,9 @@
 #
 # Trusted publishing (OIDC), not a stored key, as in jauntyq (decision 008). The nuget.org policy
 # names this file, release.yml, and the repository extrode/husk; the variable NUGET_USER is the
-# nuget.org profile name. Each job below declares the environment `packages`, whose required
-# reviewer (Settings > Environments) is the gate between a tag and a published package.
+# nuget.org profile name. Each job below declares the environment `packages`. It has no required
+# reviewer yet; adding one (Settings > Environments) makes it the gate between a tag and a
+# published package.
 name: release
 
 on:

@@ -13,6 +13,18 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 Merged into `dev`, not yet tagged.
 
+### Changed
+
+- Svelte pinned at 5.57.3 (was 5.57.2). In the test fixtures component output is unchanged; rune-module (`.svelte.js`, `.svelte.ts`) output changes with the compiler.
+
+### Fixed
+
+- A page URL containing `&` or `"` is escaped in the rewritten `src` and the modulepreload link.
+- Compiler outputs are written to a temp file and moved over the old one, and the temp file is removed when the write fails.
+- The build stamp covers the compiler's path, so a package upgrade rebuilds every source though no file is newer.
+- Deploy retries uploads on 429 and 5xx, refuses `_headers` and `_redirects`, skips `.DS_Store`, and reports malformed API answers as errors instead of crashing.
+- A dev map from a hashed build logs a warning that saves have no visible effect.
+
 ---
 
 ## [0.1.0-preview.2] — 2026-10-31
