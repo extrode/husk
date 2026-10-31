@@ -6,7 +6,7 @@ the vendored compiler (`third-party/svelte-5.57.2/svelte/compiler/index.js`) and
 Husk's engines run (`src/Extrode.Husk.Compiler/js/husk-compile.js`).
 
 ```sh
-dotnet run scripts/node-reference/strip-fixtures.cs   # .svelte.ts -> .svelte.ts.stripped.js (Pare 0.6.0)
+dotnet run scripts/node-reference/strip-fixtures.cs   # .svelte.ts -> .svelte.ts.stripped.js (Pare 0.6.1)
 node scripts/node-reference/reference.mjs              # -> tests/fixtures/expected.tsv
 ```
 

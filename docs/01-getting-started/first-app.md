@@ -25,7 +25,7 @@ Open `hello-husk.csproj` and add `PrivateAssets="all"` to the two `.Build` refer
 <PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-preview.1" />
 ```
 
-The first restore downloads the 82.6 MB Husk package. After that it is cached.
+The first restore downloads the 85.2 MB Husk package. After that it is cached.
 
 ## 3. Write a component
 

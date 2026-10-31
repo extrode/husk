@@ -56,7 +56,7 @@ Svelte (5.57.2), so you get what Svelte gives you.
 
 ## What it costs
 
-- The build package is 82.6 MB (V8 for six platforms plus Svelte). It is restored once per machine
+- The build package is 85.2 MB (V8 for six platforms plus Svelte). It is restored once per machine
   and none of it ships with your app.
 - There is no bundler. The browser loads many small modules through an import map.
 - Husk compiles components. It is not SvelteKit: no router, no server rendering yet.

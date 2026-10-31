@@ -137,7 +137,7 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
         if (outputs.Values.FirstOrDefault(o => string.Equals(Path.GetFullPath(o), path, StringComparison.OrdinalIgnoreCase)) is { } self)
         {
             Log.LogError(null, "HUSK101", null, path, 0, 0, 0, 0,
-                $"output {self} is the source itself. Give the item PareOutDir, or move the source below wwwroot.");
+                $"output {self} is the source itself. Set the PareOutDir property, or move the source below wwwroot.");
             return false;
         }
         // A failed write leaves that output older than the source, so the next build compiles it again.

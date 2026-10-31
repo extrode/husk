@@ -11,16 +11,19 @@ Husk publishes to nuget.org by trusted publishing (decision 008): no API key exi
 ## Each release
 
 1. Pare: the `Extrode.Pare*` version in `Directory.Packages.props` must already be on nuget.org. The release job checks and refuses otherwise.
-2. Set `<Version>` in `Directory.Build.props`. While Husk is `0.x` it carries a prerelease suffix (`0.1.0-preview.1`); a test enforces it.
+2. Set `<Version>` in `Directory.Build.props`. While Husk is `0.x` it carries a prerelease suffix (`0.1.0-preview.2`); a test enforces it.
 3. Move `CHANGELOG.md` `[Unreleased]` under the new version.
-4. Regenerate the site and commit it (it tells readers to install packages, so merge it to `main` only once they are on nuget.org): `scripts/build-docs.sh` (needs the sibling `../docs` checkout).
-5. Merge to `main`, tag, push:
+4. Merge to `main` and push. `pages.yml` deploys the site on every push to `main`, so the docs in that merge go live at once. Install snippets that name the new version should wait until step 7.
+5. Tag and push:
 
    ```sh
-   git tag v0.1.0-preview.1
-   git push origin v0.1.0-preview.1
+   git tag v0.1.0-preview.2
+   git push origin v0.1.0-preview.2
    ```
 
-6. Approve the `packages` environment deployment. The workflow tests, packs, pushes with `--skip-duplicate` and creates a GitHub release (prerelease for 0.x and suffixed tags).
+6. The workflow tests, packs, pushes to nuget.org and to GitHub Packages (`nuget.pkg.github.com/extrode`), each with `--skip-duplicate`, and creates a GitHub release (prerelease for 0.x and suffixed tags). Re-running the job after the release exists fails at `gh release create` (the nuget.org push before it is skipped as a duplicate); finish the GitHub Packages push with `backfill_tag`, below. The `packages` environment has no required reviewer yet, so nothing waits for approval.
+7. Once the version is on nuget.org, bump the install snippets and Status (`README.md`, `docs/00-overview/README.md`, `first-app.md`), run `scripts/build-docs.sh` (needs the sibling `../docs` checkout), commit and merge to `main`.
+
+To push an existing tag to GitHub Packages only (a version released before that push existed), run `release.yml` by hand from `main` with `backfill_tag` set to the tag, e.g. `v0.1.0-preview.1`. It does not touch nuget.org.
 
 To prove the trusted-publishing exchange without publishing, run `release.yml` by hand (workflow_dispatch).
