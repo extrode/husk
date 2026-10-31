@@ -9,7 +9,8 @@ namespace Extrode.Husk.Build;
 /// for compiler <c>husk</c>, one per output (<c>.svelte.js</c>, <c>.svelte.css</c>,
 /// <c>.svelte.js.map</c> for a component; <c>.js</c> and <c>.js.map</c> for a module), each with the
 /// <c>PareOutputPath</c> Pare computed. A source that fails to compile logs HUSK100 and its outputs
-/// are left as they were; every compiler warning is HUSK200. HUSK101 is an output item missing or
+/// are left as they were; every compiler warning is HUSK200, and a source whose HUSK200 the build
+/// treats as an error is left as they were too. HUSK101 is an output item missing or
 /// naming the source itself; HUSK102 a source that cannot be read or an output that cannot be
 /// written.</summary>
 public sealed class HuskCompile : Microsoft.Build.Utilities.Task
@@ -109,6 +110,10 @@ public sealed class HuskCompile : Microsoft.Build.Utilities.Task
                 Log.LogError(null, "HUSK100", null, path, error.Line, error.Line == 0 ? 0 : error.Column + 1, 0, 0, Message(error));
                 continue;
             }
+            // A warning the build treats as an error fails it like HUSK100: outputs written now would
+            // be up to date, and the next build would skip the source and pass.
+            if (result.Warnings.Count > 0 && BuildEngine is IBuildEngine8 engine && engine.ShouldTreatWarningAsError("HUSK200"))
+                continue;
             if (!Write(path, outputs, result))
                 continue;
             compiled++;

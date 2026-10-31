@@ -31,6 +31,9 @@ internal sealed class Deployer
     /// <summary>Pause before the n-th retry of an upload answered 429 or 5xx; tests set it to zero.</summary>
     public TimeSpan RetryDelay { get; init; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>The longest <c>Retry-After</c> honoured; a longer one waits this long.</summary>
+    public TimeSpan MaxRetryAfter { get; init; } = TimeSpan.FromSeconds(60);
+
     private const int UploadAttempts = 3;
 
     /// <param name="allowInsecureBaseUrl">For tests against a local http server only; the CLI
@@ -114,7 +117,8 @@ internal sealed class Deployer
     }
 
     /// <summary>One request, sent again up to <paramref name="attempts"/> times in all while the answer is
-    /// 429 or 5xx. <paramref name="content"/> builds a fresh body per attempt: sending disposes it.</summary>
+    /// 429 or 5xx, the connection fails, or the client times out. <paramref name="content"/> builds a fresh
+    /// body per attempt: sending disposes it.</summary>
     private async Task<JsonElement> Send(string step, HttpMethod method, string path, string bearer, Func<HttpContent> content,
         CancellationToken cancellationToken, int attempts = 1)
     {
@@ -122,15 +126,39 @@ internal sealed class Deployer
         {
             using var request = new HttpRequestMessage(method, new Uri(_baseUrl, path)) { Content = content() };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
-            using var response = await _http.SendAsync(request, cancellationToken);
-            int status = (int)response.StatusCode;
-            if (!response.IsSuccessStatusCode && attempt < attempts && (status == 429 || status >= 500))
+            HttpResponseMessage sent;
+            try
+            {
+                sent = await _http.SendAsync(request, cancellationToken);
+            }
+            catch (Exception e) when (attempt < attempts && !cancellationToken.IsCancellationRequested
+                && e is HttpRequestException or TaskCanceledException)
             {
                 await Task.Delay(RetryDelay * attempt, cancellationToken);
                 continue;
             }
+            using var response = sent;
+            int status = (int)response.StatusCode;
+            if (!response.IsSuccessStatusCode && attempt < attempts && (status == 429 || status >= 500))
+            {
+                await Task.Delay(Wait(response, attempt), cancellationToken);
+                continue;
+            }
             return await Read(step, response, cancellationToken);
         }
+    }
+
+    /// <summary>The backoff, or the answer's <c>Retry-After</c> when that is longer, capped at
+    /// <see cref="MaxRetryAfter"/>.</summary>
+    private TimeSpan Wait(HttpResponseMessage response, int attempt)
+    {
+        TimeSpan backoff = RetryDelay * attempt;
+        var retryAfter = response.Headers.RetryAfter;
+        TimeSpan asked = retryAfter?.Delta
+            ?? (retryAfter?.Date is DateTimeOffset date ? date - DateTimeOffset.UtcNow : TimeSpan.Zero);
+        if (asked > MaxRetryAfter)
+            asked = MaxRetryAfter;
+        return asked > backoff ? asked : backoff;
     }
 
     private static async Task<JsonElement> Read(string step, HttpResponseMessage response, CancellationToken cancellationToken)

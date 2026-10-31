@@ -220,7 +220,8 @@ reason. Outputs that failed are written again by the next build.</p>
 <h2 id="husk200">HUSK200</h2>
 <p>A Svelte compiler warning, such as <code>a11y_missing_attribute</code> for an <code>&lt;img&gt;</code> without <code>alt</code>. It does
 not fail the build; <code>&lt;TreatWarningsAsErrors&gt;</code> or <code>&lt;WarningsAsErrors&gt;HUSK200&lt;/WarningsAsErrors&gt;</code>
-makes it.</p>
+makes it. Then, as with HUSK100, that source's outputs are left as they were, so the next build
+fails on it again instead of finding it up to date.</p>
 
         </article>
         <div class="page-nav" id="page-nav">
