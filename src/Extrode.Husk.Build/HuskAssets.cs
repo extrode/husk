@@ -83,7 +83,12 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             yield return new ImportMapSource(alias.ItemSpec + "/" + relative, outputUrl);
             // The import without its last extension, as for the project's own sources.
             if (Path.GetExtension(relative) is { Length: > 0 } extension)
+            {
                 yield return new ImportMapSource(alias.ItemSpec + "/" + relative[..^extension.Length], outputUrl);
+                // TypeScript's own convention: a .ts file is imported as .js.
+                if (extension == ".ts")
+                    yield return new ImportMapSource(alias.ItemSpec + "/" + relative[..^extension.Length] + ".js", outputUrl);
+            }
             if (alias.GetMetadata("Entry") is { Length: > 0 } entry && string.Equals(relative, entry.Replace('\\', '/'), StringComparison.Ordinal))
                 yield return new ImportMapSource(alias.ItemSpec, outputUrl);
         }

@@ -222,6 +222,8 @@ public sealed class HuskAssetsTests : IDisposable
         var imports = JsonDocument.Parse(File.ReadAllText(P("obj/husk/importmap.json"))).RootElement.GetProperty("imports");
         Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util.ts").GetString());
         Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib").GetString());
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util").GetString());
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util.js").GetString());
         Assert.Equal("https://cdn.example/core.js", imports.GetProperty("@capacitor/core").GetString());
         Assert.Equal("/_husk/app/navigation.js", imports.GetProperty("$app/navigation").GetString());
         Assert.Equal("/_husk/kit.js", imports.GetProperty("@sveltejs/kit").GetString());
