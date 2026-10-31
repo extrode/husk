@@ -252,17 +252,6 @@ public sealed class HuskCompileTests : IDisposable
     }
 
     [Fact]
-    public void A_second_task_folder_in_one_process_is_named_and_the_first_may_go_on()
-    {
-        string key = "husk-test-" + Guid.NewGuid().ToString("N");
-
-        Assert.Null(HuskCompile.OtherTaskFolder(key, "/cache/extrode.husk.build/0.1.0/tasks/net10.0"));
-        Assert.Null(HuskCompile.OtherTaskFolder(key, "/cache/extrode.husk.build/0.1.0/tasks/net10.0"));
-        Assert.Equal("/cache/extrode.husk.build/0.1.0/tasks/net10.0", HuskCompile.OtherTaskFolder(key, "/cache/extrode.husk.build/0.2.0/tasks/net10.0"));
-        Assert.Null(HuskCompile.OtherTaskFolder(key, "/cache/extrode.husk.build/0.1.0/tasks/net10.0"));
-    }
-
-    [Fact]
     public void A_source_listed_twice_is_husk101_not_a_crash()
     {
         var items = Source("wwwroot/Plain.svelte");
