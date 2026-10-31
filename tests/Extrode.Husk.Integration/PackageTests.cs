@@ -224,7 +224,7 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.AspNetCore.dll")));
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.development.json")));
         Assert.Empty(Directory.GetFiles(project.P("bin"), "*ClearScript*", SearchOption.AllDirectories));
-        Assert.NotEmpty(Directory.GetFiles(project.P("packages"), "ClearScriptV8.*", SearchOption.AllDirectories));
+        Assert.Single(Directory.GetFiles(project.P($"packages/microsoft.clearscript.v8.native.{HostRid}/7.5.1.1/runtimes/{HostRid}/native"), $"ClearScriptV8.{HostRid}.*"));
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public sealed class PackageTests(PackedFeed feed)
             """);
         var (exit, output) = project.Build();
         Assert.True(exit == 0, output);
-        string rid = (OperatingSystem.IsWindows() ? "win-" : OperatingSystem.IsMacOS() ? "osx-" : "linux-") + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        string rid = HostRid;
         string task = Path.Combine("extrode.husk.build", feed.Version.ToLowerInvariant(), "tasks", "net10.0");
 
         Copy(project.P("packages/" + task.Replace('\\', '/')), project.P("elsewhere/" + task.Replace('\\', '/')));
@@ -258,6 +258,9 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.Single(app.Output.Split('\n'), l => l.Contains("Husk's V8 library is not at", StringComparison.Ordinal));
         Assert.DoesNotContain("HUSK100", app.Output, StringComparison.Ordinal);
     }
+
+    private static string HostRid =>
+        (OperatingSystem.IsWindows() ? "win-" : OperatingSystem.IsMacOS() ? "osx-" : "linux-") + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
 
     private static void Copy(string from, string to)
     {
