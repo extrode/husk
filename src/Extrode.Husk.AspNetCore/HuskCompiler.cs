@@ -79,7 +79,9 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
             if (!File.Exists(map.Stylesheet) || File.ReadAllText(map.Stylesheet) != text)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(map.Stylesheet)!);
-                File.WriteAllText(map.Stylesheet, text);
+                // Beside it, then moved over it: the static-file server never reads half a stylesheet.
+                File.WriteAllText(map.Stylesheet + ".husk-tmp", text);
+                File.Move(map.Stylesheet + ".husk-tmp", map.Stylesheet, overwrite: true);
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

@@ -220,6 +220,7 @@ public sealed class HuskDevelopmentTests : IDisposable
         static string Block(string css, string name) => css[css.IndexOf($"/* {name} */", StringComparison.Ordinal)..];
         Assert.Equal(Block(before, "B.svelte"), Block(after, "B.svelte"));
         Assert.DoesNotContain("red", after);
+        Assert.False(File.Exists(stylesheet + ".husk-tmp"));
         WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
         Assert.Equal(Compiler.StylesheetWriter.Join([("A.svelte", File.ReadAllText(ComponentOutputs("A")[1])), ("B.svelte", File.ReadAllText(ComponentOutputs("B")[1]))]), after);
     }
