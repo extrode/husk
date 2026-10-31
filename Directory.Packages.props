@@ -10,8 +10,8 @@
     <PackageVersion Include="Extrode.Pare" Version="$(PareVersion)" />
     <PackageVersion Include="Extrode.Pare.AspNetCore" Version="$(PareVersion)" />
     <PackageVersion Include="Extrode.Pare.Build" Version="$(PareVersion)" />
-    <PackageVersion Include="Microsoft.Build.Framework" Version="18.9.6" />
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.9.6" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="18.11.0" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.11.0" />
     <PackageVersion Include="Microsoft.ClearScript.V8" Version="$(ClearScriptVersion)" />
     <PackageVersion Include="Microsoft.ClearScript.V8.Native.linux-arm64" Version="$(ClearScriptVersion)" />
     <PackageVersion Include="Microsoft.ClearScript.V8.Native.linux-x64" Version="$(ClearScriptVersion)" />
