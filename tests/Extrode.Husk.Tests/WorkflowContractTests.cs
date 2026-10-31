@@ -81,8 +81,9 @@ public sealed class WorkflowContractTests
         string release = Workflow("release.yml");
         string props = File.ReadAllText(Path.Combine(RepoPaths.Root, "Directory.Build.props"));
 
-        Assert.Contains("[ \"$PROP_VERSION\" = \"$TAG_VERSION\" ]", Job(release, "release"), StringComparison.Ordinal);
-        Assert.Contains("sed -n 's/.*<Version>", Job(release, "release"), StringComparison.Ordinal);
+        Assert.Contains("[ \"$PROP_VERSION\" = \"$TAG_VERSION\" ]", Job(release, "build"), StringComparison.Ordinal);
+        Assert.Contains("sed -n 's/.*<Version>", Job(release, "build"), StringComparison.Ordinal);
+        Assert.Contains("needs: build", Job(release, "release"), StringComparison.Ordinal);
         Assert.Matches(@"<Version>\d+\.\d+\.\d+[^<]*</Version>", props);
     }
 
@@ -97,13 +98,16 @@ public sealed class WorkflowContractTests
     [Fact]
     public void Release_publishes_only_for_a_tag_push_and_only_when_the_pinned_Pare_is_on_nuget_org()
     {
-        string job = Job(Workflow("release.yml"), "release");
+        string build = Job(Workflow("release.yml"), "build");
+        string publish = Job(Workflow("release.yml"), "release");
 
-        Assert.Contains("if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')", job, StringComparison.Ordinal);
-        Assert.Contains("<PareVersion>", job, StringComparison.Ordinal);
-        int guard = job.IndexOf("is not on nuget.org", StringComparison.Ordinal);
-        Assert.True(guard >= 0);
-        Assert.True(guard < job.IndexOf("dotnet nuget push", StringComparison.Ordinal));
+        Assert.Contains("if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')", build, StringComparison.Ordinal);
+        Assert.Contains("<PareVersion>", build, StringComparison.Ordinal);
+        Assert.Contains("is not on nuget.org", build, StringComparison.Ordinal);
+        Assert.DoesNotContain("dotnet nuget push", build, StringComparison.Ordinal);
+        Assert.DoesNotContain("id-token", build, StringComparison.Ordinal);
+        Assert.Contains("needs: build", publish, StringComparison.Ordinal);
+        Assert.Contains("dotnet nuget push", publish, StringComparison.Ordinal);
     }
 
     [Fact]
