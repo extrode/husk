@@ -175,6 +175,17 @@ public sealed class DeployTests : IDisposable
     }
 
     [Fact]
+    public async Task A_token_with_a_trailing_newline_is_trimmed_and_one_with_a_newline_inside_exits_1()
+    {
+        string[] args = ["--dir", _dir.FullName, "--script", "site", "--account", "acc1", "--compatibility-date", "2026-10-30"];
+        _server.Respond((200, SessionBody(UploadJwt, [])), (200, JwtBody(CompletionJwt)), (200, JwtBody(null)));
+        Assert.Equal(0, await Program.Run(args, Token + "\n", _out, _err, _http, _server.BaseUrl, allowInsecureBaseUrl: true));
+
+        Assert.Equal(1, await Program.Run(args, "a\nb", _out, _err, _http, _server.BaseUrl, allowInsecureBaseUrl: true));
+        Assert.DoesNotContain("   at ", _err.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_2xx_answer_that_is_not_JSON_exits_1_with_no_stack_trace()
     {
         _server.Respond((200, "<html>proxy</html>"));
