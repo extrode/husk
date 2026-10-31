@@ -50,8 +50,8 @@ and the build stops with `HUSK002`.
 | `dotnet publish` | the site ships compiled, hashed files and no sources |
 | write bad Svelte | the build fails: `App.svelte(4,3): error HUSK100: ...`, like a C# error |
 
-TypeScript works in components (`<script lang="ts">`) and in `.svelte.ts` rune modules. Pare
-strips the types. The compiler output is checked byte for byte against Node running the same
+TypeScript works in components (`<script lang="ts">`, handled by Svelte) and in `.svelte.ts` rune modules
+(Pare strips the types). The compiler output is checked byte for byte against Node running the same
 Svelte (5.57.3), so you get what Svelte gives you.
 
 ## What it costs

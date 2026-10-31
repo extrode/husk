@@ -38,7 +38,9 @@ so the project references both:
 
 Svelte rejected the source; its code and message follow (`expected_token`, `js_parse_error`). In
 Development it is also logged when the compiler itself failed, with the exception. A `.svelte.ts`
-that Pare cannot strip reports Pare's code instead (PARE100 and up, in Pare's error codes).
+that Pare cannot strip is logged as HUSK100 with Pare's code as the message (`PARE100` and up for
+syntax it cannot erase, `PARE001` for a syntax error; see Pare's error codes). Search for the
+`HUSK100` code, not `PARE1xx`.
 
 ## HUSK101
 
