@@ -15,7 +15,7 @@ Merged into `dev`, not yet tagged.
 
 ### Fixed
 
-- A reused build process (`dotnet build` keeps them for a few minutes) that had compiled with one Extrode.Husk.Build version could load a second version's V8 beside the first, risking a crash. It now stops with HUSK004, which says to run `dotnet build-server shutdown`.
+- A reused build process (`dotnet build` keeps them for a few minutes, across projects) that had loaded V8 for one Husk could load a second V8 library for another (a different ClearScript version, or a Husk outside the NuGet cache); V8 then spins and dies. Husk now stops with HUSK004, which says to run `dotnet build-server shutdown`. Husk versions on the same ClearScript share one library and build as before. A Husk older than this one does not record what it loaded, so the check starts with this version.
 
 ---
 
