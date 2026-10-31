@@ -20,7 +20,7 @@ A page opts in with an empty marker, which the build fills:
 <script type="module" src="/main.js"></script>
 ```
 
-Output names carry a content hash and the import map points at them, so a changed file gets a new URL and an unchanged one stays cached.
+With `HuskHashNames` (the default outside Debug), output names carry a content hash and the import map points at them, so a changed file gets a new URL and an unchanged one stays cached.
 
 ## Incremental builds
 

@@ -4,7 +4,7 @@
 
 | Item | Default | Metadata |
 |---|---|---|
-| `HuskComponent` | `wwwroot/**/*.svelte` | the Pare placement metadata (`PareServeAt`, `PareOutDir`, `PareEmbed`) |
+| `HuskComponent` | `wwwroot/**/*.svelte` | `PareServeAt` per item. `PareOutDir` and `PareEmbed` are Pare project properties, not item metadata; setting either means Husk serves no `husk.css`, import map, runtime or pages |
 | `HuskModule` | `wwwroot/**/*.svelte.ts`, `wwwroot/**/*.svelte.js` | same |
 | `HuskPage` | `wwwroot/**/*.html` | none |
 
@@ -12,8 +12,9 @@
 
 | Property | Default | Meaning |
 |---|---|---|
-| `EnableHuskDefaultItems` | `true` | `false` removes the default globs; list the items yourself |
+| `EnableHuskDefaultItems` | `true` | `false` removes the default globs for components, modules and pages; list the items yourself, each with `PareServeAt` |
 | `HuskDev` | `true` in Debug | Svelte's `dev` option |
+| `HuskHashNames` | `false` in Debug, `true` otherwise | serve every module and runtime file as `name.<hash>.js`, point the import map at them and add `modulepreload` links to pages. In Development leave it `false`: the browser loads hashed copies that only a build writes, so a save would have no visible effect (the app logs a warning) |
 
 ## Packages
 
