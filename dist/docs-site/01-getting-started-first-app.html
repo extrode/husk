@@ -143,20 +143,18 @@
     <span class="code-lang">bash</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="sh"><code class="language-sh"><span class="tok-fn">dotnet</span> add package Extrode.Pare.Build <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">7</span>.<span class="tok-num">0</span>
-<span class="tok-fn">dotnet</span> add package Extrode.Husk.Build <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">5</span>
-<span class="tok-fn">dotnet</span> add package Extrode.Husk.AspNetCore <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">5</span>
+  <pre data-lang="sh"><code class="language-sh"><span class="tok-fn">dotnet</span> add package Extrode.Husk.Build <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">6</span>
+<span class="tok-fn">dotnet</span> add package Extrode.Husk.AspNetCore <span class="tok-attr">--version</span> <span class="tok-num">0</span>.<span class="tok-num">1</span>.<span class="tok-num">0</span>-preview.<span class="tok-num">6</span>
 </code></pre>
 </div>
-<p>Open <code>hello-husk.csproj</code> and add <code>PrivateAssets=&quot;all&quot;</code> to the two <code>.Build</code> references. They are build tools, not code your app needs at run time:</p>
+<p>Open <code>hello-husk.csproj</code> and add <code>PrivateAssets=&quot;all&quot;</code> to the <code>Extrode.Husk.Build</code> reference. It is a build tool, not code your app needs at run time:</p>
 <div class="code-block">
   <div class="code-header">
     <span class="code-lang">XML</span>
     <button class="copy-btn" type="button" onclick="copyCode(this)">copy</button>
   </div>
-  <pre data-lang="xml"><code class="language-xml"><span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Pare.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.7.0&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
-<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.5&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
-<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.AspNetCore&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.5&quot;</span> <span class="tok-punc">/&gt;</span>
+  <pre data-lang="xml"><code class="language-xml"><span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.Build&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.6&quot;</span> <span class="tok-attr">PrivateAssets</span>=<span class="tok-str">&quot;all&quot;</span> <span class="tok-punc">/&gt;</span>
+<span class="tok-punc">&lt;</span><span class="tok-tag">PackageReference</span> <span class="tok-attr">Include</span>=<span class="tok-str">&quot;Extrode.Husk.AspNetCore&quot;</span> <span class="tok-attr">Version</span>=<span class="tok-str">&quot;0.1.0-preview.6&quot;</span> <span class="tok-punc">/&gt;</span>
 </code></pre>
 </div>
 <p>The first restore downloads about 83 MB: Husk itself (6 MB) and Microsoft's V8 packages for six platforms (77 MB, shared across Husk versions). After that it is cached.</p>
@@ -267,7 +265,7 @@ app.<span class="tok-fn">Run</span>();
 <tbody>
 <tr>
 <td><code>HUSK002</code></td>
-<td>Add the <code>Extrode.Pare.Build</code> reference.</td>
+<td>Pare's build was left out: remove the <code>ExcludeAssets</code> on your <code>Extrode.Pare.Build</code> reference, or the reference.</td>
 </tr>
 <tr>
 <td><code>HUSK001</code></td>

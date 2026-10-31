@@ -15,6 +15,14 @@ Merged into `dev`, not yet tagged.
 
 ---
 
+## [0.1.0-preview.6] — 2026-10-31
+
+### Changed
+
+- The install is one build reference: `Extrode.Husk.Build` depends on `Extrode.Pare.Build` 0.7.2 (was 0.7.0), whose `buildTransitive/` targets reach the app, so the app no longer references Pare itself. A direct `Extrode.Pare.Build` reference keeps working at 0.7.2 or later; an older one is NU1605. HUSK002 now means a direct `Extrode.Pare.Build` reference excludes its build assets.
+
+---
+
 ## [0.1.0-preview.5] — 2026-10-31
 
 ### Fixed

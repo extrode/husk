@@ -22,7 +22,7 @@
 |---|---|
 | `Extrode.Husk.Build` | build-time: compiler, vendored Svelte; depends on Microsoft's `Microsoft.ClearScript.V8.Native.*` at 7.5.1.1 (source mapping must allow `Microsoft.ClearScript.*`). Reference with `PrivateAssets="all"` |
 | `Extrode.Husk.AspNetCore` | `AddHusk()`: Development recompiles and `dotnet watch` reloads. Does nothing outside Development |
-| `Extrode.Pare.Build` | Pare's build, which Husk plugs into. Reference directly |
+| `Extrode.Pare.Build` | Pare's build, which Husk plugs into. A dependency of `Extrode.Husk.Build`; a direct reference is optional (0.7.2 or later) |
 
 ## Errors
 

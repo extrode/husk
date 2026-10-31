@@ -12,17 +12,15 @@ cd hello-husk
 ## 2. Add the packages
 
 ```sh
-dotnet add package Extrode.Pare.Build --version 0.7.0
-dotnet add package Extrode.Husk.Build --version 0.1.0-preview.5
-dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.5
+dotnet add package Extrode.Husk.Build --version 0.1.0-preview.6
+dotnet add package Extrode.Husk.AspNetCore --version 0.1.0-preview.6
 ```
 
-Open `hello-husk.csproj` and add `PrivateAssets="all"` to the two `.Build` references. They are build tools, not code your app needs at run time:
+Open `hello-husk.csproj` and add `PrivateAssets="all"` to the `Extrode.Husk.Build` reference. It is a build tool, not code your app needs at run time:
 
 ```xml
-<PackageReference Include="Extrode.Pare.Build" Version="0.7.0" PrivateAssets="all" />
-<PackageReference Include="Extrode.Husk.Build" Version="0.1.0-preview.5" PrivateAssets="all" />
-<PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-preview.5" />
+<PackageReference Include="Extrode.Husk.Build" Version="0.1.0-preview.6" PrivateAssets="all" />
+<PackageReference Include="Extrode.Husk.AspNetCore" Version="0.1.0-preview.6" />
 ```
 
 The first restore downloads about 83 MB: Husk itself (6 MB) and Microsoft's V8 packages for six platforms (77 MB, shared across Husk versions). After that it is cached.
@@ -118,7 +116,7 @@ Look under `obj/`: the compiled `App.svelte.js`, its source map and `husk.css` a
 
 | You see | It means |
 |---|---|
-| `HUSK002` | Add the `Extrode.Pare.Build` reference. |
+| `HUSK002` | Pare's build was left out: remove the `ExcludeAssets` on your `Extrode.Pare.Build` reference, or the reference. |
 | `HUSK001` | The build machine is Alpine, FreeBSD or another unsupported platform. |
 | `HUSK100` | Svelte rejected your component. The message names the line and column. |
 | A blank page | Check the browser console. The usual cause is a missing `data-husk` marker or `/main.js` path. |

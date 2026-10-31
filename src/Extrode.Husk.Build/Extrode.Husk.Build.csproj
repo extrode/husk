@@ -7,7 +7,7 @@
   <PropertyGroup>
     <RootNamespace>Extrode.Husk.Build</RootNamespace>
     <PackageId>Extrode.Husk.Build</PackageId>
-    <Description>Compiles Svelte components to ES modules during dotnet build, in an embedded V8. No Node. Builds on Extrode.Pare.Build, which the project references too.</Description>
+    <Description>Compiles Svelte components to ES modules during dotnet build, in an embedded V8. No Node. Builds on Extrode.Pare.Build, which it brings in.</Description>
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageTags>svelte;msbuild;aspnetcore;v8</PackageTags>
     <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
@@ -30,6 +30,12 @@
     <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-x64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-arm64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" VersionOverride="[$(ClearScriptVersion)]" ExcludeAssets="runtime;compile;native;contentfiles;analyzers" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- A dependency, so its buildTransitive/ imports Pare's targets into the app: the app needs no
+         reference of its own. Pare.Build is a developmentDependency, whose default PrivateAssets="all"
+         would write no dependency; this one excludes only what must not flow. -->
+    <PackageReference Include="Extrode.Pare.Build" PrivateAssets="contentfiles;analyzers;build" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Extrode.Husk.Compiler\Extrode.Husk.Compiler.csproj" PrivateAssets="all" />

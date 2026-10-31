@@ -34,7 +34,6 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk: `SvelteCompiler.Shared` disposes the replaced compiler while another caller may still be compiling on it (needs a refcount or deferred dispose); dev saves are serialized by Pare, so only concurrent in-proc builds can hit it
 - Husk: `CompilerBridge` compares only ClearScript.V8's version before sharing the app's ClearScript; ClearScript.Core and a compiler folder with no ClearScript.V8.dll are not checked
 - Husk: in Development an unmarked page that is not UTF-8 (UTF-16, Latin-1) is re-encoded as UTF-8 by Pare's watcher, while the build copies its bytes; IPareCompiler gets text only
-- Pare: ship `build/` as `buildTransitive/` too, so a project referencing only Extrode.Husk.Build gets Pare's targets and HUSK002 (direct Pare.Build reference) can go
 - Integration tests pick a free port by bind-and-release; another process can take it before the app binds (RunningApp, SampleWatchTests).
 - Each Sample()/Consumer() restores into its own globalPackagesFolder, so ClearScript natives download per copy; share one per PackedFeed.
 - HuskPage globs wwwroot/**/*.html regardless of the user's Content Remove/Update metadata, so an excluded page is served and published again.
@@ -47,7 +46,6 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - CI (written, never run; review ccb60ff..4460a6a): macOS Safari theories need `safaridriver --enable` on the runner and no step runs it; Windows needs Git's `sh` on PATH and MSYS path conversion for scripts/pack-local.sh. Confirm on the first run.
 - CI (2026-10-30, run 41040030030 on f495932): ubuntu and macOS pass; windows had 2 failures, fixed in 7ddb53d and confirmed on wp1 (Windows, ssh): Husk.Tests 174 of 174, Integration 54 passed and 3 skipped, and both Windows-only fixes fail when reverted. Open: SampleWatchTests fixed for macOS (see above); windows and ubuntu passed run 41052658431; the ubuntu L003 flake (HuskDevelopmentTests) did not reproduce in Docker, the baseline now waits for outputs to settle.
 - Husk tests: CorpusTests riwalqalb and saaaat fail when the sibling checkout's worktree path (`ikhbat.org/riwalqalb.com/.worktrees/fix/whisper-window-skip`) is gone; make the corpus tests skip a missing root.
-- Husk Build: HUSK002 does not reject Pare.Build 0.4.0 (no `PareCompileSource`); needs a version property from Pare.
 - Husk Build: up-to-date check compares mtimes, so an equal-mtime or coarse-resolution race can skip a rebuild.
 - Husk Build: `$(_HuskCompilerOutput)**` packs stray files and the pdb is inconsistent.
 - Husk Compiler: the V8 engine has no heap or time limit.
