@@ -68,7 +68,13 @@ internal sealed class CompilerBridge
         string? cache = tasks is not null && Path.GetFileName(tasks) == "tasks" ? Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(tasks))) : null;
         if (cache is null)
             return beside;
-        string cached = Path.Combine(cache, "microsoft.clearscript.v8.native." + rid, AssemblyName.GetAssemblyName(v8).Version!.ToString(), "runtimes", rid, "native", name);
+        Version version;
+        try { version = AssemblyName.GetAssemblyName(v8).Version!; }
+        catch (Exception e) when (e is BadImageFormatException or FileLoadException or IOException)
+        {
+            return null;
+        }
+        string cached = Path.Combine(cache, "microsoft.clearscript.v8.native." + rid, (version.Revision == 0 ? version.ToString(3) : version.ToString()), "runtimes", rid, "native", name);
         return File.Exists(cached) ? null : cached;
     }
 
