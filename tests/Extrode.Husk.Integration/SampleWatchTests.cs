@@ -20,12 +20,6 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
     {
         using var sample = feed.Sample();
         var sinceCopy = Stopwatch.StartNew();
-        int port;
-        using (var probe = new TcpListener(IPAddress.Loopback, 0))
-        {
-            probe.Start();
-            port = ((IPEndPoint)probe.LocalEndpoint).Port;
-        }
         var start = new ProcessStartInfo("dotnet", ["watch", "--non-interactive", "--no-launch-profile"])
         {
             WorkingDirectory = sample.Dir,
@@ -34,7 +28,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
         };
         foreach (var key in start.Environment.Keys.Where(k => k.StartsWith("MSBuild", StringComparison.OrdinalIgnoreCase)).ToList())
             start.Environment.Remove(key);
-        start.Environment["ASPNETCORE_URLS"] = $"http://127.0.0.1:{port}";
+        start.Environment["ASPNETCORE_URLS"] = "http://127.0.0.1:0";
         start.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         var output = new StringBuilder();
         string Output() { lock (output) return output.ToString(); }
@@ -46,13 +40,19 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
         watch.BeginErrorReadLine();
         try
         {
-            var address = new Uri($"http://127.0.0.1:{port}/");
+            Uri? address = null;
             using (var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
             {
                 var deadline = DateTime.UtcNow.AddSeconds(180);
                 while (true)
                 {
                     Assert.True(DateTime.UtcNow < deadline && !watch.HasExited, Output());
+                    address = Listening.Parse(Output());
+                    if (address is null)
+                    {
+                        await Task.Delay(200, TestContext.Current.CancellationToken);
+                        continue;
+                    }
                     try
                     {
                         using var _ = await http.GetAsync(address, TestContext.Current.CancellationToken);
@@ -82,7 +82,7 @@ public sealed partial class SampleWatchTests(PackedFeed feed)
                 Browsers.Until(driver, "return window.huskSocketOpen === true && document.querySelector('h1') ? true : null;", TimeSpan.FromSeconds(30));
                 Script(driver, "window.huskBeforeSave = true;");
             }
-            driver.Navigate().GoToUrl(address);
+            driver.Navigate().GoToUrl(address!);
             Load();
             Assert.Equal("Husk sample", driver.FindElement(By.TagName("h1")).Text);
             string app = sample.P("wwwroot/App.svelte");

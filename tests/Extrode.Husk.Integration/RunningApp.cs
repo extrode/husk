@@ -1,17 +1,15 @@
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 using System.Text;
 
 namespace Extrode.Husk.Integration;
 
-/// <summary>A built app's dll, running on a free loopback port until disposed.</summary>
+/// <summary>A built app's dll, running on a loopback port the OS picks until disposed.</summary>
 public sealed class RunningApp : IDisposable
 {
     private readonly Process _process;
     private readonly StringBuilder _output = new();
 
-    public Uri Address { get; }
+    public Uri Address { get; private set; } = null!;
 
     public string Output
     {
@@ -20,11 +18,6 @@ public sealed class RunningApp : IDisposable
 
     public RunningApp(string contentRoot, string dll, string environment = "Development")
     {
-        using (var probe = new TcpListener(IPAddress.Loopback, 0))
-        {
-            probe.Start();
-            Address = new Uri($"http://127.0.0.1:{((IPEndPoint)probe.LocalEndpoint).Port}/");
-        }
         var start = new ProcessStartInfo("dotnet")
         {
             WorkingDirectory = contentRoot,
@@ -33,7 +26,7 @@ public sealed class RunningApp : IDisposable
         };
         start.ArgumentList.Add(dll);
         start.ArgumentList.Add("--urls");
-        start.ArgumentList.Add(Address.ToString());
+        start.ArgumentList.Add("http://127.0.0.1:0");
         start.Environment["ASPNETCORE_ENVIRONMENT"] = environment;
         foreach (var key in start.Environment.Keys.Where(k => k.StartsWith("MSBuild", StringComparison.OrdinalIgnoreCase)).ToList())
             start.Environment.Remove(key);
@@ -62,6 +55,14 @@ public sealed class RunningApp : IDisposable
         {
             if (_process.HasExited)
                 throw new InvalidOperationException("the app exited: " + Output);
+            if (Listening.Parse(Output) is not { } address)
+            {
+                if (DateTime.UtcNow >= until)
+                    throw new TimeoutException("the app never said where it listens: " + Output);
+                Thread.Sleep(100);
+                continue;
+            }
+            Address = address;
             try
             {
                 http.GetAsync(Address).GetAwaiter().GetResult();

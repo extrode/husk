@@ -69,6 +69,15 @@ public sealed class HuskAssetsTests : IDisposable
         Assert.Equal("/* ui/Child.svelte */\n.a{}\n", File.ReadAllText(P("obj/husk/husk.css")));
     }
 
+    [Theory]
+    [InlineData("/obj/pare/a.js", "/obj/pare", StringComparison.Ordinal, true)]
+    [InlineData("/obj/pare/a.js", "/obj/pare/", StringComparison.Ordinal, true)]
+    [InlineData("/obj/Pare/a.js", "/obj/pare", StringComparison.Ordinal, false)]
+    [InlineData("/obj/Pare/a.js", "/obj/pare", StringComparison.OrdinalIgnoreCase, true)]
+    [InlineData("/obj/pare-old/a.js", "/obj/pare", StringComparison.OrdinalIgnoreCase, false)]
+    public void Served_means_inside_the_folder_with_the_platforms_case_rule(string path, string root, StringComparison comparison, bool served) =>
+        Assert.Equal(served, HuskAssets.IsServed(path.Replace('/', Path.DirectorySeparatorChar), root.Replace('/', Path.DirectorySeparatorChar), comparison));
+
     [Fact]
     public void An_unserved_output_is_left_out_of_the_map()
     {

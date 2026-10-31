@@ -1,1 +1,1 @@
-- T8 done 2026-10-31: Cloudflare limits in docs/architecture/002-cloudflare-and-deno.md (sample measured, saaaat and riwalqalb estimated). Free 20,000 files, 25 MiB each; all far under.
+- T9 done 2026-10-31: HuskPage follows Content Remove, HuskAssets served check is case- and folder-aware, integration tests no longer race on ports, one package folder per PackedFeed (PackageTests 32 s). 219 unit and 78 integration tests pass, L001 to L003 hold.

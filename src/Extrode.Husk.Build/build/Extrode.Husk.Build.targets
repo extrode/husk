@@ -35,6 +35,15 @@
     <_HuskServed Condition="'$(UsingMicrosoftNETSdkStaticWebAssets)' == 'true' and '$(PareEmbed)' != 'true' and '$(PareOutDir)' == ''">true</_HuskServed>
   </PropertyGroup>
 
+  <!-- A page the project took out of Content (Remove, or an Update-d exclusion) is not served or
+       published as plain Content, so its compiled copy must not be either. Only while the SDK's
+       default Content globbing is on: with it off Content says nothing about pages. -->
+  <ItemGroup Condition="'$(EnableHuskDefaultItems)' == 'true' and '$(EnableDefaultContentItems)' != 'false'">
+    <_HuskPageNotContent Include="@(HuskPage)" Exclude="@(Content)" />
+    <HuskPage Remove="@(_HuskPageNotContent)" />
+    <_HuskPageNotContent Remove="@(_HuskPageNotContent)" />
+  </ItemGroup>
+
   <ItemGroup>
     <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.js" />
     <PareCompileSource Include="@(HuskComponent)" PareCompiler="husk" PareOutputExtension=".svelte.css" />
