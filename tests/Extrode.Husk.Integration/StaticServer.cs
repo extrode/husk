@@ -8,14 +8,16 @@ public sealed class StaticServer : IDisposable
 {
     private readonly HttpListener _listener;
     private readonly string _root;
+    private readonly bool _spa;
 
     public Uri Address { get; }
 
     /// <summary>HttpListener cannot bind port 0, so a port is picked and bound; when something takes it
     /// in between, the next attempt picks again.</summary>
-    public StaticServer(string root, Func<int>? pickPort = null)
+    public StaticServer(string root, Func<int>? pickPort = null, bool spa = false)
     {
         _root = root;
+        _spa = spa;
         pickPort ??= FreePort;
         for (int attempt = 1; ; attempt++)
         {
@@ -59,6 +61,10 @@ public sealed class StaticServer : IDisposable
             using var response = context.Response;
             string path = Uri.UnescapeDataString(context.Request.Url!.AbsolutePath).TrimStart('/');
             string file = Path.Combine(_root, path.Length == 0 ? "index.html" : path);
+            // A single-page fallback, as Cloudflare's: a navigation to a path with no file gets the page, except
+            // below the module directory.
+            if (!File.Exists(file) && _spa && !path.StartsWith("_husk/", StringComparison.Ordinal) && !path.StartsWith("data/", StringComparison.Ordinal))
+                file = Path.Combine(_root, "index.html");
             if (!File.Exists(file))
             {
                 response.StatusCode = 404;
