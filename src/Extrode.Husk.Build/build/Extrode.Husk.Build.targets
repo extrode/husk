@@ -26,6 +26,8 @@
     <HuskTaskAssembly Condition="'$(HuskTaskAssembly)' == ''">$(MSBuildThisFileDirectory)..\tasks\net10.0\Extrode.Husk.Build.dll</HuskTaskAssembly>
     <HuskVendorDir Condition="'$(HuskVendorDir)' == ''">$(MSBuildThisFileDirectory)..\third-party\svelte-5.57.3\</HuskVendorDir>
     <HuskVendorDir>$([MSBuild]::EnsureTrailingSlash('$(HuskVendorDir)'))</HuskVendorDir>
+    <!-- The ClearScript the compiler is built with; a pack-time check keeps it equal to ClearScriptVersion. -->
+    <_HuskClearScriptVersion>7.5.1.1</_HuskClearScriptVersion>
     <_HuskCompilerPath>$(HuskVendorDir)svelte\compiler\index.js</_HuskCompilerPath>
     <_HuskCompilerAssembly>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))\Extrode.Husk.Compiler.dll</_HuskCompilerAssembly>
     <PareCompileDependsOn>_HuskCheckPlatform;$(PareCompileDependsOn);_HuskCollectSources;HuskCompile</PareCompileDependsOn>
@@ -73,6 +75,22 @@
     </PropertyGroup>
     <Error Code="HUSK001" Condition="'$(_HuskSupported)' != 'true'"
            Text="Husk cannot build on $(_HuskRid): its compiler runs on V8, which ships for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64 and linux-arm64 (glibc) only. Build on one of those; the output runs anywhere." />
+
+    <!-- The package carries no V8 native: it depends on Microsoft.ClearScript.V8.Native.<rid>, which restores
+         into the NuGet cache (NativeProbe looks there). Not checked when the task is a local build output
+         with its own runtimes/ folder (the tests). -->
+    <PropertyGroup Condition="'$(NuGetPackageRoot)' != ''">
+      <_HuskTaskDir>$([System.IO.Path]::GetDirectoryName('$(HuskTaskAssembly)'))</_HuskTaskDir>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(_HuskTaskDir)' != '' and !Exists('$(_HuskTaskDir)/runtimes')">
+      <_HuskNativeRid>$(NETCoreSdkPortableRuntimeIdentifier)</_HuskNativeRid>
+      <_HuskNativeExt Condition="$(_HuskNativeRid.StartsWith('win-'))">dll</_HuskNativeExt>
+      <_HuskNativeExt Condition="$(_HuskNativeRid.StartsWith('osx-'))">dylib</_HuskNativeExt>
+      <_HuskNativeExt Condition="'$(_HuskNativeExt)' == ''">so</_HuskNativeExt>
+      <_HuskNativeFile>$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))microsoft.clearscript.v8.native.$(_HuskNativeRid)/$(_HuskClearScriptVersion)/runtimes/$(_HuskNativeRid)/native/ClearScriptV8.$(_HuskNativeRid).$(_HuskNativeExt)</_HuskNativeFile>
+    </PropertyGroup>
+    <Error Code="HUSK003" Condition="'$(_HuskNativeFile)' != '' and !Exists('$(_HuskNativeFile)')"
+           Text="Husk's V8 library is missing: $(_HuskNativeFile). Restore the project so Microsoft.ClearScript.V8.Native.$(_HuskNativeRid) $(_HuskClearScriptVersion) lands in the NuGet cache. If the project pins another version of that package, remove the pin: Husk needs exactly $(_HuskClearScriptVersion)." />
   </Target>
 
   <!-- Pare's targets do the placing, serving and publishing, and NuGet imports a package's build/
