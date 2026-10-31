@@ -15,6 +15,14 @@ Merged into `dev`, not yet tagged.
 
 ---
 
+## [0.1.0-preview.5] — 2026-10-31
+
+### Fixed
+
+- A reused build process (`dotnet build` keeps them for a few minutes, across projects) that had loaded V8 for one Husk could load a second V8 library for another (a different ClearScript version, or a Husk outside the NuGet cache); V8 then spins and dies. Husk now stops with HUSK004, which says to run `dotnet build-server shutdown`. Husk versions on the same ClearScript share one library and build as before. A Husk older than this one does not record what it loaded, so the check starts with this version.
+
+---
+
 ## [0.1.0-preview.4] — 2026-10-31
 
 `v0.1.0-preview.3` was tagged but never published: its release build failed on two Linux/Windows-only test bugs, and release tags cannot be moved.

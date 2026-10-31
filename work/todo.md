@@ -37,7 +37,6 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Pare: ship `build/` as `buildTransitive/` too, so a project referencing only Extrode.Husk.Build gets Pare's targets and HUSK002 (direct Pare.Build reference) can go
 - Integration tests pick a free port by bind-and-release; another process can take it before the app binds (RunningApp, SampleWatchTests).
 - Each Sample()/Consumer() restores into its own globalPackagesFolder, so ClearScript natives download per copy; share one per PackedFeed.
-- Two Extrode.Husk.Build versions in one reused MSBuild node load two ClearScript natives into one process (crash risk); consider TaskHostFactory or a version check.
 - HuskPage globs wwwroot/**/*.html regardless of the user's Content Remove/Update metadata, so an excluded page is served and published again.
 - PareKeepSources=true with Husk: a page or .svelte.js keeps its source's name, so wwwroot and obj/pare register one asset path twice (SDK error).
 - Outside wwwroot / non-web projects, a component's next-to-source output (Child.svelte.js) overwrites a hand-written file of that name without warning.
@@ -68,3 +67,6 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk pack (review 33d329d..ac22ec4): `_HuskPackageReadme` rewrites inline links and `src=` only; reference-style definitions (`[x]: docs/a.md`), links with a title and `href=` would ship relative, and the test catches only the title case.
 - Husk Build (review 33d329d..ac22ec4): HUSK200-as-error skip relies on `IBuildEngine8.ShouldTreatWarningAsError`; unverified under the `TaskHostFactory` host (Visual Studio's MSBuild.exe).
 - Husk Deploy: a folder link loop whose target spells an ancestor differently (`/private/var` for `/var`, other case) is not detected and fails with "Too many levels of symbolic links" (exit 1).
+- Husk Build (review dd428b0..36abeb5): HUSK004's record (`NativeProbe.Resolve` SetData) and check (`HuskCompile`) are not atomic; two Husk task folders compiling at the same instant in one process (MSBuild `-mt`, unverified) could both load V8. A path spelled two ways for one file (symlinked NuGet folder) gives a false HUSK004.
+- Husk tests (review dd428b0..36abeb5): `TempProject.Exec(limit, ...)` reads the pipes to the end after killing the tree, so a process that escaped the tree (a reused MSBuild node, a build server) holds it past the limit; callers must pass `-nodeReuse:false --disable-build-servers`.
+- Husk Build (re-review db504df): `NativeProbe.Wanted()` re-reads the disk each run while the loaded native is fixed per load context, so a `runtimes/` folder appearing or vanishing beside a live node's task gives a false HUSK004; x86/arm32 hosts get no check (HUSK001 tests the SDK RID, not the node's); `Wanted()` and `CompilerBridge.MissingNative` duplicate the rid/cache path logic.

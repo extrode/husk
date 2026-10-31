@@ -13,6 +13,7 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK001](#husk001) | error (MSBuild) | Husk cannot build on this platform |
 | [HUSK002](#husk002) | error (MSBuild) | Husk needs Extrode.Pare.Build |
 | [HUSK003](#husk003) | error (MSBuild) | V8's native library for this machine was not restored |
+| [HUSK004](#husk004) | error (MSBuild) | this build process already loaded a different V8 library |
 | [HUSK100](#husk100) | error | Svelte could not compile the source |
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
@@ -43,6 +44,16 @@ for this machine in the NuGet cache. The file is missing when the project was no
 package source mapping does not allow `Microsoft.ClearScript.*`, or when the app pins another
 version of a `Microsoft.ClearScript.V8.Native.*` package (a lower pin is NU1605; a higher one means
 7.5.1.1 is never downloaded). Restore the project, allow the packages, or remove the pin.
+
+## HUSK004
+
+`dotnet build` keeps its build processes running for a few minutes and reuses them, for any
+project you build, in any folder. Each Husk loads V8's native library from the NuGet cache. Husk
+versions that use the same ClearScript version find the same file and share it. Two different files
+in one process break V8 (the build spins, then dies), so Husk stops instead. It happens when the
+process already compiled with a Husk on another ClearScript version, or with a Husk outside the
+NuGet cache (`HuskTaskAssembly`). Run `dotnet build-server shutdown` and build again; in a
+solution, give every project the same Extrode.Husk.Build version.
 
 ## HUSK100
 
