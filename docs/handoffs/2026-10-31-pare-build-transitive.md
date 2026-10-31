@@ -1,4 +1,4 @@
-# Handoff: Pare.Build flows through Extrode.Husk.Build (next Pare release)
+# Handoff: Pare.Build flows through Extrode.Husk.Build (Pare 0.7.2)
 
 Date: 2026-10-31. From: Pare (`../pare`, branch `dev`, merge `4848315`). Answers Husk's
 `work/todo.md` item "Pare: ship `build/` as `buildTransitive/` too" and N4 of Pare's
@@ -9,8 +9,9 @@ Date: 2026-10-31. From: Pare (`../pare`, branch `dev`, merge `4848315`). Answers
 - **Pare 0.7.1 is on nuget.org** (`Extrode.Pare`, `.Build`, `.AspNetCore`, `.Cli`). Husk is on
   0.7.0 (`Directory.Packages.props`, `PareVersion`); 0.7.1 can be taken now, nothing in it needs
   a Husk change.
-- **`buildTransitive` is on Pare's `dev`, not released.** The version is the user's call; it is
-  not 0.7.1. Do the steps below only once it is on nuget.org.
+- **`buildTransitive` ships in Pare 0.7.2**, prepared on Pare's `dev` and tagged by the user. Do
+  the steps below once 0.7.2 is on nuget.org
+  (`https://api.nuget.org/v3-flatcontainer/extrode.pare.build/index.json` lists it).
 
 ## What Pare ships
 
@@ -21,9 +22,9 @@ through another package's dependency. Proven in Pare's
 references Pare.Build as below, an app references only the wrapper, and `a.ts` is stripped. With a
 direct Pare.Build reference as well, the targets import once (no MSB4011).
 
-## Husk to do, once that release is out
+## Husk to do, once 0.7.2 is out
 
-1. `Directory.Packages.props`: `PareVersion` to the new version.
+1. `Directory.Packages.props`: `PareVersion` to `0.7.2`.
 2. `src/Extrode.Husk.Build/Extrode.Husk.Build.csproj`: add
    ```xml
    <PackageReference Include="Extrode.Pare.Build" PrivateAssets="contentfiles;analyzers;build" />
@@ -48,7 +49,7 @@ direct Pare.Build reference as well, the targets import once (no MSB4011).
 5. Prove it the way a stranger would: clean cache (`dotnet nuget locals all --clear`), a new app
    with only `Extrode.Husk.Build`, `dotnet build` and `dotnet publish` strip and compile.
 
-## Also in that release (no Husk change needed)
+## Also in 0.7.2 (no Husk change needed)
 
 - A `TypeScriptSource` declared twice takes the last declaration's metadata, so a project's
   `PareServeAt` beats a package's default glob; on Windows both separators name one source.
