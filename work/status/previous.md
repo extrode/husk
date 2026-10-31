@@ -1,1 +1,1 @@
-- T6 hashed output, import map, modulepreload and T7 deploy command (src/Extrode.Husk.Deploy) merged to dev 2026-10-30, gated. Decision: docs/decisions/2026-10-30-007-hashed-output.md. SampleWatchTests fails on base 0b24e5e too (pre-existing, in work/todo.md)
+- T8 done 2026-10-31: Cloudflare limits in docs/architecture/002-cloudflare-and-deno.md (sample measured, saaaat and riwalqalb estimated). Free 20,000 files, 25 MiB each; all far under.

@@ -1,1 +1,1 @@
-- T9 Backlog bug batch from work/todo.md - done when: each has a test that failed before its fix
+- T12 saaaat client router and $app/* shims - done when: a spec exists in docs/specs/ (milestone 2); T13 is user-only
