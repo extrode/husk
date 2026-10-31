@@ -6,6 +6,10 @@ namespace Extrode.Husk.Tests;
 public sealed class StylesheetWriterTests
 {
     [Fact]
+    public void Development_stylesheet_refuses_names_and_css_of_different_lengths() =>
+        Assert.Throws<ArgumentException>(() => Development.Stylesheet(["a.svelte", "b.svelte"], [".a{}"]));
+
+    [Fact]
     public void Components_join_in_ordinal_path_order_and_empty_css_is_skipped()
     {
         var text = StylesheetWriter.Join([

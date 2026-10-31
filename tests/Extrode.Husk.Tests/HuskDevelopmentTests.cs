@@ -40,7 +40,7 @@ public sealed class HuskDevelopmentTests : IDisposable
 
     private void WriteMaps(params string[] components) => WriteMaps(components, []);
 
-    private void WriteMaps(string[] components, string[] pages)
+    private void WriteMaps(string[] components, string[] pages, bool hashNames = false)
     {
         File.WriteAllText(PareMap, JsonSerializer.Serialize(new
         {
@@ -56,6 +56,7 @@ public sealed class HuskDevelopmentTests : IDisposable
             svelte = Path.Combine(RepoPaths.Vendored, "svelte", "compiler", "index.js"),
             projectDirectory = _dir.FullName,
             dev = true,
+            hashNames,
             stylesheet = P("obj/husk/husk.css"),
             importMap = P("obj/husk/importmap.json"),
             styles = components.Select(c => new { name = $"{c}.svelte", css = ComponentOutputs(c)[1] }),
@@ -101,6 +102,26 @@ public sealed class HuskDevelopmentTests : IDisposable
         Assert.Equal("", File.ReadAllText(css));
         WaitFor(() => _log.Count(LogLevel.Information, "Husk compiled wwwroot/Hello.svelte in ") >= 2);
         Assert.Matches(@"^Husk compiled wwwroot/Hello\.svelte in \d+ ms$", _log.Lines(LogLevel.Information).First(l => l.StartsWith("Husk compiled", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task A_map_from_a_hashed_build_warns_that_saves_have_no_visible_effect()
+    {
+        Put("wwwroot/Hello.svelte", "<p>one</p>\n");
+        WriteMaps(["Hello"], [], hashNames: true);
+        await using var app = (IAsyncDisposable)await Start();
+
+        Assert.Contains("HuskHashNames=true", Assert.Single(_log.Lines(LogLevel.Warning)));
+    }
+
+    [Fact]
+    public async Task A_map_from_an_unhashed_build_does_not_warn()
+    {
+        Put("wwwroot/Hello.svelte", "<p>one</p>\n");
+        WriteMaps("Hello");
+        await using var app = (IAsyncDisposable)await Start();
+
+        Assert.Empty(_log.Lines(LogLevel.Warning));
     }
 
     [Fact]

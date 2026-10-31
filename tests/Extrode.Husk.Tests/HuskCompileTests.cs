@@ -52,6 +52,7 @@ public sealed class HuskCompileTests : IDisposable
         Assert.Equal(row.Css, ExpectedRow.Sha(File.ReadAllText(P("obj/pare/Styled.svelte.css"))));
         Assert.Equal(row.Map, ExpectedRow.Sha(File.ReadAllText(P("obj/pare/Styled.svelte.js.map"))));
         Assert.Contains(_engine.Messages, m => m.StartsWith("husk: compiled 1 of 1 sources", StringComparison.Ordinal));
+        Assert.Empty(Directory.GetFiles(P("obj/pare"), "*.husk-tmp"));
     }
 
     [Fact]

@@ -104,6 +104,16 @@ public sealed class HuskAssetsTests : IDisposable
         Assert.Equal(P("obj/pare/A.svelte.css"), map.GetProperty("styles")[0].GetProperty("css").GetString());
     }
 
+    [Fact]
+    public void The_development_map_records_whether_names_are_hashed()
+    {
+        Assert.True(Run("/", Output("A.svelte.css", "A.svelte")));
+        Assert.False(JsonDocument.Parse(File.ReadAllText(P("obj/husk/Extrode.Husk.development.json"))).RootElement.GetProperty("hashNames").GetBoolean());
+
+        Assert.True(RunHashed(Output("A.svelte.js", "A.svelte", text: "a")));
+        Assert.True(JsonDocument.Parse(File.ReadAllText(P("obj/husk/Extrode.Husk.development.json"))).RootElement.GetProperty("hashNames").GetBoolean());
+    }
+
     private bool RunHashed(params TaskItem[] outputs)
     {
         string runtime = P("vendor/svelte/src/index-client.js");
