@@ -6,22 +6,41 @@ namespace Extrode.Husk.Integration;
 /// <summary>A static file server, as `python3 -m http.server` would be, for the life of a test.</summary>
 public sealed class StaticServer : IDisposable
 {
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly string _root;
 
     public Uri Address { get; }
 
-    public StaticServer(string root)
+    /// <summary>HttpListener cannot bind port 0, so a port is picked and bound; when something takes it
+    /// in between, the next attempt picks again.</summary>
+    public StaticServer(string root, Func<int>? pickPort = null)
     {
         _root = root;
-        using (var probe = new TcpListener(IPAddress.Loopback, 0))
+        pickPort ??= FreePort;
+        for (int attempt = 1; ; attempt++)
         {
-            probe.Start();
-            Address = new Uri($"http://127.0.0.1:{((IPEndPoint)probe.LocalEndpoint).Port}/");
+            Address = new Uri($"http://127.0.0.1:{pickPort()}/");
+            var listener = new HttpListener();
+            listener.Prefixes.Add(Address.ToString());
+            try
+            {
+                listener.Start();
+                _listener = listener;
+                break;
+            }
+            catch (HttpListenerException) when (attempt < 10)
+            {
+                listener.Close();
+            }
         }
-        _listener.Prefixes.Add(Address.ToString());
-        _listener.Start();
         _ = Answer();
+    }
+
+    private static int FreePort()
+    {
+        using var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        return ((IPEndPoint)probe.LocalEndpoint).Port;
     }
 
     private async Task Answer()
