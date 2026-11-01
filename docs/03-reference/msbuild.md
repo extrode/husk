@@ -10,6 +10,7 @@
 | `HuskRoutes` | none | The routes folder (`src/routes`). Its presence turns on the [router](../02-guides/router.md); nothing changes without it |
 | `HuskShell` | none | The app's HTML shell (`src/app.html`), written to `index.html` with the import map, stylesheet and entry script filled in |
 | `HuskAlias` | none | Include is the alias (`$lib`), `Path` the folder, optional `Entry` the file the bare alias means (`index.ts`) |
+| `HuskStylesheet` | none | A `.css` file a module imports for its side effect (`import '$lib/app.css'`); name the alias that reaches it in `HuskAlias`. Becomes a module that adds the CSS in a `<style>` ahead of `husk.css`; `url(...)` in it is not rewritten. Missing file: HUSK103 |
 | `HuskImport` | none | Include is a bare specifier, `Url` where the browser finds it (`/vendor/x.js`) |
 | `HuskEnv` | none | Include is an `import.meta.env` name, `Value` its value in this build |
 

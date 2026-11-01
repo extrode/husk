@@ -17,6 +17,7 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK100](#husk100) | error | Svelte could not compile the source |
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
+| [HUSK103](#husk103) | error | a `HuskStylesheet` file does not exist |
 | [HUSK200](#husk200) | warning | a Svelte compiler warning |
 | [HUSK300](#husk300) | error | two routes for one address |
 | [HUSK301](#husk301) | error | a SvelteKit feature Husk does not provide |
@@ -80,6 +81,11 @@ by an older Husk than the one compiling; rebuild.
 A source, output, page, `husk.css` or `importmap.json` could not be read or written: the file is
 locked, the disk is full, or the folder is read-only. The message carries the operating system's
 reason. Outputs that failed are written again by the next build.
+
+## HUSK103
+
+A `HuskStylesheet` item names a file that is not there. The message carries the full path; fix the
+item or add the file.
 
 ## HUSK200
 
