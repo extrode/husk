@@ -53,6 +53,32 @@ public sealed class JsonImportTests
     }
 
     [Fact]
+    public void A_file_that_is_not_json_fails_the_build()
+    {
+        using var project = App("src/lib/data.geojson");
+        project.Put("src/lib/data.geojson", "{}\n");
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("HUSK104", output);
+    }
+
+    [Fact]
+    public void A_file_under_wwwroot_fails_the_build_with_a_message_instead_of_an_sdk_crash()
+    {
+        using var project = App("wwwroot/data/t.json");
+        project.Put("wwwroot/data/t.json", "{}\n");
+        project.Put("app.csproj", project.Read("app.csproj").Replace("Root=\"src\"", "Root=\"wwwroot\""));
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("HUSK104", output);
+        Assert.DoesNotContain("MSB4018", output);
+    }
+
+    [Fact]
     public void A_serve_at_that_leaves_the_served_folder_fails_the_build_and_writes_nothing_outside()
     {
         using var project = App();

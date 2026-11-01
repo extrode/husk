@@ -110,6 +110,16 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
                 Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, "a HuskJson file does not exist");
                 continue;
             }
+            if (!source.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, "a HuskJson file must have the extension .json");
+                continue;
+            }
+            if (IsServed(source, Path.Combine(ProjectDirectory, "wwwroot"), PathComparison))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, "a HuskJson file under wwwroot is already served by the SDK; drop the HuskJson item");
+                continue;
+            }
             string rootFolder = Path.GetFullPath(item.GetMetadata("Root"), ProjectDirectory);
             if (!IsServed(source, rootFolder, PathComparison))
             {
@@ -166,6 +176,8 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
                 continue;
             }
             string identity = Path.GetRelativePath(ProjectDirectory, source).Replace('\\', '/');
+            if (!OperatingSystem.IsLinux())
+                identity = identity.ToLowerInvariant();
             string name = Path.GetFileName(source) + "." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..8].ToLowerInvariant() + ".js";
             string text = string.Format(CssModule, JsonSerializer.Serialize(Path.GetFileName(source)), JsonSerializer.Serialize(File.ReadAllText(source))) + "\n";
             string target = Path.Combine(folder, name);

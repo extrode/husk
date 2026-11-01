@@ -80,3 +80,5 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Pare extension point: a post-process hook on Pare's own .ts output, so Husk can rewrite import.meta.env under Development (spec 003 P4, docs/architecture/006-saaaat-port.md); until then a saved .ts serves it unrewritten until the next build
 - Development: an edit to a HuskStylesheet or HuskJson file does not rebuild its module until the next build (spec 003 T7/T8); extend HuskRouteWatcher-style watching or document
 - Safari router/sample browser tests time out on this Mac at 2026-11-02 (also on dev 7ba1f1b-ish, so not spec 003): link clicks do nothing in safaridriver; check Safari automation state (Develop > Allow Remote Automation, a stuck Safari window) before blaming the code
+- Imported CSS (`HuskStylesheet`) applies when its module runs, so prerendered pages paint unstyled first; Vite emits a `<link>`. HuskAssets.cs:146 (review 80c2474..af2d738).
+- Imported CSS is appended to `<head>` when the page has no `link[href*="husk.css"]`, landing after component styles. HuskAssets.cs:150 (review 80c2474..af2d738).

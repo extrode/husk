@@ -93,7 +93,8 @@ public sealed class StaticServer : IDisposable
                 ".ttf" => "font/ttf",
                 ".webmanifest" => "application/manifest+json",
                 ".txt" => "text/plain; charset=utf-8",
-                _ => "text/html; charset=utf-8",
+                ".html" or ".htm" or "" => "text/html; charset=utf-8",
+                _ => "application/octet-stream",
             };
             byte[] body = await File.ReadAllBytesAsync(file);
             if (_headScript is not null && response.ContentType.StartsWith("text/html", StringComparison.Ordinal))
@@ -106,7 +107,7 @@ public sealed class StaticServer : IDisposable
     private static byte[] InjectHeadScript(byte[] html, string script)
     {
         string text = System.Text.Encoding.UTF8.GetString(html);
-        int head = text.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
+        int head = System.Text.RegularExpressions.Regex.Match(text, "<head[\\s>]", System.Text.RegularExpressions.RegexOptions.IgnoreCase) is { Success: true } m ? m.Index : -1;
         int close = head < 0 ? -1 : text.IndexOf('>', head);
         if (close < 0)
             return html;

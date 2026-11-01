@@ -36,6 +36,18 @@ public sealed class StaticServerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_head_script_is_not_put_in_a_non_page_file_or_a_header_element()
+    {
+        File.WriteAllText(Path.Combine(_root, "feed.xml"), "<head></head>");
+        File.WriteAllText(Path.Combine(_root, "index.html"), "<html><header>h</header><head></head></html>");
+        using var server = new StaticServer(_root, headScript: "window.__frozen=1");
+        using var http = new HttpClient();
+        Assert.Equal("<head></head>", await http.GetStringAsync(new Uri(server.Address, "feed.xml"), TestContext.Current.CancellationToken));
+        string html = await http.GetStringAsync(server.Address, TestContext.Current.CancellationToken);
+        Assert.True(html.IndexOf("window.__frozen=1", StringComparison.Ordinal) > html.IndexOf("<head>", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Without_a_head_script_the_page_is_served_unchanged()
     {
         const string page = "<html><head></head></html>";
