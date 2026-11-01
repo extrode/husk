@@ -206,8 +206,10 @@ public sealed class RoutesBrowserTests : IDisposable
     {
         using var driver = Open(browser, "/");
 
-        Script(driver, "window.__goto('/month#%E0%A4%A');");
+        var outcome = ((IJavaScriptExecutor)driver).ExecuteAsyncScript(
+            "const done = arguments[arguments.length - 1]; window.__goto('/month#%E0%A4%A').then(() => done('ok'), (e) => done(e.name));");
 
+        Assert.Equal("ok", outcome);
         Settled(driver, "month");
         Assert.Equal(0L, Convert.ToInt64(Script(driver, "return window.scrollY;")));
     }
