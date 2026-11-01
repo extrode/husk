@@ -20,7 +20,7 @@ sections that apply; drop the empty ones rather than leaving them blank.
 ### Fixed
 
 - Router: Back and Forward keep the history position in step with the page on screen, including after a reload and when `beforeNavigate` cancels the move; a link followed during a Back continues from where the Back reached.
-- Router: the error page shows the URL that failed and still renders when the root layout or the error page cannot load; an unreadable `app.html` is HUSK305; `import.meta.env` placeholders are written as given.
+- Router: the error page shows the URL that failed and still renders when the root layout or the error page cannot load; an unreadable `app.html` is HUSK305; env values in `app.html` placeholders are no longer HTML-encoded.
 - Development: the route watcher survives a file it cannot read, builds for a change that lands as a build finishes, and the browser refreshes once more after a route rebuild.
 - A page removed from `@(Content)` is no longer built or published.
 
