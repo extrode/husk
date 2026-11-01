@@ -18,14 +18,14 @@ Plan: ./002-plan.md
 - [x] T15 Fixture app mirroring saaaat's routes; Selenium acceptance in Chrome, Firefox, WebKit — files: `tests/Extrode.Husk.Integration/` — covers: R1-R11, R16, R17 — done when: every acceptance criterion in the spec except the saaaat corpus passes in three browsers
 - [x] T16 Optional saaaat `apps/web` corpus build (skips when the sibling checkout is missing); measure the redirect/back behaviour in the current app and set the spec criterion — files: `tests/Extrode.Husk.Integration/`, spec — covers: R18, acceptance 1 and 3 — done when: all 17 pages render, or the failures are in `work/todo.md`
 - [ ] T17 User docs, `docs/architecture/005-router.md`, changelog line, CSP caveat — files: `docs/`, `CHANGELOG.md` — covers: R19, Non-goals — done when: every new item and code is documented
-- [ ] T18 enact L004 resolution is deterministic — files: `docs/laws/004-*.md` — covers: law 1 — done when: user sets `status: enacted`
-- [ ] T19 prove L004 via /prove — covers: law 1 — done when: `laws-check.js --run` holds (after T4)
-- [ ] T20 enact L005 `page.url` equals the address — files: `docs/laws/005-*.md` — done when: user enacts
-- [ ] T21 prove L005 via /prove — done when: `laws-check.js --run` holds (after T15)
-- [ ] T22 enact L006 one pattern per route folder, no clashes — files: `docs/laws/006-*.md` — done when: user enacts
-- [ ] T23 prove L006 via /prove — done when: `laws-check.js --run` holds (after T2)
-- [ ] T24 enact L007 unsupported feature leaves no partial route table — files: `docs/laws/007-*.md` — done when: user enacts
-- [ ] T25 prove L007 via /prove — done when: `laws-check.js --run` holds (after T3)
+- [x] T18 enact L004 resolution is deterministic — files: `docs/laws/004-*.md` — covers: law 1 — done when: user sets `status: enacted`
+- [x] T19 prove L004 via /prove — covers: law 1 — done when: `laws-check.js --run` holds (after T4)
+- [x] T20 enact L005 `page.url` equals the address — files: `docs/laws/005-*.md` — done when: user enacts
+- [x] T21 prove L005 via /prove — done when: `laws-check.js --run` holds (after T15)
+- [x] T22 enact L006 one pattern per route folder, no clashes — files: `docs/laws/006-*.md` — done when: user enacts
+- [x] T23 prove L006 via /prove — done when: `laws-check.js --run` holds (after T2)
+- [x] T24 enact L007 unsupported feature leaves no partial route table — files: `docs/laws/007-*.md` — done when: user enacts
+- [x] T25 prove L007 via /prove — done when: `laws-check.js --run` holds (after T3)
 
 ## Analyze
 R1 T2,T4,T5,T9,T15 · R2 T2 · R3 T3,T4 · R4 T4,T5 · R5 T3,T4 · R6 T6 · R7 T6 · R8 T7 · R9 T7 · R10 T5 · R11 T5 · R12 T12,T14 · R13 T8,T9,T10 · R14 T5,T6 · R15 T3,T10 · R16 T13 · R17 T3,T5 · R18 T1,T8,T16 · R19 T9,T10,T17 · R20 T5,T9,T11. All 20 covered, no orphans. Every task traces to a "Changes by area" bullet.
