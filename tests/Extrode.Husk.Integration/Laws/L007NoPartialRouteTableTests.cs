@@ -7,6 +7,7 @@ public sealed class L007NoPartialRouteTableTests
 {
     private const string Routes = TempProject.HuskOut + "app/routes.js";
     private const string Shell = TempProject.HuskOut + "app/index.html";
+    private const string Template = TempProject.HuskOut + "app/shell/index.html";
 
     private static TempProject App()
     {
@@ -40,6 +41,7 @@ public sealed class L007NoPartialRouteTableTests
         Assert.True(exit == 0, output);
         byte[] routes = File.ReadAllBytes(project.P(Routes));
         byte[] shell = File.ReadAllBytes(project.P(Shell));
+        byte[] template = File.ReadAllBytes(project.P(Template));
 
         project.Put(file, text);
         (exit, output) = project.Build();
@@ -48,5 +50,6 @@ public sealed class L007NoPartialRouteTableTests
         Assert.Contains("error " + code, output);
         Assert.True(routes.AsSpan().SequenceEqual(File.ReadAllBytes(project.P(Routes))), $"{code} {file}: routes.js changed\n{output}");
         Assert.True(shell.AsSpan().SequenceEqual(File.ReadAllBytes(project.P(Shell))), $"{code} {file}: the shell changed\n{output}");
+        Assert.True(template.AsSpan().SequenceEqual(File.ReadAllBytes(project.P(Template))), $"{code} {file}: the shell template changed\n{output}");
     }
 }
