@@ -96,17 +96,10 @@ public sealed class StaticServer : IDisposable
                 ".html" or ".htm" or "" => "text/html; charset=utf-8",
                 _ => "application/octet-stream",
             };
-            try
-            {
-                byte[] body = await File.ReadAllBytesAsync(file);
-                if (_headScript is not null && response.ContentType.StartsWith("text/html", StringComparison.Ordinal))
-                    body = InjectHeadScript(body, _headScript);
-                await response.OutputStream.WriteAsync(body);
-            }
-            catch (Exception e) when (e is HttpListenerException or IOException or ObjectDisposedException)
-            {
-                // A browser that navigates away abandons the requests in flight; that must not end the server.
-            }
+            byte[] body = await File.ReadAllBytesAsync(file);
+            if (_headScript is not null && response.ContentType.StartsWith("text/html", StringComparison.Ordinal))
+                body = InjectHeadScript(body, _headScript);
+            await response.OutputStream.WriteAsync(body);
         }
     }
 
