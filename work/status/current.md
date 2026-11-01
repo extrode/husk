@@ -1,0 +1,1 @@
+- Spec 003 saaaat side: T14-T15 (port project and Capacitor stand-ins on saaaat `feat/husk-port`), then T16-T19, laws T20-T25 (docs/specs/003-saaaat-on-husk/003-tasks.md).
