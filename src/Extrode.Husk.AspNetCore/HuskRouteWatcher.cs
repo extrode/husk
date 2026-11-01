@@ -30,6 +30,7 @@ internal sealed class HuskRouteWatcher(string mapPath, ILogger logger,
     private HuskDevelopmentMap? _map;
     private FileSystemWatcher? _watcher;
     private bool _pending;
+    private bool _active;
     private Task _running = Task.CompletedTask;
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -97,8 +98,11 @@ internal sealed class HuskRouteWatcher(string mapPath, ILogger logger,
             else if (_known.Contains(path) || Directory.Exists(path) && !IsNewFolder(path))
                 return;
             _pending = true;
-            if (_running.IsCompleted)
+            if (!_active)
+            {
+                _active = true;
                 _running = Task.Run(Build);
+            }
         }
     }
 
@@ -122,7 +126,10 @@ internal sealed class HuskRouteWatcher(string mapPath, ILogger logger,
             lock (_gate)
             {
                 if (!_pending)
+                {
+                    _active = false;
                     return;
+                }
                 _pending = false;
             }
             var clock = Stopwatch.StartNew();
