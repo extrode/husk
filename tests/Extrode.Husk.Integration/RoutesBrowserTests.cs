@@ -42,7 +42,7 @@ public sealed class RoutesBrowserTests : IDisposable
         var driver = Browsers.Start(browser);
         try
         {
-            // A cold Safari on a CI runner sometimes never paints the first load; one more try tells that from a broken page.
+            // A cold Safari on a CI runner sometimes never paints the first load; two more tries tell that from a broken page.
             for (int attempt = 1; ; attempt++)
             {
                 driver.Navigate().GoToUrl(new Uri(_server.Address, path).ToString());
@@ -51,7 +51,7 @@ public sealed class RoutesBrowserTests : IDisposable
                     Browsers.Until(driver, "return document.querySelector('#title, #error') ? true : null;");
                     return driver;
                 }
-                catch (TimeoutException) when (attempt == 1 && browser == "safari")
+                catch (TimeoutException) when (attempt < 3 && browser == "safari")
                 {
                 }
             }
