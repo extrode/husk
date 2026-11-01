@@ -69,6 +69,15 @@ public sealed class HuskAssetsTests : IDisposable
         Assert.Equal("/* ui/Child.svelte */\n.a{}\n", File.ReadAllText(P("obj/husk/husk.css")));
     }
 
+    [Theory]
+    [InlineData("/obj/pare/a.js", "/obj/pare", StringComparison.Ordinal, true)]
+    [InlineData("/obj/pare/a.js", "/obj/pare/", StringComparison.Ordinal, true)]
+    [InlineData("/obj/Pare/a.js", "/obj/pare", StringComparison.Ordinal, false)]
+    [InlineData("/obj/Pare/a.js", "/obj/pare", StringComparison.OrdinalIgnoreCase, true)]
+    [InlineData("/obj/pare-old/a.js", "/obj/pare", StringComparison.OrdinalIgnoreCase, false)]
+    public void Served_means_inside_the_folder_with_the_platforms_case_rule(string path, string root, StringComparison comparison, bool served) =>
+        Assert.Equal(served, HuskAssets.IsServed(path.Replace('/', Path.DirectorySeparatorChar), root.Replace('/', Path.DirectorySeparatorChar), comparison));
+
     [Fact]
     public void An_unserved_output_is_left_out_of_the_map()
     {
@@ -182,6 +191,42 @@ public sealed class HuskAssetsTests : IDisposable
         Assert.False(File.Exists(a));
         Assert.Equal("a2", File.ReadAllText(Directory.GetFiles(P("obj/husk/hashed"), "A.svelte.*.js").Single()));
         Assert.Equal(stamp, File.GetLastWriteTimeUtc(b));
+    }
+
+    [Fact]
+    public void Aliases_imports_and_the_router_shims_get_import_map_keys()
+    {
+        string lib = P("src/lib/util.ts");
+        var util = new TaskItem(P("obj/pare/app/lib/util.js"), new Dictionary<string, string>
+        {
+            ["PareSource"] = lib, ["PareRelativePath"] = "app/lib/util.js", ["PareCompiler"] = "",
+        });
+        Directory.CreateDirectory(P("obj/pare/app/lib"));
+        File.WriteAllText(util.ItemSpec, "");
+
+        Assert.True(new HuskAssets
+        {
+            BuildEngine = _engine,
+            Outputs = [util],
+            OutputDirectory = P("obj/husk"),
+            ServedRoot = P("obj/pare"),
+            RuntimeImports = Path.Combine(RepoPaths.Vendored, "runtime-imports.json"),
+            CompilerAssembly = "/c/Extrode.Husk.Compiler.dll",
+            CompilerPath = "/c/index.js",
+            ProjectDirectory = _dir.FullName,
+            Aliases = [new TaskItem("$lib", new Dictionary<string, string> { ["Path"] = "src/lib", ["Entry"] = "util.ts" })],
+            Imports = [new TaskItem("@capacitor/core", new Dictionary<string, string> { ["Url"] = "https://cdn.example/core.js" })],
+            Routing = true,
+        }.Execute());
+
+        var imports = JsonDocument.Parse(File.ReadAllText(P("obj/husk/importmap.json"))).RootElement.GetProperty("imports");
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util.ts").GetString());
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib").GetString());
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util").GetString());
+        Assert.Equal("/app/lib/util.js", imports.GetProperty("$lib/util.js").GetString());
+        Assert.Equal("https://cdn.example/core.js", imports.GetProperty("@capacitor/core").GetString());
+        Assert.Equal("/_husk/app/navigation.js", imports.GetProperty("$app/navigation").GetString());
+        Assert.Equal("/_husk/kit.js", imports.GetProperty("@sveltejs/kit").GetString());
     }
 
     [Fact]

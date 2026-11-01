@@ -55,6 +55,38 @@ public sealed partial class PageBuildTests
         Assert.Equal(stamps, new[] { "index.html", "docs/plain.html" }.Select(p => project.Stamp(TempProject.PareOut + p)));
     }
 
+    [Fact]
+    public void A_page_removed_from_Content_is_not_built_or_published()
+    {
+        using var project = new TempProject();
+        project.Project(items: "<Content Remove=\"wwwroot/draft.html\" />");
+        project.Put("wwwroot/index.html", Marked);
+        project.Put("wwwroot/draft.html", Unmarked);
+
+        var (exit, output) = project.Run("publish", "-nologo", "-o", "out", "-nodeReuse:false", "--disable-build-servers");
+
+        Assert.True(exit == 0, output);
+        Assert.True(File.Exists(project.P("out/wwwroot/index.html")), output);
+        Assert.False(File.Exists(project.P("obj/Release/net10.0/pare/draft.html")), output);
+        Assert.False(File.Exists(project.P("out/wwwroot/draft.html")), output);
+    }
+
+    [Theory]
+    [InlineData("Microsoft.NET.Sdk.Web", "")]
+    [InlineData("Microsoft.NET.Sdk.Razor", "")]
+    [InlineData("Microsoft.NET.Sdk.Web", "<EnableDefaultContentItems>false</EnableDefaultContentItems>")]
+    public void Pages_are_built_where_Content_does_not_list_them(string sdk, string properties)
+    {
+        using var project = new TempProject();
+        project.Project(properties, sdk: sdk);
+        project.Put("wwwroot/index.html", Marked);
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.True(File.Exists(project.P(TempProject.PareOut + "index.html")), output);
+    }
+
     [Theory]
     [InlineData("<PareEmbed>true</PareEmbed>")]
     [InlineData("<PareOutDir>gen</PareOutDir>")]

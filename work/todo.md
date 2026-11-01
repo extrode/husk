@@ -22,8 +22,6 @@ Real, but needs a decision, a dependency, or more information first. Say which.
   Needs nothing; a profiling session.
 - Not yet checked: a Linux and a win-arm64 run, memory per engine, `compileModule` for
   `.svelte.ts`, source maps. Before T5 ships.
-- Cloudflare account limits (files per deployment, file size) against the two apps' output.
-  Before T6.
 
 ## Dropped
 
@@ -34,13 +32,9 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk: `SvelteCompiler.Shared` disposes the replaced compiler while another caller may still be compiling on it (needs a refcount or deferred dispose); dev saves are serialized by Pare, so only concurrent in-proc builds can hit it
 - Husk: `CompilerBridge` compares only ClearScript.V8's version before sharing the app's ClearScript; ClearScript.Core and a compiler folder with no ClearScript.V8.dll are not checked
 - Husk: in Development an unmarked page that is not UTF-8 (UTF-16, Latin-1) is re-encoded as UTF-8 by Pare's watcher, while the build copies its bytes; IPareCompiler gets text only
-- Integration tests pick a free port by bind-and-release; another process can take it before the app binds (RunningApp, SampleWatchTests).
-- Each Sample()/Consumer() restores into its own globalPackagesFolder, so ClearScript natives download per copy; share one per PackedFeed.
-- HuskPage globs wwwroot/**/*.html regardless of the user's Content Remove/Update metadata, so an excluded page is served and published again.
 - PareKeepSources=true with Husk: a page or .svelte.js keeps its source's name, so wwwroot and obj/pare register one asset path twice (SDK error).
 - Outside wwwroot / non-web projects, a component's next-to-source output (Child.svelte.js) overwrites a hand-written file of that name without warning.
 - NativeProbe sets a DllImportResolver on a ClearScript the app shares; the app's own later SetDllImportResolver then throws.
-- HuskAssets decides "served" with OrdinalIgnoreCase on every OS; Linux paths differing only in case are misclassified.
 - A marked page with invalid UTF-8 is decoded with replacement chars, changing bytes outside the marker (build and dev).
 - SampleWatchTests (macOS): FIXED 2026-10-30 in the test. A write within about 45 s of a file being created also raises Created on macOS; dotnet watch (SDK 10.0.403) then logs "File added" and about half the runs exits with "Unexpected true - HotReloadMSBuildWorkspace.cs line 158". The test waits until 45 s after the copy on macOS (8 of 8 pass, 6 of 10 failed before). Real saves are of older files. Optional: report to dotnet/sdk (repro tmp/fsw/fsw.cs).
 - CI (written, never run; review ccb60ff..4460a6a): macOS Safari theories need `safaridriver --enable` on the runner and no step runs it; Windows needs Git's `sh` on PATH and MSYS path conversion for scripts/pack-local.sh. Confirm on the first run.
@@ -68,3 +62,18 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk Build (review dd428b0..36abeb5): HUSK004's record (`NativeProbe.Resolve` SetData) and check (`HuskCompile`) are not atomic; two Husk task folders compiling at the same instant in one process (MSBuild `-mt`, unverified) could both load V8. A path spelled two ways for one file (symlinked NuGet folder) gives a false HUSK004.
 - Husk tests (review dd428b0..36abeb5): `TempProject.Exec(limit, ...)` reads the pipes to the end after killing the tree, so a process that escaped the tree (a reused MSBuild node, a build server) holds it past the limit; callers must pass `-nodeReuse:false --disable-build-servers`.
 - Husk Build (re-review db504df): `NativeProbe.Wanted()` re-reads the disk each run while the loaded native is fixed per load context, so a `runtimes/` folder appearing or vanishing beside a live node's task gives a false HUSK004; x86/arm32 hosts get no check (HUSK001 tests the SDK RID, not the node's); `Wanted()` and `CompilerBridge.MissingNative` duplicate the rid/cache path logic.
+- Sample publish output ships each module under plain and hashed name plus .br/.gz copies (831 files for 277 uploadable): decide whether Husk.Deploy skips .br/.gz and plain duplicates (T8, docs/architecture/002).
+- Husk router (spec 002): a side-effect CSS import from JS (`import '$lib/design/utilities.css'`) has no support; the corpus test stands in with `HuskImport` plus a module that adds a `<link>`. Needs a first-class item (copy the CSS, hash it, link it from the shell).
+- Husk router (spec 002): JSON imports (`import x from './x.json' with { type: 'json' }`) in sources compiled with `PareServeAt` are not copied or served; the corpus test copies `umm-al-qura.json` and `sighting-record.json` into wwwroot by hand.
+- Husk router (spec 002): `import.meta.env` in Pare-compiled `.ts` files is not rewritten in Development (Pare's dev compiler cannot be hooked); only Husk-compiled outputs are. Build and publish are fine.
+- Husk router (review of feat/002 vs dev): all router addresses, `UseHuskSpa` (`NoFallbackPrefixes`, `Page`) and `matchRoute` assume the app is served at the site root; `StaticWebAssetBasePath` other than empty puts modules and the shell under that path and `/app/` matches no route.
+- Husk router (review): a `+layout.ts`/`+layout.js` without a `+layout.svelte` in the same folder, and a `+page.ts` without `+page.svelte`, are ignored with no diagnostic (RouteTable.cs ~78, ~116, ~123); SvelteKit runs the layout load under its default layout.
+- Husk Build (review): `HuskAssets.AliasSources` extensionless and `.ts`-to-`.js` keys skip ImportMapWriter's "two sources share a bare key" rule: `a.ts` beside `a.svelte` makes `$lib/a` point at whichever output comes last.
+- Husk Build (review): `HuskAssets.SourceUrls` keys paths with `StringComparer.Ordinal` while the rest compares per OS; `<HuskRoutes Include="src/Routes">` against `src/routes/**` globs gives a false HUSK304 on macOS/Windows.
+- Husk Compiler (review): `KitFeatures` import regex `[^;'"]*?` crosses newlines, so semicolon-free `export let data\nimport { goto } from '$app/navigation'` can give a false HUSK302; imports in comments are also reported. Needs a tokenizer, not a regex.
+- Husk Build (review): L002 (no change, no compile) is unproven for router apps; `RewriteEnv` rewrites Pare outputs in place after Pare wrote them. Add a router-app no-change build test before enacting a router law.
+- Husk Build (review): the shell is a static web asset at `index.html`; a router app that also has `wwwroot/index.html` or a Husk page at `index.html` gets two assets on one path (unverified, likely a build error).
+- Husk Deploy (review, unverified): CloudflareApi comment says a missing `/_husk/*.js` stays a 404 under `single-page-application`; Cloudflare documents the fallback for navigation requests only, check at the first real deploy.
+- Husk router tests (review): no browser test yet for the `afterNavigate` replay fix, the error view URL, `goto` to another origin (now rejects) or a malformed hash.
+
+- Husk router (T13): route watching untested on Windows (a running app may lock files the rebuild needs); the 404 fallback does not work with `HuskHashNames=true`; under plain `dotnet run` nothing reloads the browser.

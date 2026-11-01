@@ -30,11 +30,12 @@ public sealed class RuntimeImports(IReadOnlyDictionary<string, string> imports, 
 /// each runtime specifier to its file under the runtime base URL, and each source URL, with its
 /// extension and without its last one, to its output URL. Keys are sorted ordinally. With
 /// <paramref name="hashed"/> (plain URL to hashed URL), every value it names becomes the hashed URL,
-/// and each plain URL is a key too, for the relative imports between modules.</summary>
+/// and each plain URL is a key too, for the relative imports between modules. <paramref name="fixedImports"/>
+/// (specifier to URL) are added as given, before that step.</summary>
 public static class ImportMapWriter
 {
     public static string Write(RuntimeImports runtime, string runtimeBase, bool dev, IEnumerable<ImportMapSource> sources,
-        IReadOnlyDictionary<string, string>? hashed = null)
+        IReadOnlyDictionary<string, string>? hashed = null, IReadOnlyDictionary<string, string>? fixedImports = null)
     {
         var imports = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var (specifier, file) in runtime.Imports)
@@ -52,6 +53,10 @@ public static class ImportMapWriter
         foreach (var group in bare)
             if (group.Select(s => s.OutputUrl).Distinct(StringComparer.Ordinal).Count() == 1)
                 imports[group.Key] = group.First().OutputUrl;
+        // Specifiers that name a file directly ($app/navigation, a vendored package): the file's URL,
+        // hashed like any other value below.
+        foreach (var (specifier, url) in fixedImports ?? new Dictionary<string, string>())
+            imports[specifier] = url;
         if (hashed is not null)
         {
             foreach (var (key, value) in imports.ToList())

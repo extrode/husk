@@ -3,6 +3,7 @@ namespace Extrode.Husk.Integration;
 /// <summary>The import map's key forms, before anything builds on them: a key with the source's
 /// extension, one without, and the `.svelte` form of a `.svelte.ts` module. Each target is served only
 /// at its output URL, so a key that does not match is a 404.</summary>
+[Collection(nameof(PackedFeed))]
 public sealed class ImportMapProbeTests : IDisposable
 {
     private readonly DirectoryInfo _dir = Directory.CreateTempSubdirectory("husk-probe-");

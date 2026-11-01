@@ -156,6 +156,21 @@ public sealed class DeployTests : IDisposable
         Assert.Contains("0 uploaded, 3 unchanged", _out.ToString(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(false, "none")]
+    [InlineData(true, "single-page-application")]
+    public async Task Not_found_handling_is_none_unless_spa_is_given(bool spa, string expected)
+    {
+        _server.Respond(SessionBody(CompletionJwt), JwtBody(null));
+
+        Assert.Equal(0, await (spa ? Run("--spa") : Run()));
+
+        using var json = JsonDocument.Parse(Parts(_server.Requests[1])["metadata"].Body);
+        var config = json.RootElement.GetProperty("assets").GetProperty("config");
+        Assert.Equal(expected, config.GetProperty("not_found_handling").GetString());
+        Assert.Equal("auto-trailing-slash", config.GetProperty("html_handling").GetString());
+    }
+
     [Fact]
     public async Task Dry_run_prints_the_manifest_and_sends_nothing()
     {
@@ -409,7 +424,7 @@ internal sealed class FakeCloudflare : IDisposable
             {
                 context = await _listener.GetContextAsync();
             }
-            catch (Exception e) when (e is HttpListenerException or ObjectDisposedException)
+            catch (Exception e) when (e is HttpListenerException or ObjectDisposedException or ArgumentException or InvalidOperationException)
             {
                 return;
             }

@@ -50,6 +50,91 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
     /// <summary>The served runtime files, each with its URL below the base path as RelativePath.</summary>
     public ITaskItem[] Runtime { get; set; } = [];
 
+    /// <summary><c>@(HuskAlias)</c>: Include is a name (<c>$lib</c>, <c>@saaaat/core</c>), Path the source
+    /// folder it stands for, Entry the file a bare import of the name means.</summary>
+    public ITaskItem[] Aliases { get; set; } = [];
+
+    /// <summary><c>@(HuskImport)</c>: Include is a specifier, Url the file it means.</summary>
+    public ITaskItem[] Imports { get; set; } = [];
+
+    /// <summary>The app has a router: <c>$app/*</c> and <c>@sveltejs/kit</c> resolve to its shims.</summary>
+    public bool Routing { get; set; }
+
+    /// <summary>The route folder, <c>@(HuskRoutes)</c>, and what to build again when a route file is
+    /// added or removed in Development: the project, its configuration and target framework.</summary>
+    public string RoutesRoot { get; set; } = "";
+
+    public string Project { get; set; } = "";
+
+    public string Configuration { get; set; } = "";
+
+    public string TargetFramework { get; set; } = "";
+
+    private static readonly StringComparison PathComparison =
+        OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+    /// <summary>True when <paramref name="path"/> is inside the <paramref name="servedRoot"/> folder.
+    /// The folder boundary counts: <c>pare-old/x.js</c> is not inside <c>pare</c>.</summary>
+    internal static bool IsServed(string path, string servedRoot, StringComparison comparison)
+    {
+        string folder = servedRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return path.StartsWith(folder, comparison);
+    }
+
+    private IEnumerable<ImportMapSource> AliasSources(string source, string outputUrl)
+    {
+        string full = Path.GetFullPath(source);
+        foreach (var alias in Aliases)
+        {
+            string folder = Path.GetFullPath(Path.Combine(ProjectDirectory, alias.GetMetadata("Path")));
+            if (!IsServed(full, folder, PathComparison))
+                continue;
+            string relative = Path.GetRelativePath(folder, full).Replace('\\', '/');
+            yield return new ImportMapSource(alias.ItemSpec + "/" + relative, outputUrl);
+            // The import without its last extension, as for the project's own sources.
+            if (Path.GetExtension(relative) is { Length: > 0 } extension)
+            {
+                yield return new ImportMapSource(alias.ItemSpec + "/" + relative[..^extension.Length], outputUrl);
+                // TypeScript's own convention: a .ts file is imported as .js.
+                if (extension == ".ts")
+                    yield return new ImportMapSource(alias.ItemSpec + "/" + relative[..^extension.Length] + ".js", outputUrl);
+            }
+            if (alias.GetMetadata("Entry") is { Length: > 0 } entry && string.Equals(relative, entry.Replace('\\', '/'), StringComparison.Ordinal))
+                yield return new ImportMapSource(alias.ItemSpec, outputUrl);
+        }
+    }
+
+    private Dictionary<string, string> FixedImports(string root)
+    {
+        var fixedImports = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (Routing)
+        {
+            fixedImports["$app/navigation"] = root + "_husk/app/navigation.js";
+            fixedImports["$app/state"] = root + "_husk/app/state.svelte.js";
+            fixedImports["$app/environment"] = root + "_husk/app/environment.js";
+            fixedImports["@sveltejs/kit"] = root + "_husk/kit.js";
+        }
+        foreach (var import in Imports)
+            fixedImports[import.ItemSpec] = import.GetMetadata("Url");
+        return fixedImports;
+    }
+
+    /// <summary>Each served script output's source file (full path) to the URL the source is imported
+    /// by: <c>/x/Child.svelte</c> for <c>x/Child.svelte.js</c>, the key the import map holds.</summary>
+    internal static Dictionary<string, string> SourceUrls(IEnumerable<ITaskItem> outputs, string servedRoot, string root)
+    {
+        var urls = new Dictionary<string, string>(StringComparer.Ordinal);
+        string served = Path.GetFullPath(servedRoot);
+        foreach (var output in outputs)
+        {
+            string relative = output.GetMetadata("PareRelativePath").Replace('\\', '/');
+            if (!IsServed(output.GetMetadata("FullPath"), served, PathComparison) || !(relative.EndsWith(".js", StringComparison.Ordinal) || relative.EndsWith(".mjs", StringComparison.Ordinal)))
+                continue;
+            urls[Path.GetFullPath(output.GetMetadata("PareSource"))] = root + relative[..(relative.LastIndexOf('/') + 1)] + Path.GetFileName(output.GetMetadata("PareSource"));
+        }
+        return urls;
+    }
+
     public override bool Execute()
     {
         string root = Url(BasePath);
@@ -59,7 +144,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
         string served = Path.GetFullPath(ServedRoot);
         foreach (var output in Outputs)
         {
-            if (!output.GetMetadata("FullPath").StartsWith(served, StringComparison.OrdinalIgnoreCase))
+            if (!IsServed(output.GetMetadata("FullPath"), served, PathComparison))
                 continue;
             string relative = output.GetMetadata("PareRelativePath").Replace('\\', '/');
             if (output.GetMetadata("PareCompiler") == "husk" && relative.EndsWith(".svelte.css", StringComparison.Ordinal))
@@ -69,6 +154,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
                 int slash = relative.LastIndexOf('/');
                 string sourceName = Path.GetFileName(output.GetMetadata("PareSource"));
                 sources.Add(new ImportMapSource(root + relative[..(slash + 1)] + sourceName, root + relative));
+                sources.AddRange(AliasSources(output.GetMetadata("PareSource"), root + relative));
                 modules.Add((relative, output.GetMetadata("FullPath")));
             }
         }
@@ -85,14 +171,14 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             {
                 modules.AddRange(Runtime.Select(r => (r.GetMetadata("RelativePath").Replace('\\', '/'), r.GetMetadata("FullPath"))));
                 var hashed = WriteHashed(root, modules);
-                string map = ImportMapWriter.Write(runtime, root + "_husk/", Dev, sources, hashed.ToDictionary(m => m.Url, m => m.HashedUrl, StringComparer.Ordinal));
+                string map = ImportMapWriter.Write(runtime, root + "_husk/", Dev, sources, hashed.ToDictionary(m => m.Url, m => m.HashedUrl, StringComparer.Ordinal), FixedImports(root));
                 WriteIfChanged(importMap, map);
                 WriteIfChanged(Path.Combine(OutputDirectory, Graph), ModuleGraphJson(map, hashed));
             }
             else
             {
                 WriteHashed(root, []);
-                WriteIfChanged(importMap, ImportMapWriter.Write(runtime, root + "_husk/", Dev, sources));
+                WriteIfChanged(importMap, ImportMapWriter.Write(runtime, root + "_husk/", Dev, sources, null, FixedImports(root)));
             }
             WriteIfChanged(Path.Combine(OutputDirectory, DevelopmentMap), Development(stylesheet, importMap, styles));
         }
@@ -157,6 +243,13 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             json.WriteString("projectDirectory", ProjectDirectory);
             json.WriteBoolean("dev", Dev);
             json.WriteBoolean("hashNames", HashNames);
+            json.WriteBoolean("routing", Routing);
+            json.WriteString("routesRoot", RoutesRoot);
+            json.WriteString("project", Project);
+            json.WriteString("configuration", Configuration);
+            json.WriteString("targetFramework", TargetFramework);
+            json.WriteString("servedRoot", Path.GetFullPath(ServedRoot));
+            json.WriteString("basePath", Url(BasePath));
             json.WriteString("stylesheet", stylesheet);
             json.WriteString("importMap", importMap);
             json.WriteStartArray("styles");

@@ -1,1 +1,1 @@
-- T9 Backlog bug batch from work/todo.md - done when: each has a test that failed before its fix
+- Enact L004-L007 (docs/laws/), then /prove each (T19, T21, T23, T25). Then milestone 3 / service worker spec.

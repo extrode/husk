@@ -29,6 +29,9 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
             if (Read(result.RootElement, file, outputPaths, logger, sw) is not { } texts)
                 return null;
             WriteStylesheet(map, bridge, texts, logger);
+            if (map.Routing)
+                foreach (var path in texts.Keys.Where(p => p.EndsWith(".js", StringComparison.Ordinal)).ToList())
+                    texts[path] = RewriteEnv(texts[path]);
             return texts;
         }
         catch (Exception e)
@@ -63,6 +66,11 @@ internal sealed class HuskCompiler(HuskSession session) : IPareCompiler
         logger.LogInformation("Husk compiled {File} in {Milliseconds} ms", file, sw.ElapsedMilliseconds);
         return texts;
     }
+
+    // The same rewrite as Extrode.Husk.Compiler's KitFeatures.RewriteEnv (this package does not reference the
+    // compiler, which loads from the build package); a test holds the two equal.
+    internal static string RewriteEnv(string js) =>
+        js.Contains("import.meta.env", StringComparison.Ordinal) ? System.Text.RegularExpressions.Regex.Replace(js, @"\bimport\.meta\.env\b", "globalThis.__huskEnv") : js;
 
     private static readonly StringComparison PathComparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 

@@ -8,6 +8,9 @@ namespace Extrode.Husk.Integration;
 public sealed class PackedFeed : IDisposable
 {
     public readonly TempProject Feed = new();
+    /// <summary>One package folder for every project restored from this feed: the ClearScript natives
+    /// download once per run, not once per project.</summary>
+    public readonly TempProject Packages = new();
     public readonly string Version = $"0.1.0-test.{DateTime.UtcNow.Ticks}";
     public readonly (int Exit, string Output) Pack;
 
@@ -46,14 +49,16 @@ public sealed class PackedFeed : IDisposable
     public string Package(string id) => Path.Combine(Feed.Dir, $"{id}.{Version}.nupkg");
 
     /// <summary>A nuget.config for <paramref name="project"/>: Husk from this feed, the rest
-    /// from nuget.org, into a package folder of the project's own.</summary>
-    public void NuGetConfig(TempProject project)
+    /// from nuget.org, into the feed's shared package folder, or the project's own when <paramref name="ownPackages"/>
+    /// (for a test that changes what is in it).</summary>
+    public void NuGetConfig(TempProject project, bool ownPackages = false)
     {
+        string packages = ownPackages ? project.P("packages") : Packages.Dir;
         Assert.True(Pack.Exit == 0, Pack.Output);
         project.Put("nuget.config", $"""
             <?xml version="1.0" encoding="utf-8"?>
             <configuration>
-              <config><add key="globalPackagesFolder" value="{project.P("packages")}" /></config>
+              <config><add key="globalPackagesFolder" value="{packages}" /></config>
               <packageSources>
                 <clear />
                 <add key="husk" value="{Feed.Dir}" />
@@ -67,16 +72,20 @@ public sealed class PackedFeed : IDisposable
             """);
     }
 
+    /// <summary>The package folder <paramref name="project"/> restores into.</summary>
+    public static string PackageFolder(TempProject project) =>
+        System.Text.RegularExpressions.Regex.Match(project.Read("nuget.config"), "globalPackagesFolder\" value=\"([^\"]+)\"").Groups[1].Value;
+
     public static readonly string PareVersion = typeof(PackedFeed).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
         .Single(a => a.Key == "PareVersion").Value!;
 
     /// <summary>A web project restoring from this feed, with <paramref name="references"/>
     /// (<c>$(HuskVersion)</c> is this feed's version, <c>$(PareVersion)</c> the Pare it depends on)
     /// and the Styled fixture.</summary>
-    public TempProject Consumer(string references)
+    public TempProject Consumer(string references, bool ownPackages = false)
     {
         var project = new TempProject();
-        NuGetConfig(project);
+        NuGetConfig(project, ownPackages);
         project.Put("app.csproj", $"""
             <Project Sdk="Microsoft.NET.Sdk.Web">
               <PropertyGroup>
@@ -124,6 +133,7 @@ public sealed class PackedFeed : IDisposable
             _development.Value.Project.Dispose();
         }
         Feed.Dispose();
+        Packages.Dispose();
     }
 }
 
@@ -170,6 +180,18 @@ public sealed class PackageTests(PackedFeed feed)
              "third-party/svelte-5.57.3/clsx/license", "third-party/svelte-5.57.3/esm-env/LICENSE", "third-party/svelte-5.57.3/svelte/LICENSE.md"],
             entries.Where(e => e.StartsWith("third-party/", StringComparison.Ordinal) && Path.GetFileName(e).StartsWith("license", StringComparison.OrdinalIgnoreCase))
                 .Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Projects_restored_from_the_feed_share_one_package_folder()
+    {
+        using var first = new TempProject();
+        using var second = new TempProject();
+        feed.NuGetConfig(first);
+        feed.NuGetConfig(second);
+
+        Assert.Equal(PackedFeed.PackageFolder(first), PackedFeed.PackageFolder(second));
+        Assert.DoesNotContain(first.Dir, PackedFeed.PackageFolder(first), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -233,7 +255,7 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(File.Exists(project.P("bin/Debug/net10.0/Extrode.Husk.development.json")));
         Assert.Empty(Directory.GetFiles(project.P("bin"), "*ClearScript*", SearchOption.AllDirectories));
         string ext = OperatingSystem.IsWindows() ? "dll" : OperatingSystem.IsMacOS() ? "dylib" : "so";
-        Assert.True(File.Exists(project.P($"packages/microsoft.clearscript.v8.native.{HostRid}/7.5.1.1/runtimes/{HostRid}/native/ClearScriptV8.{HostRid}.{ext}")));
+        Assert.True(File.Exists(Path.Combine(PackedFeed.PackageFolder(project), $"microsoft.clearscript.v8.native.{HostRid}/7.5.1.1/runtimes/{HostRid}/native/ClearScriptV8.{HostRid}.{ext}")));
     }
 
     [Fact]
@@ -242,19 +264,19 @@ public sealed class PackageTests(PackedFeed feed)
         using var project = feed.Consumer("""
             <PackageReference Include="Extrode.Husk.Build" Version="$(HuskVersion)" />
             <PackageReference Include="Extrode.Husk.AspNetCore" Version="$(HuskVersion)" />
-            """);
+            """, ownPackages: true);
         var (exit, output) = project.Build();
         Assert.True(exit == 0, output);
         string rid = HostRid;
         string task = Path.Combine("extrode.husk.build", feed.Version.ToLowerInvariant(), "tasks", "net10.0");
 
-        Copy(project.P("packages/" + task.Replace('\\', '/')), project.P("elsewhere/" + task.Replace('\\', '/')));
+        Copy(Path.Combine(PackedFeed.PackageFolder(project), task), project.P("elsewhere/" + task.Replace('\\', '/')));
         (exit, output) = project.Build("-p:HuskTaskAssembly=" + Path.Combine(project.P("elsewhere"), task, "Extrode.Husk.Build.dll"));
         Assert.NotEqual(0, exit);
         Assert.Contains("error HUSK003", output, StringComparison.Ordinal);
         Assert.Contains(Path.Combine(project.P("elsewhere"), "microsoft.clearscript.v8.native." + rid), output, StringComparison.Ordinal);
 
-        Directory.Move(project.P($"packages/microsoft.clearscript.v8.native.{rid}/7.5.1.1/runtimes"), project.P("runtimes-moved"));
+        Directory.Move(Path.Combine(PackedFeed.PackageFolder(project), $"microsoft.clearscript.v8.native.{rid}/7.5.1.1/runtimes"), project.P("runtimes-moved"));
         (exit, output) = project.Build();
         Assert.NotEqual(0, exit);
         Assert.Contains("error HUSK003", output, StringComparison.Ordinal);
@@ -278,8 +300,8 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(exit == 0, output);
         string task = $"extrode.husk.build/{feed.Version.ToLowerInvariant()}/tasks/net10.0";
         string native = $"microsoft.clearscript.v8.native.{HostRid}/7.5.1.1";
-        Copy(project.P("packages/" + task), project.P("elsewhere/" + task));
-        Copy(project.P("packages/" + native), project.P("elsewhere/" + native));
+        Copy(Path.Combine(PackedFeed.PackageFolder(project), task), project.P("elsewhere/" + task));
+        Copy(Path.Combine(PackedFeed.PackageFolder(project), native), project.P("elsewhere/" + native));
         string other = Path.Combine(project.P("elsewhere/" + task), "Extrode.Husk.Build.dll");
         // One process builds Release with the restored Husk, then Debug with the copy.
         project.Put("both.proj", $"""
@@ -312,8 +334,8 @@ public sealed class PackageTests(PackedFeed feed)
         Assert.True(exit == 0, output);
         string task = $"extrode.husk.build/{feed.Version.ToLowerInvariant()}/tasks/net10.0";
         string upgraded = "extrode.husk.build/9.9.9/tasks/net10.0";
-        Copy(project.P("packages/" + task), project.P("packages/" + upgraded));
-        string other = Path.Combine(project.P("packages/" + upgraded), "Extrode.Husk.Build.dll");
+        Copy(Path.Combine(PackedFeed.PackageFolder(project), task), Path.Combine(PackedFeed.PackageFolder(project), upgraded));
+        string other = Path.Combine(Path.Combine(PackedFeed.PackageFolder(project), upgraded), "Extrode.Husk.Build.dll");
         project.Put("both.proj", $"""
             <Project>
               <Target Name="Build">
