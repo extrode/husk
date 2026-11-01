@@ -60,6 +60,16 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
     /// <summary>The app has a router: <c>$app/*</c> and <c>@sveltejs/kit</c> resolve to its shims.</summary>
     public bool Routing { get; set; }
 
+    /// <summary>The route folder, <c>@(HuskRoutes)</c>, and what to build again when a route file is
+    /// added or removed in Development: the project, its configuration and target framework.</summary>
+    public string RoutesRoot { get; set; } = "";
+
+    public string Project { get; set; } = "";
+
+    public string Configuration { get; set; } = "";
+
+    public string TargetFramework { get; set; } = "";
+
     private static readonly StringComparison PathComparison =
         OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
@@ -234,6 +244,12 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             json.WriteBoolean("dev", Dev);
             json.WriteBoolean("hashNames", HashNames);
             json.WriteBoolean("routing", Routing);
+            json.WriteString("routesRoot", RoutesRoot);
+            json.WriteString("project", Project);
+            json.WriteString("configuration", Configuration);
+            json.WriteString("targetFramework", TargetFramework);
+            json.WriteString("servedRoot", Path.GetFullPath(ServedRoot));
+            json.WriteString("basePath", Url(BasePath));
             json.WriteString("stylesheet", stylesheet);
             json.WriteString("importMap", importMap);
             json.WriteStartArray("styles");
