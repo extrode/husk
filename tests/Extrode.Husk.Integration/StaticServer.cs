@@ -65,6 +65,8 @@ public sealed class StaticServer : IDisposable
             string file = Path.Combine(_root, path.Length == 0 ? "index.html" : path);
             // A single-page fallback, as Cloudflare's: a navigation to a path with no file gets the page, except
             // below the module directory.
+            if (!File.Exists(file) && path.Length > 0 && File.Exists(file + ".html"))
+                file += ".html";
             if (!File.Exists(file) && _spa && !path.StartsWith("_husk/", StringComparison.Ordinal) && !path.StartsWith("data/", StringComparison.Ordinal))
                 file = Path.Combine(_root, "index.html");
             if (!File.Exists(file))
