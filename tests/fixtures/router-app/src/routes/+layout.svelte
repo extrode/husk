@@ -1,8 +1,9 @@
 <script>
   import { page } from '$app/state';
-  import { beforeNavigate } from '$app/navigation';
+  import { beforeNavigate, goto } from '$app/navigation';
   import { browser } from '$app/environment';
   let { children } = $props();
+  if (browser) window.__goto = goto;
   beforeNavigate((nav) => {
     if (window.__cancel) nav.cancel();
   });
@@ -17,4 +18,5 @@
   <a id="to-out" href="/outside" rel="external">out</a>
 </nav>
 <p id="where">{page.url.pathname}{page.url.search} {browser}</p>
+<p id="href">{page.url.href}</p>
 <main id="main">{@render children()}</main>
