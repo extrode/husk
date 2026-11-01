@@ -93,11 +93,12 @@ public sealed class RoutesBrowserTests : IDisposable
         Settled(driver, "month");
         driver.Navigate().Refresh();
         Settled(driver, "month");
-        Script(driver, "window.__cancel = true;");
+        Script(driver, "window.__seen = 0; window.__cancel = true;");
 
         driver.Navigate().Back();
-        Thread.Sleep(1500);
 
+        Browsers.Until(driver, "return window.__seen > 0 ? true : null;");
+        Browsers.Until(driver, "return location.pathname.endsWith('/month') ? true : null;");
         Assert.EndsWith("/month", driver.Url);
         Assert.Equal("month", Text(driver, "#title"));
     }
@@ -164,10 +165,11 @@ public sealed class RoutesBrowserTests : IDisposable
     public void A_cancelling_beforeNavigate_leaves_address_and_page(string browser)
     {
         using var driver = Open(browser, "/");
-        Script(driver, "window.__cancel = true;");
+        Script(driver, "window.__seen = 0; window.__cancel = true;");
 
         driver.FindElement(By.Id("to-month")).Click();
-        Thread.Sleep(300);
+
+        Browsers.Until(driver, "return window.__seen > 0 ? true : null;");
 
         Assert.Equal("home", Text(driver, "#title"));
         Assert.False(driver.Url.EndsWith("/month", StringComparison.Ordinal));
@@ -202,6 +204,22 @@ public sealed class RoutesBrowserTests : IDisposable
         Browsers.Until(driver, "return document.querySelector('h1')?.textContent === '404' ? true : null;");
         Assert.Equal("Not Found", Text(driver, "h1 + p"));
         Assert.Empty(driver.FindElements(By.Id("error")));
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void An_error_page_is_shown_without_the_root_layout_when_that_layout_fails_to_load(string browser)
+    {
+        var broken = Directory.EnumerateFiles(_project.P("out/wwwroot"), "*+layout.svelte*", SearchOption.AllDirectories).ToList();
+        Assert.NotEmpty(broken);
+        foreach (string file in broken)
+            File.WriteAllText(file, "export default ;");
+        using var driver = Browsers.Start(browser);
+
+        driver.Navigate().GoToUrl(new Uri(_server.Address, "/nowhere").ToString());
+
+        Browsers.Until(driver, "return document.querySelector('#error')?.textContent === '404' ? true : null;");
+        Assert.Empty(driver.FindElements(By.Id("where")));
     }
 
     [Theory]

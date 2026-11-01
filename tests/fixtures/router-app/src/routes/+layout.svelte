@@ -5,6 +5,7 @@
   let { children } = $props();
   if (browser) window.__goto = goto;
   beforeNavigate((nav) => {
+    window.__seen = (window.__seen ?? 0) + 1;
     if (window.__cancel) nav.cancel();
   });
 </script>
