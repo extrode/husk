@@ -137,7 +137,11 @@ internal sealed class HuskRouteWatcher(string mapPath, ILogger logger,
             {
                 var (ok, output) = await build(map, _stop.Token);
                 if (ok)
+                {
                     logger.LogInformation("Husk built the routes again in {Elapsed} ms", clock.ElapsedMilliseconds);
+                    await Task.Delay(Settle, _stop.Token);
+                    Touch(map);
+                }
                 else
                     logger.LogError("Husk could not build the routes again:\n{Output}", output);
             }
@@ -150,6 +154,17 @@ internal sealed class HuskRouteWatcher(string mapPath, ILogger logger,
                 logger.LogError("Husk could not build the routes again: {Message}", e.Message);
             }
         }
+    }
+
+    // dotnet watch refreshes the browser at the first file a build writes, which can be routes.js before
+    // the import map and the shell are: touching them once the build is over gives it a last refresh.
+    internal static void Touch(HuskDevelopmentMap map)
+    {
+        if (map.ImportMap.Length == 0 || Path.GetDirectoryName(map.ImportMap) is not { } folder)
+            return;
+        foreach (string file in new[] { map.ImportMap, Path.Combine(folder, "app", "index.html") })
+            if (File.Exists(file))
+                File.SetLastWriteTimeUtc(file, DateTime.UtcNow);
     }
 
     public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>

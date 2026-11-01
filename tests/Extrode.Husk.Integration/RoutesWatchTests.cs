@@ -130,7 +130,7 @@ public sealed class RoutesWatchTests(PackedFeed feed)
             app.Put("src/routes/added/+page.svelte", "<h1 id=\"title\">added</h1>\n");
             Until($"{Reloaded}", "an added route file did not reload the page");
             Mark();
-            Until("(document.querySelector('#title')?.textContent === 'added') || (window.__goto('/added'), false)", "an added route was not reachable");
+            Until("(document.querySelector('#title')?.textContent === 'added') || (window.__goto && (window.__goto('/added'), false))", "an added route was not reachable");
             Assert.EndsWith("/added", driver.Url);
 
             Script(driver, "window.huskBeforeSave = true;");

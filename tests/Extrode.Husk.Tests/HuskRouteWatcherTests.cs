@@ -29,11 +29,11 @@ public sealed class HuskRouteWatcherTests : IDisposable
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
-    private void WriteMap(bool routing = true, string? routesRoot = null) =>
+    private void WriteMap(bool routing = true, string? routesRoot = null, string importMap = "importmap.json") =>
         File.WriteAllText(_map, System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
         {
             ["compiler"] = "c", ["svelte"] = "s", ["projectDirectory"] = _root, ["dev"] = true, ["stylesheet"] = "husk.css",
-            ["importMap"] = "importmap.json", ["styles"] = Array.Empty<object>(), ["routing"] = routing,
+            ["importMap"] = importMap, ["styles"] = Array.Empty<object>(), ["routing"] = routing,
             ["routesRoot"] = routesRoot ?? _routes, ["project"] = Path.Combine(_root, "app.csproj"), ["configuration"] = "Debug",
             ["targetFramework"] = "net10.0", ["servedRoot"] = _served, ["basePath"] = "/app",
         }));
@@ -85,6 +85,29 @@ public sealed class HuskRouteWatcherTests : IDisposable
         await Quiet();
 
         Assert.Equal(1, _builds);
+        await watcher.StopAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task A_good_build_is_followed_by_a_touch_of_the_import_map_and_the_shell()
+    {
+        string importMap = Path.Combine(_root, "husk", "importmap.json");
+        string shell = Path.Combine(_root, "husk", "app", "index.html");
+        Directory.CreateDirectory(Path.GetDirectoryName(shell)!);
+        File.WriteAllText(importMap, "{}");
+        File.WriteAllText(shell, "<html>");
+        var old = DateTime.UtcNow.AddHours(-1);
+        File.SetLastWriteTimeUtc(importMap, old);
+        File.SetLastWriteTimeUtc(shell, old);
+        WriteMap(importMap: importMap);
+        using var watcher = new HuskRouteWatcher(_map, NullLogger.Instance, (_, _) => Task.FromResult((true, "")));
+        await watcher.StartAsync(TestContext.Current.CancellationToken);
+
+        File.WriteAllText(Path.Combine(_routes, "new.svelte"), "x");
+        await Within(() => File.GetLastWriteTimeUtc(shell) > old && File.GetLastWriteTimeUtc(importMap) > old);
+
+        Assert.True(File.GetLastWriteTimeUtc(shell) > old, "the shell was not touched");
+        Assert.True(File.GetLastWriteTimeUtc(importMap) > old, "the import map was not touched");
         await watcher.StopAsync(TestContext.Current.CancellationToken);
     }
 
