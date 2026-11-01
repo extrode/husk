@@ -61,3 +61,9 @@ saved plain `.ts` goes through Pare's own strip step, and `IPareCompiler` is not
 - **Decision (T10):** serve-time rewriting does not extend to Pare's `.ts` without a Pare change. Law candidate 3
   (watch equals clean build) is **narrowed to Husk-compiled outputs and the shell**; the gap is listed here and in
   `work/todo.md` as a Pare extension point (a post-process hook on its output). No Husk code changes for it.
+
+### R12 — no change, no compile, for a router app (T11)
+
+`L002NoChangeNoCompileTests.A_router_app_with_a_stylesheet_and_json_rebuilds_nothing_when_nothing_changed` builds a
+router app with `HuskStylesheet`, `HuskJson` and `HuskEnv` twice, with and without hashed names, and finds no
+source compiled and no file rewritten. It held on the first run; the router's generated files need no fix.

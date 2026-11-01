@@ -64,6 +64,47 @@ public sealed partial class L002NoChangeNoCompileTests
             Assert.NotEmpty(Directory.EnumerateFiles(project.P(TempProject.HuskOut + "hashed"), "*.js", SearchOption.AllDirectories));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_router_app_with_a_stylesheet_and_json_rebuilds_nothing_when_nothing_changed(bool hashNames)
+    {
+        string property = "-p:HuskHashNames=" + hashNames;
+        using var project = new TempProject();
+        project.Project(items: """
+            <HuskComponent Include="src/**/*.svelte" PareServeAt="app" />
+            <TypeScriptSource Include="src/**/*.ts" PareServeAt="app" />
+            <HuskRoutes Include="src/routes" />
+            <HuskAlias Include="$lib" Path="src/lib" />
+            <HuskStylesheet Include="src/lib/app.css" />
+            <HuskJson Include="src/lib/data.json" Root="src" ServeAt="app" />
+            <HuskEnv Include="PUBLIC_X" Value="1" />
+            """);
+        project.Put("src/lib/app.css", "h1 { color: red; }\n");
+        project.Put("src/lib/data.json", "{ \"a\": 1 }\n");
+        project.Put("src/lib/data.ts", "import data from './data.json' with { type: 'json' };\nexport const a = data.a + Number(import.meta.env.PUBLIC_X);\n");
+        project.Put("src/routes/+layout.svelte", "<script>import '$lib/app.css'; let { children } = $props();</script>\n<main>{@render children()}</main>\n");
+        project.Put("src/routes/+page.svelte", "<script>import { a } from '$lib/data.ts';</script>\n<h1>{a}</h1>\n");
+        project.Put("src/routes/about/+page.svelte", "<p>about</p>\n");
+
+        Assert.Equal(0, project.Build(property).Exit);
+        for (int round = 0; round < 2; round++)
+        {
+            var before = Snapshot(project);
+            var (exit, output) = project.Build(property);
+
+            Assert.True(exit == 0, output);
+            Assert.True(Compiled(output) == 0, $"round {round}: a build with nothing changed compiled {Compiled(output)}\n{output}");
+            var after = Snapshot(project);
+            Assert.Equal(before.Keys.Order(), after.Keys.Order());
+            foreach (var (file, state) in before)
+                Assert.True(after[file] == state, $"round {round}: {file} was rewritten by a build with nothing changed");
+            File.AppendAllText(project.P("src/routes/about/+page.svelte"), "<!-- edit -->\n");
+            Later(project, "src/routes/about/+page.svelte");
+            Assert.Equal(0, project.Build(property).Exit);
+        }
+    }
+
     private static int? Compiled(string output) =>
         CompiledLine().Match(output) is { Success: true } m ? int.Parse(m.Groups[1].Value) : null;
 
