@@ -16,9 +16,9 @@ public sealed class StylesheetImportTests
             <HuskAlias Include="$lib" Path="src/lib" />
             <HuskStylesheet Include="{stylesheet}" />
             """);
-        project.Put("src/lib/app.css", "h1 { color: rgb(1, 2, 3); } p { color: rgb(9, 9, 9); }\n");
+        project.Put("src/lib/app.css", "h1 { color: rgb(1, 2, 3); } p { color: rgb(9, 9, 9); } em { color: rgb(9, 9, 9); }\n");
         project.Put("src/routes/+layout.svelte", "<script>import '$lib/app.css'; let { children } = $props();</script>\n<main>{@render children()}</main>\n");
-        project.Put("src/routes/+page.svelte", "<h1>home</h1><p>text</p>\n<style>p { color: rgb(5, 6, 7); }</style>\n");
+        project.Put("src/routes/+page.svelte", "<h1>home</h1><p>text</p>\n<em>e</em>\n<style>:global(em) { color: rgb(5, 6, 7); }</style>\n");
         return project;
     }
 
@@ -32,6 +32,19 @@ public sealed class StylesheetImportTests
         Assert.NotEqual(0, exit);
         Assert.Contains("HUSK103", output);
         Assert.Contains("missing.css", output);
+    }
+
+    [Fact]
+    public void A_stylesheet_under_no_alias_fails_the_build()
+    {
+        using var project = App();
+        project.Put("loose/other.css", "a { color: red; }\n");
+        project.Put("app.csproj", project.Read("app.csproj").Replace("src/lib/app.css", "loose/other.css"));
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("HUSK105", output);
     }
 
     [Fact]
@@ -62,6 +75,7 @@ public sealed class StylesheetImportTests
         var js = (IJavaScriptExecutor)driver;
         Browsers.Until(driver, "return document.querySelector('h1') ? true : null;");
         Assert.Equal("rgb(1, 2, 3)", js.ExecuteScript("return getComputedStyle(document.querySelector('h1')).color"));
-        Assert.Equal("rgb(5, 6, 7)", js.ExecuteScript("return getComputedStyle(document.querySelector('p')).color"));
+        Assert.Equal("rgb(9, 9, 9)", js.ExecuteScript("return getComputedStyle(document.querySelector('p')).color"));
+        Assert.Equal("rgb(5, 6, 7)", js.ExecuteScript("return getComputedStyle(document.querySelector('em')).color"));
     }
 }

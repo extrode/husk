@@ -18,7 +18,8 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
 | [HUSK103](#husk103) | error | a `HuskStylesheet` file does not exist |
-| [HUSK104](#husk104) | error | a `HuskJson` file does not exist or is outside its `Root` |
+| [HUSK104](#husk104) | error | a `HuskJson` file does not exist, is outside its `Root`, or shares a URL with another |
+| [HUSK105](#husk105) | error | a `HuskStylesheet` is under no `HuskAlias` folder |
 | [HUSK200](#husk200) | warning | a Svelte compiler warning |
 | [HUSK300](#husk300) | error | two routes for one address |
 | [HUSK301](#husk301) | error | a SvelteKit feature Husk does not provide |
@@ -90,8 +91,13 @@ item or add the file.
 
 ## HUSK104
 
-A `HuskJson` item names a file that is not there, or one outside its `Root` folder. The message carries
-the full path.
+A `HuskJson` item names a file that is not there, one outside its `Root` folder, a `ServeAt` that leaves the
+served folder, or a second file for a URL another item already has. The message carries the full path.
+
+## HUSK105
+
+A `HuskStylesheet` is not inside the folder of any `HuskAlias`, so no import specifier can name it (a
+relative `import './app.css'` is not supported). Put an alias over its folder.
 
 ## HUSK200
 

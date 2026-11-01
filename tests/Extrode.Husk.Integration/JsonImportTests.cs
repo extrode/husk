@@ -49,7 +49,20 @@ public sealed class JsonImportTests
         Assert.True(exit == 0, output);
 
         Assert.NotEqual(before, project.Read(TempProject.HuskOut + "importmap.json"));
-        Assert.DoesNotContain(".json", project.Read(TempProject.HuskOut + "modulegraph.json").Replace("\"/app/lib/data.json\"", ""));
+        Assert.DoesNotContain(".json", project.Read(TempProject.HuskOut + "modulegraph.json"));
+    }
+
+    [Fact]
+    public void A_serve_at_that_leaves_the_served_folder_fails_the_build_and_writes_nothing_outside()
+    {
+        using var project = App();
+        project.Put("app.csproj", project.Read("app.csproj").Replace("Root=\"src\" ServeAt=\"app\"", "Root=\"src\" ServeAt=\"../../../..\""));
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("HUSK104", output);
+        Assert.Equal("{ \"word\": \"first\" }\n", project.Read("src/lib/data.json"));
     }
 
     [Theory]
