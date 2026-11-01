@@ -96,4 +96,32 @@ public sealed class RoutesBuildTests
 
         Assert.Equal(stamp, project.Stamp(TempProject.PareOut + "app/lib/util.js"));
     }
+
+    [Fact]
+    public void An_app_shell_without_the_placeholders_fails_the_build_and_writes_nothing()
+    {
+        using var project = App();
+        project.Put("src/app.html", "<html><head></head><body></body></html>\n");
+        project.Put("app.csproj", project.Read("app.csproj").Replace("<HuskRoutes Include=\"src/routes\" />", "<HuskRoutes Include=\"src/routes\" /><HuskShell Include=\"src/app.html\" />"));
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("app.html(1,1): error HUSK305", output.Replace("\\", "/"));
+        Assert.False(File.Exists(project.P(TempProject.HuskOut + "app/index.html")));
+    }
+
+    [Fact]
+    public void An_app_shell_that_cannot_be_read_fails_the_build_with_HUSK305()
+    {
+        using var project = App();
+        Directory.CreateDirectory(project.P("src/app.html"));
+        project.Put("app.csproj", project.Read("app.csproj").Replace("<HuskRoutes Include=\"src/routes\" />", "<HuskRoutes Include=\"src/routes\" /><HuskShell Include=\"src/app.html\" />"));
+
+        var (exit, output) = project.Build();
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("HUSK305", output);
+        Assert.Contains("cannot read the app shell", output);
+    }
 }

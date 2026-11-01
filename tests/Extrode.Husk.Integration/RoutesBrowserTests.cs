@@ -188,6 +188,49 @@ public sealed class RoutesBrowserTests : IDisposable
         Assert.Equal("month", Text(driver, "#title"));
     }
 
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void An_error_page_that_fails_to_load_is_replaced_by_the_built_in_one(string browser)
+    {
+        var broken = Directory.EnumerateFiles(_project.P("out/wwwroot"), "*+error.svelte*", SearchOption.AllDirectories).ToList();
+        Assert.NotEmpty(broken);
+        foreach (string file in broken)
+            File.WriteAllText(file, "export default ;");
+        using var driver = Browsers.Start(browser);
+
+        driver.Navigate().GoToUrl(new Uri(_server.Address, "/nowhere").ToString());
+
+        Browsers.Until(driver, "return document.querySelector('h1')?.textContent === '404' ? true : null;");
+        Assert.Equal("Not Found", Text(driver, "h1 + p"));
+        Assert.Empty(driver.FindElements(By.Id("error")));
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_percent_encoded_fragment_scrolls_to_the_element_it_names(string browser)
+    {
+        using var driver = Open(browser, "/");
+
+        Script(driver, "window.__goto('/month#caf%C3%A9');");
+
+        Settled(driver, "month");
+        Browsers.Until(driver, "return window.scrollY > 0 ? true : null;");
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_malformed_fragment_still_navigates_and_stays_at_the_top(string browser)
+    {
+        using var driver = Open(browser, "/");
+
+        var outcome = ((IJavaScriptExecutor)driver).ExecuteAsyncScript(
+            "const done = arguments[arguments.length - 1]; window.__goto('/month#%E0%A4%A').then(() => done('ok'), (e) => done(e.name));");
+
+        Assert.Equal("ok", outcome);
+        Settled(driver, "month");
+        Assert.Equal(0L, Convert.ToInt64(Script(driver, "return window.scrollY;")));
+    }
+
     [Fact]
     public async Task A_module_address_with_no_file_is_a_404_and_not_the_page()
     {

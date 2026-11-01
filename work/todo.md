@@ -75,6 +75,6 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk Build (review): the shell is a static web asset at `index.html`; a router app that also has `wwwroot/index.html` or a Husk page at `index.html` gets two assets on one path (unverified, likely a build error).
 - Husk Deploy (review, unverified): CloudflareApi comment says a missing `/_husk/*.js` stays a 404 under `single-page-application`; Cloudflare documents the fallback for navigation requests only, check at the first real deploy.
 - Husk router tests (review): no browser test yet for the `afterNavigate` replay fix, the error view URL, `goto` to another origin (now rejects) or a malformed hash.
-- Husk tests (review f8d0012..1cd3b5f): `A_cancelled_back_after_a_reload...` waits with `Thread.Sleep(1500)`; no tests yet for HUSK305 on an unreadable shell, `errorView` catch paths or `hashId`.
+- Husk tests (review f8d0012..1cd3b5f): `A_cancelled_back_after_a_reload...` and `A_cancelling_beforeNavigate...` wait with `Thread.Sleep`; no test yet for the `errorView` root-layout-load catch path (error page import failure, HUSK305 and `hashId` are covered).
 
 - Husk router (T13): route watching untested on Windows (a running app may lock files the rebuild needs); the 404 fallback does not work with `HuskHashNames=true`; under plain `dotnet run` nothing reloads the browser.
