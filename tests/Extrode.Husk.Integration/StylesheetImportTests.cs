@@ -35,6 +35,20 @@ public sealed class StylesheetImportTests
     }
 
     [Fact]
+    public void The_same_stylesheet_listed_in_two_cases_is_one_module_on_a_case_insensitive_disk()
+    {
+        if (OperatingSystem.IsLinux())
+            Assert.Skip("paths are case-sensitive here");
+        using var project = App();
+        project.Put("app.csproj", project.Read("app.csproj").Replace("<HuskStylesheet Include=\"src/lib/app.css\" />", "<HuskStylesheet Include=\"src/lib/app.css\" /><HuskStylesheet Include=\"src/lib/APP.css\" />"));
+
+        var (exit, output) = project.Build();
+
+        Assert.True(exit == 0, output);
+        Assert.Single(Directory.EnumerateFiles(project.P(TempProject.HuskOut + "css")));
+    }
+
+    [Fact]
     public void A_stylesheet_under_no_alias_fails_the_build()
     {
         using var project = App();

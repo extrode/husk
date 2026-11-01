@@ -92,7 +92,7 @@ item or add the file.
 ## HUSK104
 
 A `HuskJson` item names a file that is not there, one outside its `Root` folder, a `ServeAt` that leaves the
-served folder, or a second file for a URL another item already has. The message carries the full path.
+served folder, a second file for a URL another item already has, a file without the `.json` extension, or a file under `wwwroot` (the SDK already serves it). The message carries the full path.
 
 ## HUSK105
 
