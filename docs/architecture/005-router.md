@@ -22,4 +22,4 @@ metadata; it is exercised in T8.
 - Corpus: `SaaaatCorpusTests` builds saaaat's `apps/web`, renders all 17 pages in three browsers
   (console errors checked in Chrome only: WebDriver exposes no console in the others).
 - Known gaps: see work/todo.md (CSS side-effect imports, JSON modules, dev `import.meta.env` in
-  Pare-compiled `.ts`, route add/remove in Development).
+  Pare-compiled `.ts`). Route add/remove in Development: `HuskRouteWatcher` rebuilds the project, because `dotnet watch` never sees a file added after it starts; `RoutesWatchTests` covers it.

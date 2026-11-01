@@ -215,7 +215,8 @@
                 RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
                 ProjectDirectory="$(MSBuildProjectDirectory)"
                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" HashNames="$(HuskHashNames)" Runtime="@(_HuskRuntimeCandidate);@(_HuskAppFile)"
-                Aliases="@(HuskAlias)" Imports="@(HuskImport)" Routing="$(_HuskRouting)" />
+                Aliases="@(HuskAlias)" Imports="@(HuskImport)" Routing="$(_HuskRouting)" RoutesRoot="$(_HuskRoutesRoot)"
+                Project="$(MSBuildProjectFullPath)" Configuration="$(Configuration)" TargetFramework="$(TargetFramework)" />
     <ItemGroup>
       <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json;$(_HuskGraph);$(_HuskObjRoot)hashed/**" />
     </ItemGroup>
