@@ -105,6 +105,23 @@ public sealed class RoutesBrowserTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_link_followed_during_a_back_continues_from_the_position_back_reached(string browser)
+    {
+        using var driver = Open(browser, "/");
+        driver.FindElement(By.Id("to-month")).Click();
+        Settled(driver, "month");
+        driver.FindElement(By.Id("to-query")).Click();
+        Browsers.Until(driver, "return location.pathname.endsWith('/query') ? true : null;");
+        Script(driver, "addEventListener('popstate', () => window.__goto('/'), { once: true });");
+
+        driver.Navigate().Back();
+
+        Browsers.Until(driver, "return document.querySelector('#title')?.textContent === 'home' ? true : null;");
+        Assert.Equal(2L, (long)Script(driver, "return history.state.idx;")!);
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void A_refreshed_address_and_a_trailing_slash_reach_their_page(string browser)
     {
         using var driver = Open(browser, "/month/");

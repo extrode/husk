@@ -13,6 +13,7 @@ let config;
 let currentUrl = null;
 let token = 0;
 let index = 0;
+let shown = 0;
 let ignorePop = false;
 
 const web = (url) => url.protocol === 'http:' || url.protocol === 'https:';
@@ -26,7 +27,7 @@ export async function start({ routes, errorPage, rootLayout, dev, target }) {
   addEventListener('popstate', onPop);
   addEventListener('hashchange', onHash);
   document.addEventListener('click', onClick);
-  index = history.state?.idx ?? 0;
+  index = shown = history.state?.idx ?? 0;
   history.replaceState({ idx: index }, '', location.href);
   await navigate(location.href, { initial: true, replace: true, type: 'enter' });
 }
@@ -104,6 +105,7 @@ async function navigate(href, options, redirects = 0) {
     if (cancelled) {
       if (options.popped && options.delta) {
         ignorePop = true;
+        index = shown;
         history.go(-options.delta);
       }
       return false;
@@ -122,7 +124,7 @@ async function navigate(href, options, redirects = 0) {
       runLoads(matched.route, matched.params, url, { fetch: window.fetch.bind(window) }),
       importRoute(matched.route).catch((e) => e),
     ]);
-    if (mine !== token) return superseded(options);
+    if (mine !== token) return superseded();
     if (loaded.kind === 'redirect') {
       if (redirects >= MAX_REDIRECTS) next = await errorView(500, 'Redirect loop', url);
       else return navigate(new URL(loaded.location, url).href, { ...options, redirected: true }, redirects + 1);
@@ -139,7 +141,7 @@ async function navigate(href, options, redirects = 0) {
       next = { chain, params: matched.params, status: 200, error: null, route: { id: routeId(matched.route) }, data: merged[merged.length - 1] };
     }
   }
-  if (mine !== token) return superseded(options);
+  if (mine !== token) return superseded();
 
   if (options.popped) {
     index = history.state?.idx ?? index;
@@ -149,6 +151,7 @@ async function navigate(href, options, redirects = 0) {
 
   const from = describe(currentUrl, null);
   currentUrl = url;
+  shown = index;
   _committing();
   page.url = url;
   page.params = next.params;
@@ -175,9 +178,7 @@ async function navigate(href, options, redirects = 0) {
   return true;
 }
 
-// A popstate the browser already applied still moves our position, whatever navigation won.
-function superseded(options) {
-  if (options.popped) index = history.state?.idx ?? index;
+function superseded() {
   return false;
 }
 
@@ -197,17 +198,20 @@ function onPop(event) {
   const url = new URL(location.href);
   const idx = event.state?.idx ?? index;
   if (currentUrl && url.pathname === currentUrl.pathname && url.search === currentUrl.search) {
-    index = idx;
+    index = shown = idx;
     currentUrl = url;
     page.url = url;
     return;
   }
-  navigate(url.href, { popped: true, type: 'popstate', delta: idx - index });
+  const delta = idx - shown;
+  index = idx;
+  navigate(url.href, { popped: true, type: 'popstate', delta });
 }
 
 function onHash() {
   const url = new URL(location.href);
   if (history.state?.idx === undefined) history.replaceState({ idx: ++index }, '', url.href);
+  shown = index;
   currentUrl = url;
   page.url = url;
 }
