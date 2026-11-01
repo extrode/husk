@@ -190,6 +190,23 @@ public sealed class RoutesBrowserTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void An_error_page_that_fails_to_load_is_replaced_by_the_built_in_one(string browser)
+    {
+        var broken = Directory.EnumerateFiles(_project.P("out/wwwroot"), "*+error.svelte*", SearchOption.AllDirectories).ToList();
+        Assert.NotEmpty(broken);
+        foreach (string file in broken)
+            File.WriteAllText(file, "export default ;");
+        using var driver = Browsers.Start(browser);
+
+        driver.Navigate().GoToUrl(new Uri(_server.Address, "/nowhere").ToString());
+
+        Browsers.Until(driver, "return document.querySelector('h1')?.textContent === '404' ? true : null;");
+        Assert.Equal("Not Found", Text(driver, "h1 + p"));
+        Assert.Empty(driver.FindElements(By.Id("error")));
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void A_percent_encoded_fragment_scrolls_to_the_element_it_names(string browser)
     {
         using var driver = Open(browser, "/");
