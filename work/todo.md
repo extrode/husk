@@ -76,4 +76,4 @@ Not doing, with the reason. Kept so the same idea does not get re-raised every q
 - Husk Deploy (review, unverified): CloudflareApi comment says a missing `/_husk/*.js` stays a 404 under `single-page-application`; Cloudflare documents the fallback for navigation requests only, check at the first real deploy.
 - Husk router tests (review): no browser test yet for the `afterNavigate` replay fix, the error view URL, `goto` to another origin (now rejects) or a malformed hash.
 
-- Husk router (T13): route watching untested on Windows (a running app may lock files the rebuild needs); the 404 fallback does not work with `HuskHashNames=true`; under plain `dotnet run` nothing reloads the browser.
+- Husk router (T13): route watching untested on Windows (a running app may lock files the rebuild needs); the 404 fallback does not work with `HuskHashNames=true`; under plain `dotnet run` nothing reloads the browser.- Husk deploy: run `husk-deploy` against a real Cloudflare account (needs a token and a site) and check that a missing `/_husk/*.js` is a 404 under the single-page fallback (see line above).
