@@ -73,6 +73,26 @@ public sealed class HuskDevelopmentTests : IDisposable
         return app;
     }
 
+    // Windows refuses a read while the writer is swapping the file in; the writer is atomic, so a retry sees it whole.
+    private static T Retrying<T>(Func<T> read)
+    {
+        for (int tries = 0; ; tries++)
+        {
+            try
+            {
+                return read();
+            }
+            catch (IOException) when (tries < 40)
+            {
+                Thread.Sleep(25);
+            }
+        }
+    }
+
+    private static string ReadText(string path) => Retrying(() => File.ReadAllText(path));
+
+    private static byte[] ReadBytes(string path) => Retrying(() => File.ReadAllBytes(path));
+
     private static void WaitFor(Func<bool> condition)
     {
         var until = DateTime.UtcNow.AddSeconds(30);
@@ -92,14 +112,14 @@ public sealed class HuskDevelopmentTests : IDisposable
         await using var app = (IAsyncDisposable)await Start();
 
         var (js, css, map) = (ComponentOutputs("Hello")[0], ComponentOutputs("Hello")[1], ComponentOutputs("Hello")[2]);
-        Assert.Contains("one", File.ReadAllText(js));
-        Assert.EndsWith("\n//# sourceMappingURL=Hello.svelte.js.map\n", File.ReadAllText(js));
-        Assert.Contains("color: red", File.ReadAllText(css));
-        Assert.StartsWith("{", File.ReadAllText(map));
+        Assert.Contains("one", ReadText(js));
+        Assert.EndsWith("\n//# sourceMappingURL=Hello.svelte.js.map\n", ReadText(js));
+        Assert.Contains("color: red", ReadText(css));
+        Assert.StartsWith("{", ReadText(map));
 
         Put("wwwroot/Hello.svelte", "<p>two</p>\n");
-        WaitFor(() => File.ReadAllText(js).Contains("two"));
-        Assert.Equal("", File.ReadAllText(css));
+        WaitFor(() => ReadText(js).Contains("two"));
+        Assert.Equal("", ReadText(css));
         WaitFor(() => _log.Count(LogLevel.Information, "Husk compiled wwwroot/Hello.svelte in ") >= 2);
         Assert.Matches(@"^Husk compiled wwwroot/Hello\.svelte in \d+ ms$", _log.Lines(LogLevel.Information).First(l => l.StartsWith("Husk compiled", StringComparison.Ordinal)));
     }
@@ -150,7 +170,7 @@ public sealed class HuskDevelopmentTests : IDisposable
         await using var app = (IAsyncDisposable)await Start();
         WaitFor(() => ComponentOutputs("Hello").Concat(ComponentOutputs("Other")).All(File.Exists));
         List<byte[]?> Snapshot() => [.. ComponentOutputs("Hello").Concat(ComponentOutputs("Other")).Append(P("obj/husk/husk.css"))
-            .Select(f => File.Exists(f) ? File.ReadAllBytes(f) : null)];
+            .Select(f => File.Exists(f) ? ReadBytes(f) : null)];
         bool Same(List<byte[]?> a, List<byte[]?> b) => a.Zip(b).All(p => p.First is null ? p.Second is null : p.Second is not null && p.First.AsSpan().SequenceEqual(p.Second));
         List<byte[]?> Settled()
         {
@@ -174,8 +194,8 @@ public sealed class HuskDevelopmentTests : IDisposable
             if (random.Next(3) == 0)
             {
                 Put($"wwwroot/{name}.svelte", $"<p class=\"v{i}\">v{i}</p>\n<style>.v{i} {{ color: red; }}</style>\n");
-                WaitFor(() => File.ReadAllText(ComponentOutputs(name)[0]).Contains($"v{i}", StringComparison.Ordinal)
-                    && File.Exists(P("obj/husk/husk.css")) && File.ReadAllText(P("obj/husk/husk.css")).Contains($".v{i}", StringComparison.Ordinal));
+                WaitFor(() => ReadText(ComponentOutputs(name)[0]).Contains($"v{i}", StringComparison.Ordinal)
+                    && File.Exists(P("obj/husk/husk.css")) && ReadText(P("obj/husk/husk.css")).Contains($".v{i}", StringComparison.Ordinal));
                 good = Settled();
                 continue;
             }
@@ -210,19 +230,19 @@ public sealed class HuskDevelopmentTests : IDisposable
         await using var app = (IAsyncDisposable)await Start();
         string stylesheet = P("obj/husk/husk.css");
         Put("wwwroot/B.svelte", "<p>b</p>\n<style>p { color: navy; }</style>\n");
-        WaitFor(() => File.Exists(stylesheet) && File.ReadAllText(stylesheet).Contains("navy"));
-        string before = File.ReadAllText(stylesheet);
+        WaitFor(() => File.Exists(stylesheet) && ReadText(stylesheet).Contains("navy"));
+        string before = ReadText(stylesheet);
         Assert.Contains("red", before);
 
         Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: green; }</style>\n");
-        WaitFor(() => File.ReadAllText(stylesheet).Contains("green"));
-        string after = File.ReadAllText(stylesheet);
+        WaitFor(() => ReadText(stylesheet).Contains("green"));
+        string after = ReadText(stylesheet);
         static string Block(string css, string name) => css[css.IndexOf($"/* {name} */", StringComparison.Ordinal)..];
         Assert.Equal(Block(before, "B.svelte"), Block(after, "B.svelte"));
         Assert.DoesNotContain("red", after);
         Assert.False(File.Exists(stylesheet + ".husk-tmp"));
-        WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
-        Assert.Equal(Compiler.StylesheetWriter.Join([("A.svelte", File.ReadAllText(ComponentOutputs("A")[1])), ("B.svelte", File.ReadAllText(ComponentOutputs("B")[1]))]), after);
+        WaitFor(() => ReadText(ComponentOutputs("A")[1]).Contains("green"));
+        Assert.Equal(Compiler.StylesheetWriter.Join([("A.svelte", ReadText(ComponentOutputs("A")[1])), ("B.svelte", ReadText(ComponentOutputs("B")[1]))]), after);
     }
 
     [Fact]
@@ -234,7 +254,7 @@ public sealed class HuskDevelopmentTests : IDisposable
         await using var app = (IAsyncDisposable)await Start();
 
         Put("wwwroot/A.svelte", "<p>a</p>\n<style>p { color: green; }</style>\n");
-        WaitFor(() => File.ReadAllText(ComponentOutputs("A")[1]).Contains("green"));
+        WaitFor(() => ReadText(ComponentOutputs("A")[1]).Contains("green"));
 
         Assert.False(File.Exists(P("obj/husk/husk.css.husk-tmp")));
     }
@@ -251,16 +271,16 @@ public sealed class HuskDevelopmentTests : IDisposable
         WriteMaps([], ["index.html", "plain.html"]);
         await using var app = (IAsyncDisposable)await Start();
         Assert.Equal([0xEF, 0xBB, 0xBF, .. "<head><script type=\"importmap\" data-husk>{\"imports\":{\"/A.svelte\":\"/A.svelte.js\"}}</script></head>\n"u8],
-            File.ReadAllBytes(P("obj/pare/index.html")));
-        Assert.Equal("<p>plain</p>\n", File.ReadAllText(P("obj/pare/plain.html")));
+            ReadBytes(P("obj/pare/index.html")));
+        Assert.Equal("<p>plain</p>\n", ReadText(P("obj/pare/plain.html")));
 
         File.WriteAllText(P("obj/husk/importmap.json"), "{\"imports\":{\"/A.svelte\":\"/A.svelte.js\",\"/B.svelte\":\"/B.svelte.js\"}}\n");
         File.WriteAllBytes(P("wwwroot/index.html"), [0xEF, 0xBB, 0xBF, .. "<head><title>t</title><script type=\"importmap\" data-husk></script></head>\n"u8]);
         Put("wwwroot/plain.html", "<p>plain two</p>\n");
-        WaitFor(() => File.ReadAllText(P("obj/pare/index.html")).Contains("B.svelte"));
+        WaitFor(() => ReadText(P("obj/pare/index.html")).Contains("B.svelte"));
         Assert.Equal([0xEF, 0xBB, 0xBF, .. "<head><title>t</title><script type=\"importmap\" data-husk>{\"imports\":{\"/A.svelte\":\"/A.svelte.js\",\"/B.svelte\":\"/B.svelte.js\"}}</script></head>\n"u8],
-            File.ReadAllBytes(P("obj/pare/index.html")));
-        WaitFor(() => File.ReadAllText(P("obj/pare/plain.html")) == "<p>plain two</p>\n");
+            ReadBytes(P("obj/pare/index.html")));
+        WaitFor(() => ReadText(P("obj/pare/plain.html")) == "<p>plain two</p>\n");
     }
 
     [Fact]
@@ -322,7 +342,7 @@ public sealed class HuskDevelopmentTests : IDisposable
     {
         WriteMaps();
         string compiler = Path.Combine(AppContext.BaseDirectory, "Extrode.Husk.Compiler.dll");
-        File.WriteAllText(HuskMap, File.ReadAllText(HuskMap).Replace(JsonSerializer.Serialize(compiler)[1..^1], P("missing/Extrode.Husk.Compiler.dll").Replace("\\", "\\\\"), StringComparison.Ordinal));
+        File.WriteAllText(HuskMap, ReadText(HuskMap).Replace(JsonSerializer.Serialize(compiler)[1..^1], P("missing/Extrode.Husk.Compiler.dll").Replace("\\", "\\\\"), StringComparison.Ordinal));
         var husk = new HuskCompiler(new HuskSession(HuskMap));
         var ct = TestContext.Current.CancellationToken;
 
