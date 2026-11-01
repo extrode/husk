@@ -88,6 +88,48 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
 
     public const string CssFolder = "css";
 
+    /// <summary><c>@(HuskJson)</c>: a JSON file a module imports with an import attribute
+    /// (<c>import x from './t.json' with { type: 'json' }</c>). Root is the folder the URL is counted from and
+    /// ServeAt the URL folder below the base path (the item's own, as <c>PareServeAt</c> is for a source).
+    /// The file is served there, and under a hashed name with <c>HashNames</c>.</summary>
+    public ITaskItem[] JsonFiles { get; set; } = [];
+
+    public const string JsonFolder = "json";
+
+    private List<(string Relative, string Path)> WriteJson()
+    {
+        string folder = Path.Combine(OutputDirectory, JsonFolder);
+        var result = new List<(string, string)>();
+        var kept = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var item in JsonFiles)
+        {
+            string source = Path.GetFullPath(item.ItemSpec, ProjectDirectory);
+            if (!File.Exists(source))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, "a HuskJson file does not exist");
+                continue;
+            }
+            string rootFolder = Path.GetFullPath(item.GetMetadata("Root"), ProjectDirectory);
+            if (!IsServed(source, rootFolder, PathComparison))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, $"a HuskJson file is outside its Root '{rootFolder}'");
+                continue;
+            }
+            string relative = (item.GetMetadata("ServeAt").Trim('/') + "/" + Path.GetRelativePath(rootFolder, source).Replace('\\', '/')).TrimStart('/');
+            string target = Path.GetFullPath(Path.Combine(folder, relative));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            byte[] bytes = File.ReadAllBytes(source);
+            if (!File.Exists(target) || !File.ReadAllBytes(target).AsSpan().SequenceEqual(bytes))
+                File.WriteAllBytes(target, bytes);
+            kept.Add(target);
+            result.Add((relative, target));
+        }
+        if (Directory.Exists(folder))
+            foreach (string stale in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Where(f => !kept.Contains(Path.GetFullPath(f))).ToList())
+                File.Delete(stale);
+        return result;
+    }
+
     private const string CssModule = """
         const style = document.createElement('style');
         style.setAttribute('data-husk-css', {0});
@@ -209,6 +251,7 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
                 sources.Add(new ImportMapSource(specifier, root + relative));
             modules.Add((relative, path));
         }
+        modules.AddRange(WriteJson());
         if (Log.HasLoggedErrors)
             return false;
 
@@ -274,9 +317,10 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
     private static string ModuleGraphJson(string map, List<(string Url, string HashedUrl, string Text)> modules)
     {
         var imports = JsonNode.Parse(map)!["imports"]!.AsObject().ToDictionary(e => e.Key, e => (string)e.Value!, StringComparer.Ordinal);
-        var known = modules.Select(m => m.HashedUrl).ToHashSet(StringComparer.Ordinal);
+        // A JSON file is imported, not preloaded as a module (a browser refuses it without its import attribute).
+        var known = modules.Where(m => !m.Url.EndsWith(".json", StringComparison.Ordinal)).Select(m => m.HashedUrl).ToHashSet(StringComparer.Ordinal);
         var graph = new JsonObject();
-        foreach (var module in modules.OrderBy(m => m.HashedUrl, StringComparer.Ordinal))
+        foreach (var module in modules.Where(m => !m.Url.EndsWith(".json", StringComparison.Ordinal)).OrderBy(m => m.HashedUrl, StringComparer.Ordinal))
             graph[module.HashedUrl] = new JsonArray([.. ModuleGraph.Imports(module.Text)
                 .Select(s => ModuleGraph.Resolve(s, module.HashedUrl, imports))
                 .Where(u => u is not null && known.Contains(u)).Distinct(StringComparer.Ordinal)

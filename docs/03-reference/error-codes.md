@@ -18,6 +18,7 @@ listed in [Svelte's docs](https://svelte.dev/docs/svelte/compiler-errors).
 | [HUSK101](#husk101) | error | the outputs the build gave do not match the source |
 | [HUSK102](#husk102) | error | a file cannot be read or written |
 | [HUSK103](#husk103) | error | a `HuskStylesheet` file does not exist |
+| [HUSK104](#husk104) | error | a `HuskJson` file does not exist or is outside its `Root` |
 | [HUSK200](#husk200) | warning | a Svelte compiler warning |
 | [HUSK300](#husk300) | error | two routes for one address |
 | [HUSK301](#husk301) | error | a SvelteKit feature Husk does not provide |
@@ -86,6 +87,11 @@ reason. Outputs that failed are written again by the next build.
 
 A `HuskStylesheet` item names a file that is not there. The message carries the full path; fix the
 item or add the file.
+
+## HUSK104
+
+A `HuskJson` item names a file that is not there, or one outside its `Root` folder. The message carries
+the full path.
 
 ## HUSK200
 
