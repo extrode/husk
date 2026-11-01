@@ -39,27 +39,26 @@ public sealed class RoutesBrowserTests : IDisposable
 
     private IWebDriver Open(string browser, string path)
     {
-        var driver = Browsers.Start(browser);
-        try
+        // A cold Safari on a CI runner sometimes never paints the first load, and a second try in the same
+        // session can stay stuck; each retry starts a fresh session.
+        for (int attempt = 1; ; attempt++)
         {
-            // A cold Safari on a CI runner sometimes never paints the first load; two more tries tell that from a broken page.
-            for (int attempt = 1; ; attempt++)
+            var driver = Browsers.Start(browser);
+            try
             {
                 driver.Navigate().GoToUrl(new Uri(_server.Address, path).ToString());
-                try
-                {
-                    Browsers.Until(driver, "return document.querySelector('#title, #error') ? true : null;");
-                    return driver;
-                }
-                catch (TimeoutException) when (attempt < 3 && browser == "safari")
-                {
-                }
+                Browsers.Until(driver, "return document.querySelector('#title, #error') ? true : null;");
+                return driver;
             }
-        }
-        catch
-        {
-            driver.Dispose();
-            throw;
+            catch (Exception e) when (attempt < 3 && browser == "safari" && e is TimeoutException or WebDriverException)
+            {
+                driver.Dispose();
+            }
+            catch
+            {
+                driver.Dispose();
+                throw;
+            }
         }
     }
 
