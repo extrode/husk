@@ -92,9 +92,7 @@ public sealed class JsonImportTests
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void The_json_reaches_the_browser_and_an_edit_replaces_it(string browser)
     {
         using var project = App();
