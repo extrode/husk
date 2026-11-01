@@ -11,6 +11,18 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 ## [Unreleased]
 
+## [0.1.0-preview.8] — 2026-11-01
+
+### Added
+
+- `HuskStylesheet`: a stylesheet imported for its side effect (`import '$lib/app.css'`) becomes a module that adds the CSS ahead of `husk.css`. A missing file is HUSK103.
+- `HuskJson`: a JSON file imported with an import attribute (`with { type: 'json' }`) is served, hashed with `HuskHashNames` and never preloaded. A missing file, or one outside its `Root`, is HUSK104.
+- A recipe for serving a folder outside the project with the SDK's own `Content` item (`docs/03-reference/msbuild.md`).
+
+### Known gaps
+
+- Development: an edit to a `HuskStylesheet` or `HuskJson` file shows after the next build, not on save; a saved plain `.ts` that uses `import.meta.env` is served unrewritten until the next build.
+
 ## [0.1.0-preview.7] — 2026-11-01
 
 ### Added

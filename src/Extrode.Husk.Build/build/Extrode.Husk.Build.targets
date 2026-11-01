@@ -215,10 +215,10 @@
                 RuntimeImports="$(HuskVendorDir)runtime-imports.json" CompilerAssembly="$(_HuskCompilerAssembly)"
                 ProjectDirectory="$(MSBuildProjectDirectory)"
                 CompilerPath="$(_HuskCompilerPath)" Dev="$(HuskDev)" HashNames="$(HuskHashNames)" Runtime="@(_HuskRuntimeCandidate);@(_HuskAppFile)"
-                Aliases="@(HuskAlias)" Imports="@(HuskImport)" Routing="$(_HuskRouting)" RoutesRoot="$(_HuskRoutesRoot)"
+                Aliases="@(HuskAlias)" Stylesheets="@(HuskStylesheet)" JsonFiles="@(HuskJson)" Imports="@(HuskImport)" Routing="$(_HuskRouting)" RoutesRoot="$(_HuskRoutesRoot)"
                 Project="$(MSBuildProjectFullPath)" Configuration="$(Configuration)" TargetFramework="$(TargetFramework)" />
     <ItemGroup>
-      <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json;$(_HuskGraph);$(_HuskObjRoot)hashed/**" />
+      <FileWrites Include="$(_HuskObjRoot)husk.css;$(_HuskObjRoot)importmap.json;$(_HuskObjRoot)Extrode.Husk.development.json;$(_HuskGraph);$(_HuskObjRoot)hashed/**;$(_HuskObjRoot)css/**;$(_HuskObjRoot)json/**" />
     </ItemGroup>
     <!-- Copied, not a None item: an item would flow on to every project that references this one,
          a test project's bin among them. As Pare writes its shared map. -->
@@ -248,7 +248,26 @@
       <!-- Globbed here, after HuskAssets wrote them. Already hashed: not fingerprinted again. -->
       <_HuskHashedCandidate Include="$(_HuskObjRoot)hashed/**" />
       <_HuskHashedCandidate RelativePath="$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+      <!-- The stylesheet modules (@(HuskStylesheet)), served below _husk/css/ under their plain names. -->
+      <_HuskCssCandidate Include="$(_HuskObjRoot)css/*.js" />
+      <_HuskCssCandidate RelativePath="_husk/css/%(Filename)%(Extension)" />
     </ItemGroup>
+    <ItemGroup>
+      <_HuskJsonCandidate Include="$(_HuskObjRoot)json/**" />
+      <_HuskJsonCandidate RelativePath="$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+    </ItemGroup>
+    <DefineStaticWebAssets Condition="'@(_HuskJsonCandidate)' != ''" CandidateAssets="@(_HuskJsonCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)json/" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <DefineStaticWebAssets Condition="'@(_HuskCssCandidate)' != ''" CandidateAssets="@(_HuskCssCandidate)" SourceType="Computed" SourceId="$(PackageId)"
+      ContentRoot="$(_HuskObjRoot)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest">
+      <Output TaskParameter="Assets" ItemName="_HuskStaticWebAsset" />
+    </DefineStaticWebAssets>
     <DefineStaticWebAssets CandidateAssets="@(_HuskAppCandidate)" SourceType="Computed" SourceId="$(PackageId)"
       ContentRoot="$(_HuskObjRoot)" BasePath="$(StaticWebAssetBasePath)" AssetKind="All" AssetMode="All" AssetRole="Primary"
       AssetMergeSource="$(StaticWebAssetMergeTarget)" FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"

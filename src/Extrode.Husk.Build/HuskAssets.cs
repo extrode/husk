@@ -81,6 +81,112 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
         return path.StartsWith(folder, comparison);
     }
 
+    /// <summary><c>@(HuskStylesheet)</c>: a stylesheet a module imports for its side effect, as
+    /// <c>import '$lib/app.css'</c>. Each becomes a module that adds the CSS in a style element ahead of
+    /// <c>husk.css</c>, so an imported stylesheet comes before component styles, as Vite orders them.</summary>
+    public ITaskItem[] Stylesheets { get; set; } = [];
+
+    public const string CssFolder = "css";
+
+    /// <summary><c>@(HuskJson)</c>: a JSON file a module imports with an import attribute
+    /// (<c>import x from './t.json' with { type: 'json' }</c>). Root is the folder the URL is counted from and
+    /// ServeAt the URL folder below the base path (the item's own, as <c>PareServeAt</c> is for a source).
+    /// The file is served there, and under a hashed name with <c>HashNames</c>.</summary>
+    public ITaskItem[] JsonFiles { get; set; } = [];
+
+    public const string JsonFolder = "json";
+
+    private List<(string Relative, string Path)> WriteJson()
+    {
+        string folder = Path.Combine(OutputDirectory, JsonFolder);
+        var result = new List<(string, string)>();
+        var kept = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        var owners = new Dictionary<string, string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        foreach (var item in JsonFiles)
+        {
+            string source = Path.GetFullPath(item.ItemSpec, ProjectDirectory);
+            if (!File.Exists(source))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, "a HuskJson file does not exist");
+                continue;
+            }
+            string rootFolder = Path.GetFullPath(item.GetMetadata("Root"), ProjectDirectory);
+            if (!IsServed(source, rootFolder, PathComparison))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, $"a HuskJson file is outside its Root '{rootFolder}'");
+                continue;
+            }
+            string relative = (item.GetMetadata("ServeAt").Trim('/') + "/" + Path.GetRelativePath(rootFolder, source).Replace('\\', '/')).TrimStart('/');
+            string target = Path.GetFullPath(Path.Combine(folder, relative));
+            if (!IsServed(target, folder, PathComparison))
+            {
+                Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, $"a HuskJson ServeAt '{item.GetMetadata("ServeAt")}' leaves the served folder");
+                continue;
+            }
+            if (owners.TryGetValue(target, out string? owner))
+            {
+                if (!string.Equals(owner, source, PathComparison))
+                    Log.LogError(null, "HUSK104", null, source, 0, 0, 0, 0, $"a HuskJson file is served at the URL of '{owner}' too");
+                continue;
+            }
+            owners[target] = source;
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            byte[] bytes = File.ReadAllBytes(source);
+            if (!File.Exists(target) || !File.ReadAllBytes(target).AsSpan().SequenceEqual(bytes))
+                File.WriteAllBytes(target, bytes);
+            kept.Add(target);
+            result.Add((relative, target));
+        }
+        if (Directory.Exists(folder))
+            foreach (string stale in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Where(f => !kept.Contains(Path.GetFullPath(f))).ToList())
+                File.Delete(stale);
+        return result;
+    }
+
+    private const string CssModule = """
+        const style = document.createElement('style');
+        style.setAttribute('data-husk-css', {0});
+        style.textContent = {1};
+        document.head.insertBefore(style, document.head.querySelector('link[href*="husk.css"]'));
+        """;
+
+    /// <summary>Writes one module per stylesheet below <c>css/</c>, removes the stale ones, and returns each
+    /// with its URL below the root, its import specifiers and its text.</summary>
+    private List<(string Relative, string Path, string[] Specifiers)> WriteStylesheets()
+    {
+        string folder = Path.Combine(OutputDirectory, CssFolder);
+        var result = new List<(string, string, string[])>();
+        var kept = new HashSet<string>(OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+        foreach (var item in Stylesheets)
+        {
+            string source = Path.GetFullPath(item.ItemSpec, ProjectDirectory);
+            if (!File.Exists(source))
+            {
+                Log.LogError(null, "HUSK103", null, source, 0, 0, 0, 0, "a HuskStylesheet does not exist");
+                continue;
+            }
+            string identity = Path.GetRelativePath(ProjectDirectory, source).Replace('\\', '/');
+            string name = Path.GetFileName(source) + "." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(identity)))[..8].ToLowerInvariant() + ".js";
+            string text = string.Format(CssModule, JsonSerializer.Serialize(Path.GetFileName(source)), JsonSerializer.Serialize(File.ReadAllText(source))) + "\n";
+            string target = Path.Combine(folder, name);
+            if (!kept.Add(target))
+                continue;
+            Directory.CreateDirectory(folder);
+            WriteIfChanged(target, text);
+            var specifiers = AliasSources(source, "").Select(a => a.SourceUrl).Where(u => u.EndsWith(".css", StringComparison.Ordinal)).ToArray();
+            if (specifiers.Length == 0)
+            {
+                Log.LogError(null, "HUSK105", null, source, 0, 0, 0, 0, "a HuskStylesheet is under no HuskAlias folder, so no import can name it");
+                continue;
+            }
+            result.Add(("_husk/" + CssFolder + "/" + name, target, specifiers));
+        }
+        if (Directory.Exists(folder))
+            foreach (string stale in Directory.EnumerateFiles(folder).Where(f => !kept.Contains(f)).ToList())
+                File.Delete(stale);
+        return result;
+    }
+
     private IEnumerable<ImportMapSource> AliasSources(string source, string outputUrl)
     {
         string full = Path.GetFullPath(source);
@@ -159,6 +265,22 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
             }
         }
         styles.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+        try
+        {
+            foreach (var (relative, path, specifiers) in WriteStylesheets())
+            {
+                foreach (string specifier in specifiers)
+                    sources.Add(new ImportMapSource(specifier, root + relative));
+                modules.Add((relative, path));
+            }
+            modules.AddRange(WriteJson());
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.LogError(null, "HUSK102", null, OutputDirectory, 0, 0, 0, 0, "cannot write the stylesheet or JSON modules: " + e.Message);
+        }
+        if (Log.HasLoggedErrors)
+            return false;
 
         string stylesheet = Path.Combine(OutputDirectory, Stylesheet);
         string importMap = Path.Combine(OutputDirectory, ImportMap);
@@ -222,9 +344,10 @@ public sealed class HuskAssets : Microsoft.Build.Utilities.Task
     private static string ModuleGraphJson(string map, List<(string Url, string HashedUrl, string Text)> modules)
     {
         var imports = JsonNode.Parse(map)!["imports"]!.AsObject().ToDictionary(e => e.Key, e => (string)e.Value!, StringComparer.Ordinal);
-        var known = modules.Select(m => m.HashedUrl).ToHashSet(StringComparer.Ordinal);
+        // A JSON file is imported, not preloaded as a module (a browser refuses it without its import attribute).
+        var known = modules.Where(m => !m.Url.EndsWith(".json", StringComparison.Ordinal)).Select(m => m.HashedUrl).ToHashSet(StringComparer.Ordinal);
         var graph = new JsonObject();
-        foreach (var module in modules.OrderBy(m => m.HashedUrl, StringComparer.Ordinal))
+        foreach (var module in modules.Where(m => !m.Url.EndsWith(".json", StringComparison.Ordinal)).OrderBy(m => m.HashedUrl, StringComparer.Ordinal))
             graph[module.HashedUrl] = new JsonArray([.. ModuleGraph.Imports(module.Text)
                 .Select(s => ModuleGraph.Resolve(s, module.HashedUrl, imports))
                 .Where(u => u is not null && known.Contains(u)).Distinct(StringComparer.Ordinal)
