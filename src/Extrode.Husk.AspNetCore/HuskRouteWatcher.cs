@@ -149,7 +149,7 @@ internal sealed class HuskRouteWatcher(string mapPath, ILogger logger,
             {
                 return;
             }
-            catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
+            catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or UnauthorizedAccessException)
             {
                 logger.LogError("Husk could not build the routes again: {Message}", e.Message);
             }
