@@ -188,6 +188,30 @@ public sealed class RoutesBrowserTests : IDisposable
         Assert.Equal("month", Text(driver, "#title"));
     }
 
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_percent_encoded_fragment_scrolls_to_the_element_it_names(string browser)
+    {
+        using var driver = Open(browser, "/");
+
+        Script(driver, "window.__goto('/month#caf%C3%A9');");
+
+        Settled(driver, "month");
+        Browsers.Until(driver, "return window.scrollY > 0 ? true : null;");
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_malformed_fragment_still_navigates_and_stays_at_the_top(string browser)
+    {
+        using var driver = Open(browser, "/");
+
+        Script(driver, "window.__goto('/month#%E0%A4%A');");
+
+        Settled(driver, "month");
+        Assert.Equal(0L, Convert.ToInt64(Script(driver, "return window.scrollY;")));
+    }
+
     [Fact]
     public async Task A_module_address_with_no_file_is_a_404_and_not_the_page()
     {
