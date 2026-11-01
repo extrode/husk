@@ -47,3 +47,17 @@ folder outside the project and publishes it, with exclusions in `Exclude`:
 
 `StaticFolderTests` publishes such a folder and checks that a nested file is in `out/wwwroot` and the excluded
 `_app/` and `_headers` are not. Content types are the host's, not Husk's.
+
+### P4 — `import.meta.env` in Pare-compiled `.ts` under Development (T6, T10)
+
+Read from the code (not run). A build rewrites `import.meta.env` to `globalThis.__huskEnv` in every served `.js`
+output, Pare's own `.ts` output included (`HuskRoutes.RewriteEnv`). In Development, Husk's `IPareCompiler`
+(`HuskCompiler.RewriteEnv`) rewrites only the sources Husk compiles (`.svelte`, `.svelte.ts`, `.svelte.js`). A
+saved plain `.ts` goes through Pare's own strip step, and `IPareCompiler` is not a hook on that output.
+
+- **Consequence:** after a `.ts` file containing `import.meta.env` is saved under `dotnet watch`, it is served
+  unrewritten until the next build, so `import.meta.env.X` throws in the browser. saaaat has one such file
+  (`apps/web/src/lib/backend-env.ts`).
+- **Decision (T10):** serve-time rewriting does not extend to Pare's `.ts` without a Pare change. Law candidate 3
+  (watch equals clean build) is **narrowed to Husk-compiled outputs and the shell**; the gap is listed here and in
+  `work/todo.md` as a Pare extension point (a post-process hook on its output). No Husk code changes for it.
