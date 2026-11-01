@@ -39,3 +39,13 @@ Every code is listed in [Error codes](error-codes.md).
 ## License
 
 ISL-P 1.2 with the ISL-OE 1.2 output exception: you may ship what Husk generates as part of your own app. See `LICENSE.md` and `NOTICE.md` in the repository.
+
+## A folder of static files outside the project
+
+No Husk item: the SDK's own `Content` item with a `Link` below `wwwroot/` serves and publishes it, and `Exclude`
+leaves files out.
+
+```xml
+<Content Include="../shared/static/**" Exclude="../shared/static/_headers" Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)"
+         CopyToPublishDirectory="PreserveNewest" />
+```

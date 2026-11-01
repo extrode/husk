@@ -34,3 +34,16 @@ resolved through the import map like any alias (`$lib/app.css`). The module adds
   follow without a second asset kind. Cost: `url(...)` and `@import` inside the CSS are not rewritten, and the
   stylesheet arrives after the first module runs, not in the HTML head (a flash is possible on a slow load).
 - Checked in Chromium, Firefox and Safari by `StylesheetImportTests` (imported style applies, a component style wins).
+
+### P3 — serving `apps/web/static` as it is (T5, T9)
+
+**The SDK's own items cover it; no `HuskStatic` item.** A `Content` item with a `Link` below `wwwroot/` serves a
+folder outside the project and publishes it, with exclusions in `Exclude`:
+
+```xml
+<Content Include="$(SaaaatRoot)/apps/web/static/**" Exclude="$(SaaaatRoot)/apps/web/static/_app/**;$(SaaaatRoot)/apps/web/static/_headers"
+         Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+```
+
+`StaticFolderTests` publishes such a folder and checks that a nested file is in `out/wwwroot` and the excluded
+`_app/` and `_headers` are not. Content types are the host's, not Husk's.
