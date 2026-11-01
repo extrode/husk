@@ -75,9 +75,7 @@ public sealed class StylesheetImportTests
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void The_imported_styles_apply_and_a_component_style_still_wins_over_them(string browser)
     {
         using var project = App();
