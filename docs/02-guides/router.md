@@ -47,4 +47,4 @@ a year).
 - **Service worker and web manifest.** A separate spec. Until then `/manifest.webmanifest` and the
   worker script are served as the app's HTML unless you supply them as files.
 - **Side-effect CSS imports and JSON modules** from JS are not yet built (work/todo.md).
-- Adding or removing a route file in Development needs a rebuild.
+- In Development, adding, removing or renaming a route file builds the project again (a child `dotnet build`, logged as "Husk built the routes again") and the browser reloads under `dotnet watch`. `dotnet watch` alone never sees such a file. Not covered: `HuskHashNames=true`, and plain `dotnet run` (nothing reloads the browser there).
