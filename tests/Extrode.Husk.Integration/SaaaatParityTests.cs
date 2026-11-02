@@ -87,9 +87,7 @@ public sealed class SaaaatParityTests
 
     /// <summary>Spike P1 (spec 003 T3): two recordings of the Vite build per browser, to see what differs.</summary>
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Two_recordings_of_the_same_build_agree(string browser)
     {
         string? build = Environment.GetEnvironmentVariable(ViteBuild);
