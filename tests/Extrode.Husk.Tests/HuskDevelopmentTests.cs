@@ -209,6 +209,63 @@ public sealed class HuskDevelopmentTests : IDisposable
         }
     }
 
+    // L010: after any sequence of saves, the Development outputs are what a start from nothing writes for the same sources.
+    [Fact]
+    [Trait("Law", "L010")]
+    public async Task L010_the_outputs_after_a_random_sequence_of_saves_equal_those_of_a_clean_start()
+    {
+        string[] names = ["Hello", "Other", "Third"];
+        foreach (var name in names)
+            Put($"wwwroot/{name}.svelte", $"<p class=\"{name}\">{name}</p>\n<style>.{name} {{ color: red; }}</style>\n");
+        WriteMaps(names);
+        string[] files = [.. names.SelectMany(ComponentOutputs), P("obj/husk/husk.css")];
+        Dictionary<string, string> Snapshot() => files.Where(File.Exists).ToDictionary(f => f, ReadText);
+        Dictionary<string, string> Settled()
+        {
+            var last = Snapshot();
+            for (int tries = 0; tries < 100; tries++)
+            {
+                Thread.Sleep(150);
+                var now = Snapshot();
+                if (last.Count == files.Length && last.OrderBy(p => p.Key).SequenceEqual(now.OrderBy(p => p.Key)))
+                    return now;
+                last = now;
+            }
+            throw new TimeoutException("the outputs kept changing");
+        }
+
+        Dictionary<string, string> watched;
+        await using (var app = (IAsyncDisposable)await Start())
+        {
+            Settled();
+            var random = new Random(4010);
+            for (int i = 0; i < 10; i++)
+            {
+                string name = names[random.Next(names.Length)];
+                string text = random.Next(3) switch
+                {
+                    0 => $"<p class=\"v{i}\">v{i}</p>\n<style>.v{i} {{ color: blue; }}</style>\n",
+                    1 => $"<p>plain {i}</p>\n",
+                    _ => $"<script>let n = {i};</script>\n<p class=\"s{i}\">{{n}}</p>\n<style>.s{i} {{ margin: {i}px; }}</style>\n",
+                };
+                Put($"wwwroot/{name}.svelte", text);
+                WaitFor(() => ReadText(ComponentOutputs(name)[0]).Contains($"{i}", StringComparison.Ordinal));
+                Settled();
+            }
+            watched = Settled();
+        }
+
+        foreach (var file in files)
+            File.Delete(file);
+        await using (var app = (IAsyncDisposable)await Start())
+        {
+            var clean = Settled();
+            Assert.Equal(watched.Keys.Order(), clean.Keys.Order());
+            foreach (var (file, text) in watched)
+                Assert.True(clean[file] == text, $"{Path.GetRelativePath(_dir.FullName, file)} differs between the watched and the clean output");
+        }
+    }
+
     [Fact]
     public async Task Warnings_are_logged_with_their_position()
     {
