@@ -72,6 +72,7 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
+    [Trait("Law", "L008")]
     [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Page_text_equals_the_recorded_vite_reference_in_English_and_Arabic(string browser)
     {
