@@ -56,6 +56,51 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
         return Directory.Exists(folder) ? folder : null;
     }
 
+    [Theory]
+    [InlineData("chrome")]
+    [InlineData("firefox")]
+    [InlineData("safari")]
+    public void Recording_writes_the_vite_build_text_as_the_reference(string browser)
+    {
+        if (Environment.GetEnvironmentVariable(SaaaatParityTests.Record) != "1")
+            Assert.Skip($"{SaaaatParityTests.Record} is not 1");
+        string vite = ViteOutput() ?? throw new InvalidOperationException("no Vite build to record");
+        string folder = SaaaatParityTests.ReferenceFolder(SaaaatParityTests.CommitOf(Saaaat));
+        Directory.CreateDirectory(folder);
+        var seen = SaaaatParityTests.Capture(browser, vite);
+        Assert.DoesNotContain(seen, p => p.Value.Length == 0);
+        foreach (var (name, text) in seen)
+            File.WriteAllText(Path.Combine(folder, name), text + "\n");
+    }
+
+    [Theory]
+    [InlineData("chrome")]
+    [InlineData("firefox")]
+    [InlineData("safari")]
+    public void Page_text_equals_the_recorded_vite_reference_in_English_and_Arabic(string browser)
+    {
+        string output = PortOutput;
+        if (!Directory.Exists(Saaaat))
+            Assert.Skip($"no saaaat checkout at {Saaaat}");
+        string sha = SaaaatParityTests.CommitOf(Saaaat);
+        string folder = SaaaatParityTests.ReferenceFolder(sha);
+        Assert.True(Directory.Exists(folder), $"no reference for saaaat commit {sha}: the checkout moved. Build it with scripts/node-reference/saaaat-vite-build.sh and record with {SaaaatParityTests.Record}=1");
+        var differ = new List<string>();
+        foreach (var (name, text) in SaaaatParityTests.Capture(browser, output))
+        {
+            string file = Path.Combine(folder, name);
+            Assert.True(File.Exists(file), $"reference {name} is missing for commit {sha}");
+            if (File.ReadAllText(file).TrimEnd('\n') != text)
+            {
+                differ.Add(name);
+                string actual = Path.Combine(TempProject.RepoRoot, "tmp", "parity-actual");
+                Directory.CreateDirectory(actual);
+                File.WriteAllText(Path.Combine(actual, name), text + "\n");
+            }
+        }
+        Assert.True(differ.Count == 0, "port text differs from the Vite reference: " + string.Join(", ", differ));
+    }
+
     private static IWebDriver Driver(string browser)
     {
         var driver = Browsers.Start(browser);

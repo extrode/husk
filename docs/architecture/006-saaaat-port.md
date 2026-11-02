@@ -115,3 +115,14 @@ Navigation transcripts equal the Vite build's (load, link click, Back, Forward, 
 to French changes the text; 17 pages render and Chromium logs no console error. 12 theory rows pass (3 browsers x 4).
 Firefox and Safari console errors cannot be read through WebDriver (R9, recorded not closed). Corpus tests are not
 gating; CI has no saaaat checkout.
+
+### Parity with the Vite reference (T16)
+
+Commit `c553e0f4`, references recorded here on macOS with the Vite build of that commit (Node 24.16.0). 17 pages x
+English and Arabic x Chromium, Firefox, Safari: **the port's text equals the reference in all 102 cases**. The
+test refuses a checkout whose commit has no reference folder, and a one-character edit to a reference fails it.
+
+One difference found and hidden, not fixed: after a client-side navigation (the redirects from `/`, `/calendar`,
+`/settings`) SvelteKit's route announcer (`#svelte-announcer`, off screen, for screen readers) holds the page title.
+Husk's router has no announcer, so the Vite text ended in "Today | Saaaat" and the port's did not. The comparison
+hides that element in both builds. **Gap: Husk's router does not announce navigation to screen readers.**
