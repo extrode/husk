@@ -67,3 +67,51 @@ saved plain `.ts` goes through Pare's own strip step, and `IPareCompiler` is not
 `L002NoChangeNoCompileTests.A_router_app_with_a_stylesheet_and_json_rebuilds_nothing_when_nothing_changed` builds a
 router app with `HuskStylesheet`, `HuskJson` and `HuskEnv` twice, with and without hashed names, and finds no
 source compiled and no file rewritten. It held on the first run; the router's generated files need no fix.
+
+## The port (T14, T15, T18)
+
+Branch `feat/husk-port` of the saaaat repo (branch point `c553e0f4`, two commits), project `apps/web-husk/`.
+`git diff c553e0f4 -- apps/web/src packages` is empty (R1, R10); `dotnet build apps/web-husk` and `dotnet publish`
+exit 0 on nuget.org packages only (`Extrode.Husk.Build` and `.AspNetCore` 0.1.0-preview.8, R2).
+
+### Gaps Husk had, and where each went (R10)
+
+| Gap in Husk | Resolved by |
+|---|---|
+| Side-effect stylesheet import (`+layout.svelte:8`) | `HuskStylesheet` item (P2) |
+| JSON imports from `packages/core/src` | `HuskJson` item |
+| `apps/web/static` served as it is | SDK `Content` + `Link="wwwroot/..."` (P3), no new item |
+| `import.meta.env` in saved `.ts` under `dotnet watch` | **open**, needs a Pare post-process hook (P4); law candidate 3 narrowed |
+| `@capacitor/*` | stand-ins below, not a Husk feature |
+
+Nothing under `apps/web/src` or `packages/` was edited.
+
+### Stand-ins (R13), in `apps/web-husk/stubs/`
+
+| Module | Keeps | Leaves out |
+|---|---|---|
+| `capacitor-core.js` | web `isNativePlatform` and platform answers | native bridge, `registerPlugin` (the app never calls it) |
+| `capacitor-preferences.js` | `get`, `set`, `remove` over `localStorage` | `configure`, `keys`, `clear`, `migrate`, `removeOld`, native stores |
+| `capacitor-local-notifications.js` | the calls the app makes, as no-ops | scheduling and delivery |
+
+Break test: making `isNativePlatform` throw fails the console/render test in all three browsers.
+
+### Size and build time (R14), macOS, commit `c553e0f4`
+
+| | Vite (`pnpm build`) | Husk (`dotnet publish -c Release`) |
+|---|---|---|
+| Install | 4 s (`pnpm install --frozen-lockfile`) | none (packages from nuget.org) |
+| Cold build | 7 s | 12 s (clean export, empty `obj/`, includes restore) |
+| Warm rebuild | not measured | 4 s |
+| Output | 15,553,999 bytes (whole build folder) | 21,161,115 bytes (`wwwroot`) |
+
+The two sizes are not like for like: Husk's output is unminified and carries the 227 compiled modules as separate
+files, and Vite's figure is the whole build folder. No Node is needed on the Husk side.
+
+### Tests (T17), `SaaaatPortTests` (`Category=Corpus`, skipped without the checkout)
+
+Navigation transcripts equal the Vite build's (load, link click, Back, Forward, `/settings/nonsense`,
+`/month?year=1447`, an unknown address); 19 locales open the home page and differ from English; one in-app switch
+to French changes the text; 17 pages render and Chromium logs no console error. 12 theory rows pass (3 browsers x 4).
+Firefox and Safari console errors cannot be read through WebDriver (R9, recorded not closed). Corpus tests are not
+gating; CI has no saaaat checkout.
