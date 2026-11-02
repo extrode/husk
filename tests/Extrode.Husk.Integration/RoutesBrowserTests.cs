@@ -86,6 +86,21 @@ public sealed class RoutesBrowserTests : IDisposable
 
     [Theory]
     [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
+    public void A_navigation_announces_the_new_page_title_to_screen_readers(string browser)
+    {
+        using var driver = Open(browser, "/");
+        const string announcer = "return document.getElementById('svelte-announcer')?.textContent;";
+        Assert.Equal("", Script(driver, announcer));
+        Assert.Equal("assertive", Script(driver, "return document.getElementById('svelte-announcer').getAttribute('aria-live');"));
+
+        driver.FindElement(By.Id("to-month")).Click();
+        Settled(driver, "month");
+
+        Assert.Equal("Month page", Script(driver, announcer));
+    }
+
+    [Theory]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void A_cancelled_back_after_a_reload_returns_to_the_page_on_screen(string browser)
     {
         using var driver = Open(browser, "/");

@@ -15,6 +15,7 @@ let token = 0;
 let index = 0;
 let shown = 0;
 let ignorePop = false;
+let announcer = null;
 
 const web = (url) => url.protocol === 'http:' || url.protocol === 'https:';
 const internal = (url) => url.origin === location.origin;
@@ -24,6 +25,12 @@ export async function start({ routes, errorPage, rootLayout, dev, target }) {
   _setDev(dev);
   _attach({ goto, preload });
   mount(Root, { target });
+  announcer = document.createElement('div');
+  announcer.id = 'svelte-announcer';
+  announcer.setAttribute('aria-live', 'assertive');
+  announcer.setAttribute('aria-atomic', 'true');
+  announcer.style.cssText = 'position:absolute;left:0;top:0;clip:rect(0 0 0 0);clip-path:inset(50%);overflow:hidden;white-space:nowrap;width:1px;height:1px';
+  document.body.append(announcer);
   addEventListener('popstate', onPop);
   addEventListener('hashchange', onHash);
   document.addEventListener('click', onClick);
@@ -174,6 +181,8 @@ async function navigate(href, options, redirects = 0) {
   }
   if (!options.keepFocus && document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
 
+  // As SvelteKit's route announcer: the first load is silent, each later navigation reads out the page title.
+  if (!options.initial) announcer.textContent = document.title || 'untitled page';
   _after({ type: options.type, from, to: describe(url, matched), willUnload: false, delta: options.delta });
   return true;
 }
