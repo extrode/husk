@@ -15,7 +15,7 @@ one of them at any given moment.
 | # | Milestone | Target | Status | Notes |
 |---|-----------|--------|--------|-------|
 | 1 | First build: `.svelte` to modules on `dotnet build`, served with an import map | 2026-10-30 | shipped | spec 001; 0.1.0-preview.7 on nuget.org 2026-11-01 |
-| 2 | saaaat.com web on Husk, no Deno | 2026-11-02 | shipped | spec 003: port on saaaat `feat/husk-port` (unmerged, the user's call); page text equals the Vite build in 3 browsers. Recorded gaps: no route announcer, `import.meta.env` in saved `.ts` under watch, Firefox and Safari console unread, service worker, Capacitor (stand-ins) and CSP out of scope |
+| 2 | saaaat.com web on Husk, no Deno | 2026-11-02 | shipped | spec 003: port on saaaat `feat/husk-port` (unmerged, the user's call); page text equals the Vite build in 3 browsers. Recorded gaps: `import.meta.env` in saved `.ts` under watch, Firefox and Safari console unread, service worker, Capacitor (stand-ins) and CSP out of scope |
 | 3 | riwalqalb.com frontend on Husk | — | planned | waits on the older-browser add-on (decision 003) or a moved floor |
 
 Status is one of `planned`, `in progress`, `shipped`, `dropped`. A dropped milestone stays in the

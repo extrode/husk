@@ -11,6 +11,10 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 ## [Unreleased]
 
+### Added
+
+- The router announces each navigation to screen readers, as SvelteKit's route announcer does: an off-screen `#svelte-announcer` (`aria-live="assertive"`) holds the page title after every client-side navigation, and is empty after the first load.
+
 ## [0.1.0-preview.10] — 2026-11-02
 
 ### Added

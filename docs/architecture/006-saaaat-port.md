@@ -125,4 +125,6 @@ test refuses a checkout whose commit has no reference folder, and a one-characte
 One difference found and hidden, not fixed: after a client-side navigation (the redirects from `/`, `/calendar`,
 `/settings`) SvelteKit's route announcer (`#svelte-announcer`, off screen, for screen readers) holds the page title.
 Husk's router has no announcer, so the Vite text ended in "Today | Saaaat" and the port's did not. The comparison
-hides that element in both builds. **Gap: Husk's router does not announce navigation to screen readers.**
+hides that element in both builds. **Gap: Husk's router did not announce navigation to screen readers.** Closed after preview.10: the router now keeps the
+same `#svelte-announcer` element (spec 003 follow-up), so the hiding in `TextOf` is only needed until the port moves to
+the release that has it.
