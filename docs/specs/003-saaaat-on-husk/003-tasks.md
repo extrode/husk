@@ -23,12 +23,12 @@ Husk-repo tasks run on branches off `dev` with tests. Tasks in the saaaat repo (
 - [x] T17 Parity: navigation, every locale, console — files: `SaaaatParityTests.cs` — covers: R5, R7, R9 — done when: link click, Back and Forward, the `/settings/nonsense` redirect, a query address and an unknown address behave as in the Vite build; every shipped locale opens the home page; one in-app language switch works; Chromium logs no console error
 - [x] T18 Notes: Husk-gap list, stand-ins, size and build-time table — files: `docs/architecture/006-saaaat-port.md` — covers: R10, R13, R14 — done when: every difference between the port branch and its branch point is a build file or a listed gap, and Vite and Husk size and clean-build time are in one table
 - [x] T19 Milestones — files: `work/milestones.md`, `work/tasklist.md` — covers: all — done when: row 2 reads `shipped` (or states which requirement is a recorded gap) and row 1 is corrected
-- [ ] T20 enact L008 saaaat-page-text-matches-vite-reference — files: `docs/laws/008-*.md` (draft with `/laws new`) — covers: law candidate 1 — done when: the user has set `status: enacted`
-- [ ] T21 prove L008 via /prove — covers: law candidate 1 — done when: `laws-check.js --run` holds (after T16, T17)
-- [ ] T22 enact L009 port-changes-nothing-on-main — files: `docs/laws/009-*.md` — covers: law candidate 2, R1 — done when: the user has set `status: enacted`
-- [ ] T23 prove L009 via /prove — covers: R1 — done when: `laws-check.js --run` holds (after T14); the proof lists the diff against the branch point in the saaaat checkout and skips when it is absent
-- [ ] T24 enact L010 watch-equals-clean-build — files: `docs/laws/010-*.md` — covers: law candidate 3 — done when: the user has set `status: enacted`
-- [ ] T25 prove L010 via /prove — covers: law candidate 3 — done when: `laws-check.js --run` holds (after T10, T11)
+- [x] T20 enact L008 saaaat-page-text-matches-vite-reference — files: `docs/laws/008-*.md` (draft with `/laws new`) — covers: law candidate 1 — done when: the user has set `status: enacted`
+- [x] T21 prove L008 via /prove — covers: law candidate 1 — done when: `laws-check.js --run` holds (after T16, T17)
+- [x] T22 enact L009 port-changes-nothing-on-main — files: `docs/laws/009-*.md` — covers: law candidate 2, R1 — done when: the user has set `status: enacted`
+- [x] T23 prove L009 via /prove — covers: R1 — done when: `laws-check.js --run` holds (after T14); the proof lists the diff against the branch point in the saaaat checkout and skips when it is absent
+- [x] T24 enact L010 watch-equals-clean-build — files: `docs/laws/010-*.md` — covers: law candidate 3 — done when: the user has set `status: enacted`
+- [x] T25 prove L010 via /prove — covers: law candidate 3 — done when: `laws-check.js --run` holds (after T10, T11)
 
 ## Analyze
 - R1: T14, T22, T23. R2: T13, T14. R3: T16. R4: T1, T2, T3, T16, T20, T21. R5: T17. R6: T14. R7: T16, T17. R8: T1, T5, T9, T12, T14. R9: T17. R10: T14, T18. R11: T4, T7, T8, T12. R12: T6, T10, T11, T25. R13: T15, T18. R14: T2, T18.
