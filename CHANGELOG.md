@@ -11,6 +11,8 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 ## [Unreleased]
 
+## [0.1.0-preview.9] — 2026-11-02
+
 ### Added
 
 - saaaat.com web builds and runs on Husk: a port project on the saaaat branch `feat/husk-port` (`apps/web-husk`, no edit to the app or packages). `SaaaatPortTests` and the parity test against a Vite reference recorded per browser (`tests/references/saaaat/`) pass in Chromium, Firefox and Safari; notes in `docs/architecture/006-saaaat-port.md`.
