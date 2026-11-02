@@ -33,3 +33,7 @@ scripts/node-reference/corpus.sh
 
 Measured 2026-10-31 on 5.57.3: 9440 rows (4720 sources) for Svelte, 184 for saaaat, 466 for
 riwalqalb, 0 differences. The sweep found that V8 has no `btoa`, which Svelte needs in dev for injected CSS.
+
+`saaaat-vite-build.sh [checkout]` builds the saaaat web app with `pnpm install --frozen-lockfile`
+and `pnpm build`, and prints the commit, the install and build seconds, the output size in bytes
+and the output folder (spec 003, R4 and R14). Needs Node and pnpm.

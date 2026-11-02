@@ -31,7 +31,9 @@ public sealed class SaaaatCorpusTests
             <HuskImport Include="@capacitor/core" Url="/vendor/capacitor-core.js" />
             <HuskImport Include="@capacitor/preferences" Url="/vendor/capacitor-preferences.js" />
             <HuskImport Include="@capacitor/local-notifications" Url="/vendor/capacitor-local-notifications.js" />
-            <HuskImport Include="$lib/design/utilities.css" Url="/vendor/utilities-css.js" />
+            <HuskStylesheet Include="{web}/src/lib/design/utilities.css" />
+            <HuskJson Include="{Saaaat}/packages/core/src/**/*.json" Root="{Saaaat}/packages/core/src" ServeAt="pkg/core" />
+            <Content Include="{web}/static/**" Exclude="{web}/static/_app/**;{web}/static/_headers" Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
             <HuskEnv Include="PUBLIC_BACKEND_URL" Value="" />
             """, properties: $"<HuskHooks>{web}/src/hooks.client.ts</HuskHooks>");
         (exit, output) = project.Build();
@@ -49,24 +51,6 @@ public sealed class SaaaatCorpusTests
 
     private static void CopyStatic(TempProject project)
     {
-        string source = Path.Combine(Saaaat, "apps", "web", "static");
-        foreach (string file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            string relative = Path.GetRelativePath(source, file).Replace('\\', '/');
-            if (relative.StartsWith("_app/", StringComparison.Ordinal) || relative == "_headers")
-                continue;
-            Directory.CreateDirectory(Path.GetDirectoryName(project.P("wwwroot/" + relative))!);
-            File.Copy(file, project.P("wwwroot/" + relative), overwrite: true);
-        }
-        // A side-effect CSS import has no Husk support yet (work/todo.md): stand in with a module that adds the link.
-        Directory.CreateDirectory(project.P("wwwroot/vendor"));
-        File.Copy(Path.Combine(Saaaat, "apps", "web", "src", "lib", "design", "utilities.css"), project.P("wwwroot/vendor/utilities.css"), overwrite: true);
-        project.Put("wwwroot/vendor/utilities-css.js", "const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/vendor/utilities.css'; document.head.append(l);\n");
-        foreach (string json in new[] { "umm-al-qura.json", "sighting-record.json" })
-        {
-            Directory.CreateDirectory(project.P("wwwroot/pkg/core/hijri"));
-            File.Copy(Path.Combine(Saaaat, "packages", "core", "src", "hijri", json), project.P("wwwroot/pkg/core/hijri/" + json), overwrite: true);
-        }
         // Stand-ins for the Capacitor packages, which the checkout has not installed: the web (non-native) behaviour.
         project.Put("wwwroot/vendor/capacitor-core.js", "export const Capacitor = { isNativePlatform: () => false, getPlatform: () => 'web', isPluginAvailable: () => false };\nexport const registerPlugin = () => ({});\n");
         project.Put("wwwroot/vendor/capacitor-preferences.js", "export const Preferences = { get: async ({ key }) => ({ value: localStorage.getItem(key) }), set: async ({ key, value }) => localStorage.setItem(key, value), remove: async ({ key }) => localStorage.removeItem(key) };\n");
@@ -106,6 +90,8 @@ public sealed class SaaaatCorpusTests
             driver.Navigate().GoToUrl(new Uri(server.Address, page).ToString());
             Thread.Sleep(2500);
             string where = (string)((OpenQA.Selenium.IJavaScriptExecutor)driver).ExecuteScript("return location.pathname + ' | ' + document.body.innerText.slice(0, 80).replace(/\\n/g, ' / ');")!;
+            // The app registers /sw.js (registerServiceWorker.ts); the PWA service worker is outside spec 003, so the
+            // single-page fallback answers it with the page, and Chromium reports that as an unsupported MIME type.
             // Only Chromium exposes the console to WebDriver; the others are held to the page having rendered.
             var errors = browser != "chrome" ? [] : driver.Manage().Logs.GetLog(OpenQA.Selenium.LogType.Browser).Where(e => e.Level == OpenQA.Selenium.LogLevel.Severe).Select(e => e.Message).Where(m => !m.Contains("manifest.webmanifest", StringComparison.Ordinal) && !m.Contains("[sw]", StringComparison.Ordinal) && !m.Contains("unsupported MIME type", StringComparison.Ordinal)).ToList();
             if (browser != "chrome" && where.EndsWith("| ", StringComparison.Ordinal))

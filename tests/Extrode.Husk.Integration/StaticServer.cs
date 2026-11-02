@@ -9,13 +9,15 @@ public sealed class StaticServer : IDisposable
     private readonly HttpListener _listener;
     private readonly string _root;
     private readonly bool _spa;
+    private readonly string? _headScript;
 
     public Uri Address { get; }
 
     /// <summary>HttpListener cannot bind port 0, so a port is picked and bound; when something takes it
     /// in between, the next attempt picks again.</summary>
-    public StaticServer(string root, Func<int>? pickPort = null, bool spa = false)
+    public StaticServer(string root, Func<int>? pickPort = null, bool spa = false, string? headScript = null)
     {
+        _headScript = headScript;
         _root = root;
         _spa = spa;
         pickPort ??= FreePort;
@@ -63,6 +65,8 @@ public sealed class StaticServer : IDisposable
             string file = Path.Combine(_root, path.Length == 0 ? "index.html" : path);
             // A single-page fallback, as Cloudflare's: a navigation to a path with no file gets the page, except
             // below the module directory.
+            if (!File.Exists(file) && path.Length > 0 && File.Exists(file + ".html"))
+                file += ".html";
             if (!File.Exists(file) && _spa && !path.StartsWith("_husk/", StringComparison.Ordinal) && !path.StartsWith("data/", StringComparison.Ordinal))
                 file = Path.Combine(_root, "index.html");
             if (!File.Exists(file))
@@ -76,10 +80,38 @@ public sealed class StaticServer : IDisposable
                 ".js" or ".mjs" => "text/javascript",
                 ".css" => "text/css",
                 ".map" or ".json" => "application/json",
-                _ => "text/html; charset=utf-8",
+                ".svg" => "image/svg+xml",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                ".ico" => "image/x-icon",
+                ".mp3" => "audio/mpeg",
+                ".ogg" => "audio/ogg",
+                ".wav" => "audio/wav",
+                ".woff" => "font/woff",
+                ".woff2" => "font/woff2",
+                ".ttf" => "font/ttf",
+                ".webmanifest" => "application/manifest+json",
+                ".txt" => "text/plain; charset=utf-8",
+                ".html" or ".htm" or "" => "text/html; charset=utf-8",
+                _ => "application/octet-stream",
             };
-            await response.OutputStream.WriteAsync(await File.ReadAllBytesAsync(file));
+            byte[] body = await File.ReadAllBytesAsync(file);
+            if (_headScript is not null && response.ContentType.StartsWith("text/html", StringComparison.Ordinal))
+                body = InjectHeadScript(body, _headScript);
+            await response.OutputStream.WriteAsync(body);
         }
+    }
+
+    /// <summary>Puts a script at the start of `&lt;head&gt;`, ahead of every other script in the page.</summary>
+    private static byte[] InjectHeadScript(byte[] html, string script)
+    {
+        string text = System.Text.Encoding.UTF8.GetString(html);
+        int head = System.Text.RegularExpressions.Regex.Match(text, "<head[\\s>]", System.Text.RegularExpressions.RegexOptions.IgnoreCase) is { Success: true } m ? m.Index : -1;
+        int close = head < 0 ? -1 : text.IndexOf('>', head);
+        if (close < 0)
+            return html;
+        return System.Text.Encoding.UTF8.GetBytes(text.Insert(close + 1, "<script>" + script + "</script>"));
     }
 
     public void Dispose() => _listener.Close();

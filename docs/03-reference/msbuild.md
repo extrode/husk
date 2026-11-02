@@ -10,6 +10,8 @@
 | `HuskRoutes` | none | The routes folder (`src/routes`). Its presence turns on the [router](../02-guides/router.md); nothing changes without it |
 | `HuskShell` | none | The app's HTML shell (`src/app.html`), written to `index.html` with the import map, stylesheet and entry script filled in |
 | `HuskAlias` | none | Include is the alias (`$lib`), `Path` the folder, optional `Entry` the file the bare alias means (`index.ts`) |
+| `HuskStylesheet` | none | A `.css` file a module imports for its side effect (`import '$lib/app.css'`); name the alias that reaches it in `HuskAlias`. Becomes a module that adds the CSS in a `<style>` ahead of `husk.css`; `url(...)` in it is not rewritten. Missing file: HUSK103 |
+| `HuskJson` | none | A `.json` file a module imports with an import attribute (`import x from './t.json' with { type: 'json' }`). `Root` is the folder its URL is counted from, `ServeAt` the URL folder (as `PareServeAt`). Served there, hashed with `HuskHashNames`, never preloaded. Missing or outside `Root`: HUSK104 |
 | `HuskImport` | none | Include is a bare specifier, `Url` where the browser finds it (`/vendor/x.js`) |
 | `HuskEnv` | none | Include is an `import.meta.env` name, `Value` its value in this build |
 
@@ -37,3 +39,13 @@ Every code is listed in [Error codes](error-codes.md).
 ## License
 
 ISL-P 1.2 with the ISL-OE 1.2 output exception: you may ship what Husk generates as part of your own app. See `LICENSE.md` and `NOTICE.md` in the repository.
+
+## A folder of static files outside the project
+
+No Husk item: the SDK's own `Content` item with a `Link` below `wwwroot/` serves and publishes it, and `Exclude`
+leaves files out.
+
+```xml
+<Content Include="../shared/static/**" Exclude="../shared/static/_headers" Link="wwwroot/%(RecursiveDir)%(Filename)%(Extension)"
+         CopyToPublishDirectory="PreserveNewest" />
+```
