@@ -23,3 +23,4 @@ next agent doesn't hit it. Keep entries true; delete stale ones.
 - `Content Remove` does not reach `HuskPage` by itself: the targets drop pages that left `@(Content)` (when `EnableDefaultContentItems` is not false). Test with `publish`, which builds Release (`obj/Release/...`), not Debug.
 Corpus theories used hard-coded safari and started a driver before skipping; on Linux and Windows CI the port locale test failed on safaridriver (run 41382610642). Use Browsers.All, skip before Browsers.Start.
 - A release tag whose version was not bumped in Directory.Build.props fails the release guard (seen on v0.1.0-preview.9). Bump Directory.Build.props, README and the two docs pages and cut the changelog heading on a chore/release branch before tagging.
+- Tags are protected on GitHub ("Cannot delete this tag"): a wrong release tag cannot be moved, only skipped. Bump and check the version before tagging, and never reuse a tag number.
