@@ -1,7 +1,8 @@
 ---
 id: L009
 title: The saaaat port branch changes nothing the Vite build uses
-status: proposed
+status: enacted
+enacted: 2026-11-02
 kind: guard
 scope: saaaat repo, branch feat/husk-port
 ---

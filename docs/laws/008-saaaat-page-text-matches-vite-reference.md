@@ -1,7 +1,8 @@
 ---
 id: L008
 title: The saaaat port shows the text the Vite build shows
-status: proposed
+status: enacted
+enacted: 2026-11-02
 kind: invariant
 scope: tests/Extrode.Husk.Integration/SaaaatPortTests.cs, tests/references/saaaat/
 ---

@@ -1,7 +1,8 @@
 ---
 id: L010
 title: A watch rebuild produces what a clean build produces
-status: proposed
+status: enacted
+enacted: 2026-11-02
 kind: property
 scope: src/Extrode.Husk.Build, src/Extrode.Husk.AspNetCore
 ---
