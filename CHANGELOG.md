@@ -11,7 +11,7 @@ sections that apply; drop the empty ones rather than leaving them blank.
 
 ## [Unreleased]
 
-## [0.1.0-preview.9] — 2026-11-02
+## [0.1.0-preview.10] — 2026-11-02
 
 ### Added
 
