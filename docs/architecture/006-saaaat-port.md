@@ -90,9 +90,9 @@ Nothing under `apps/web/src` or `packages/` was edited.
 
 | Module | Keeps | Leaves out |
 |---|---|---|
-| `capacitor-core.js` | web `isNativePlatform` and platform answers | native bridge, `registerPlugin` (the app never calls it) |
+| `capacitor-core.js` | `isNativePlatform()` false, `getPlatform()` 'web', `isPluginAvailable()` false | every native bridge; `registerPlugin()` returns an empty object (the app never calls it) |
 | `capacitor-preferences.js` | `get`, `set`, `remove` over `localStorage` | `configure`, `keys`, `clear`, `migrate`, `removeOld`, native stores |
-| `capacitor-local-notifications.js` | the calls the app makes, as no-ops | scheduling and delivery |
+| `capacitor-local-notifications.js` | permission always 'denied', so the app takes its "unavailable" path; `schedule()` resolves empty | scheduling, `cancel`, channels, listeners |
 
 Break test: making `isNativePlatform` throw fails the console/render test in all three browsers.
 
@@ -105,8 +105,8 @@ Break test: making `isNativePlatform` throw fails the console/render test in all
 | Warm rebuild | not measured | 4 s |
 | Output | 15,553,999 bytes (whole build folder) | 21,161,115 bytes (`wwwroot`) |
 
-The two sizes are not like for like: Husk's output is unminified and carries the 227 compiled modules as separate
-files, and Vite's figure is the whole build folder. No Node is needed on the Husk side.
+The two sizes are not like for like: Vite's figure is the whole build folder; Husk's is `wwwroot`, 714 `.js` files
+and 86 `.map` files among them. Why Husk's is larger was not investigated. No Node is needed on the Husk side.
 
 ### Tests (T17), `SaaaatPortTests` (`Category=Corpus`, skipped without the checkout)
 
