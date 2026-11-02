@@ -43,11 +43,46 @@ public sealed class SaaaatParityTests
         for (int i = 0; i < 75 && stable < 5; i++)
         {
             Thread.Sleep(200);
-            string now = (string)js.ExecuteScript("return (document.body.innerText || '').replace(/\\s+/g, ' ').trim();")!;
+            // SvelteKit's route announcer holds the page title after a client-side navigation; Husk's router has none.
+            // It is off screen and for screen readers, so it is hidden, not compared (docs/architecture/006-saaaat-port.md).
+            string now = (string)js.ExecuteScript("document.getElementById('svelte-announcer')?.style.setProperty('display', 'none'); return (document.body.innerText || '').replace(/\\s+/g, ' ').trim();")!;
             stable = now.Length > 0 && now == last ? stable + 1 : 0;
             last = now;
         }
         return last;
+    }
+
+
+    internal const string Record = "HUSK_SAAAAT_RECORD";
+
+    /// <summary>The commit of a saaaat checkout; references are keyed by it.</summary>
+    internal static string CommitOf(string checkout)
+    {
+        var start = new System.Diagnostics.ProcessStartInfo("git", ["-C", checkout, "rev-parse", "HEAD"]) { RedirectStandardOutput = true };
+        using var git = System.Diagnostics.Process.Start(start)!;
+        string sha = git.StandardOutput.ReadToEnd().Trim();
+        git.WaitForExit();
+        return git.ExitCode == 0 ? sha : throw new InvalidOperationException($"{checkout} is not a git checkout");
+    }
+
+    internal static string ReferenceFolder(string sha) => Path.Combine(TempProject.RepoRoot, "tests", "references", "saaaat", sha);
+
+    internal static string ReferenceFile(string folder, string page, string locale, string browser) =>
+        Path.Combine(folder, $"{(page == "/" ? "index" : page.Trim('/').Replace('/', '-'))}.{locale}.{browser}.txt");
+
+    /// <summary>The settled text of every page in every pinned locale, keyed by reference file name.</summary>
+    internal static Dictionary<string, string> Capture(string browser, string root)
+    {
+        var seen = new Dictionary<string, string>();
+        foreach (var (locale, numerals) in Locales)
+        {
+            using var server = new StaticServer(root, spa: true, headScript: Pinned(locale, numerals));
+            using var driver = Browsers.Start(browser);
+            if (browser != "safari") driver.Manage().Window.Size = new System.Drawing.Size(1280, 900);
+            foreach (string page in Pages)
+                seen[Path.GetFileName(ReferenceFile("", page, locale, browser))] = TextOf(driver, new Uri(server.Address, page).ToString());
+        }
+        return seen;
     }
 
     /// <summary>Spike P1 (spec 003 T3): two recordings of the Vite build per browser, to see what differs.</summary>
