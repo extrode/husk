@@ -57,9 +57,7 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Recording_writes_the_vite_build_text_as_the_reference(string browser)
     {
         if (Environment.GetEnvironmentVariable(SaaaatParityTests.Record) != "1")
@@ -74,9 +72,7 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Page_text_equals_the_recorded_vite_reference_in_English_and_Arabic(string browser)
     {
         string output = PortOutput;
@@ -148,11 +144,10 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Navigation_behaves_as_in_the_Vite_build(string browser)
     {
+        _ = PortOutput;
         string? vite = ViteOutput();
         if (vite is null)
             Assert.Skip("no Vite build to compare with");
@@ -170,11 +165,10 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Every_shipped_locale_opens_the_home_page(string browser)
     {
+        _ = PortOutput;
         using var driver = Driver(browser);
         var texts = new Dictionary<string, string>();
         foreach (string locale in AllLocales)
@@ -188,9 +182,7 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void One_in_app_language_switch_changes_the_text(string browser)
     {
         using var server = new StaticServer(PortOutput, spa: true, headScript: SaaaatParityTests.Pinned("en", "latn"));
@@ -206,9 +198,7 @@ public sealed class SaaaatPortTests(SaaaatPortTests.Port port) : IClassFixture<S
     }
 
     [Theory]
-    [InlineData("chrome")]
-    [InlineData("firefox")]
-    [InlineData("safari")]
+    [MemberData(nameof(Browsers.All), MemberType = typeof(Browsers))]
     public void Every_page_renders_and_Chromium_logs_no_console_error(string browser)
     {
         using var server = new StaticServer(PortOutput, spa: true, headScript: SaaaatParityTests.Pinned("en", "latn"));
